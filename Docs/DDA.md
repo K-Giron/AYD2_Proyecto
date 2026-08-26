@@ -45,7 +45,7 @@ SGO-Logic se propone como una capa de orquestación e integración omnicanal que
 ---
 
 ## 2. Identificación del Caso de Negocio
-**Estado:** En progreso | **Dueño:** Persona 2 (Rol B), con delimitación de alcance por Persona 1 (Rol A)
+**Estado:** Borrador completo; pendiente de validación del equipo | **Dueño:** Persona 2 (Rol B), con delimitación de alcance por Persona 1 (Rol A)
 
 ### 2.1 Situación actual y objetivo de negocio
 
@@ -106,19 +106,33 @@ Los siguientes puntos no están definidos por el enunciado. No se adoptará una 
 | Nombres de estado del ciclo de vida de la orden usados en el prototipo (Confirmada, Pago aprobado, En preparación, En tránsito, Entregada) | El prototipo de Persona 5 (§12) los usa para ilustrar la consulta de estado, pero el ciclo de vida completo todavía no tiene un CDU o ADR aceptado — ADR-005 (coordinación y estados) sigue pendiente de redactar (§10.3) | Personas 2 y 3, revisado por Persona 5 |
 
 ### 2.4 Diagrama de Casos de Uso de Negocio (CUN) — alto nivel
-`[TODO: insertar imagen del diagrama, ej. ![CUN](./diagramas/cun-alto-nivel.png)]`
+
+![Core del negocio de SGO-Logic](./diagramas/cun-alto-nivel.svg)
+
+[Fuente versionable](./diagramas/cun-alto-nivel.dot) | [PNG para presentación](./diagramas/cun-alto-nivel.png)
+
+El core del negocio se modela como un único Caso de Uso de Negocio, "Operar venta y logística omnicanal de MegaStore", que resume en una sola frase el alcance descrito en 2.2. Se distinguen actores de negocio internos (Cliente, Personal de tienda, Personal de atención, Logística, Finanzas) de actores externos existentes (ERP-Core, POS, PayKlik, LogiExpress, SAT, proveedor de notificaciones), consistentes con las entidades externas de 3.1. Todavía no hay actores operativos ni relaciones entre casos de uso: esos aparecen recién en los CDU expandidos (Sección 5), siguiendo el mismo criterio con el que Persona 4 modeló el Diagrama de Contexto (11.1).
+
+**Notación:** el óvalo de doble borde representa un CUN y la etiqueta "(negocio)" marca actores de negocio, notación complementaria declarada explícitamente por no disponer de la diagonal de UML de negocio en la herramienta de diagramado (mismo criterio que `Docs/diagramas/README.md`).
 
 ### 2.5 Primera descomposición (macroprocesos)
-Agrupar los CUN en procesos de negocio principales:
 
-| Macro-proceso | CUN incluidos |
-|---|---|
-| Venta omnicanal | Gestionar carrito omnicanal, Verificar y reservar inventario, Procesar pago |
-| Postventa | Gestionar devoluciones y reembolsos |
-| Cumplimiento fiscal | Emitir documentación fiscal, Sincronizar venta con ERP |
-| Logística | Gestionar despacho, Integrar con LogiExpress, Notificar eventos a POS |
-| Atención al cliente | Consultar estado de orden, Notificar al cliente |
-| Gobernanza | Auditar operaciones |
+![Primera descomposición del core de SGO-Logic](./diagramas/cun-primera-descomposicion.svg)
+
+[Fuente versionable](./diagramas/cun-primera-descomposicion.dot) | [PNG para presentación](./diagramas/cun-primera-descomposicion.png)
+
+El core se descompone en los 12 CUN de 2.6, agrupados en seis macro-procesos de negocio. Cada CUN queda asociado a los actores de negocio que efectivamente lo originan o lo reciben, y cada macro-proceso corresponde a una línea de acción distinguible del negocio (venta, cumplimiento fiscal, logística, atención, postventa y gobernanza), no a una agrupación técnica de sistema:
+
+| Macro-proceso | CUN incluidos | Actores de negocio asociados |
+|---|---|---|
+| Venta omnicanal | Gestionar carrito omnicanal, Verificar y reservar inventario, Procesar pago | Cliente, Personal de tienda, Personal de atención, Logística, PayKlik |
+| Postventa | Gestionar devoluciones y reembolsos | Cliente, Personal de atención, Personal de tienda |
+| Cumplimiento fiscal | Emitir documentación fiscal, Sincronizar venta con ERP | Finanzas, SAT, ERP-Core |
+| Logística | Gestionar despacho, Integrar con LogiExpress, Notificar eventos a POS | Logística, LogiExpress, POS |
+| Atención al cliente | Consultar estado de orden, Notificar al cliente | Cliente, Personal de atención, Proveedor de notificaciones |
+| Gobernanza | Auditar operaciones | Finanzas, SAT |
+
+Ningún CUN queda sin macro-proceso ni sin al menos un actor de negocio asociado; esa cobertura se reutiliza en la matriz de trazabilidad (Sección 9) y en el diagrama de Componentes de Persona 4 (11.2), donde CUN-01 a CUN-03 orientan el módulo de Carrito/Órdenes, CUN-04/CUN-05 el módulo de Facturación, CUN-06 a CUN-08 el módulo de Despacho, CUN-09/CUN-11 el módulo de Notificaciones/Consulta, CUN-10 el módulo de Postventa y CUN-12 el módulo de Auditoría.
 
 ### 2.6 Lista de CUN identificados (insumo para 2.4)
 1. **CUN-01:** Gestionar carrito omnicanal
@@ -134,7 +148,7 @@ Agrupar los CUN en procesos de negocio principales:
 11. **CUN-11:** Notificar al cliente
 12. **CUN-12:** Auditar operaciones
 
-`[TODO Persona 2: convertir 2.6 en el diagrama real de 2.4 y validar la descomposición de 2.5 conforme al material de Casos de Uso de Negocio.]`
+`[Persona 2: diagramas 2.4/2.5 incorporados. Pendiente de validación del equipo: confirmar que ningún CUN quedó fuera de alcance y que los actores de negocio coinciden con los que use Persona 4 en Contexto/Componentes.]`
 
 ---
 
