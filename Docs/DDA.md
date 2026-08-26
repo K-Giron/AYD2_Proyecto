@@ -202,7 +202,7 @@ Para este DDA, un stakeholder es una persona, grupo u organización con interese
 ---
 
 ## 5. Drivers — Requisitos Funcionales
-**Estado:** En progreso | **Dueño:** Persona 2 (Rol B)
+**Estado:** Borrador completo para los 6 CDU priorizados (5.2 a 5.7); pendiente de validación del equipo y de expandir el resto según tiempo disponible | **Dueño:** Persona 2 (Rol B)
 
 ### 5.1 Plantilla de Caso de Uso Expandido (CDU)
 
@@ -263,9 +263,219 @@ Postcondiciones:
 Relacionado con EaC: EaC-4 (resiliencia de pago), EaC-7 (trazabilidad)
 ```
 
-### 5.3 CDU pendientes de expandir
-`[TODO: repetir la plantilla 5.1 para los CDU priorizados: Gestionar carrito, Verificar inventario,
-Consultar estado de orden, Gestionar despacho, Gestionar devoluciones, y los restantes según tiempo disponible]`
+### 5.3 CDU-01: Gestionar carrito omnicanal
+
+```
+ID: CDU-01
+Nombre: Gestionar carrito omnicanal
+Derivado de (CUN): Gestionar carrito omnicanal
+Actor(es): Cliente; Personal de tienda o Personal de atención cuando actúan
+  en representación del cliente
+Descripción breve: Permite iniciar, modificar y conservar un carrito de
+  compra asociado al cliente, reconocible desde cualquier canal, para que
+  la compra pueda continuar o completarse en un canal distinto al de inicio.
+Precondiciones:
+  - El cliente está identificado o puede identificarse en el canal
+Flujo principal:
+  1. El cliente inicia una intención de compra en un canal (web, app,
+     tienda o centro de atención)
+  2. El sistema identifica al cliente o solicita su identificación para
+     asociar el carrito a su cuenta
+  3. El cliente agrega, modifica o elimina productos del carrito
+  4. Para cada producto agregado, el sistema invoca la verificación de
+     disponibilidad (CDU-02: Verificar y reservar inventario) antes de
+     confirmarlo en el carrito
+  5. El sistema conserva el carrito asociado al cliente, independiente del
+     canal de origen
+  6. El cliente decide continuar la compra desde el mismo canal o desde
+     otro distinto
+  7. El cliente confirma el carrito para iniciar el pago (CDU-03: Procesar
+     pago de una orden)
+Flujos alternativos:
+  A1. El cliente cambia de canal a mitad de la compra: el sistema recupera
+      el carrito vigente en el nuevo canal sin pedir que reingrese los
+      artículos
+  A2. El cliente elimina productos o abandona el carrito: el inventario
+      reservado para esos productos se libera según el mecanismo definido
+      en CDU-02
+Flujo de excepción:
+  E1. Un producto deja de estar disponible mientras el cliente decide: el
+      sistema informa la indisponibilidad y ofrece alternativas, o mantiene
+      el carrito sin ese ítem, sin bloquear el resto de la compra
+Postcondiciones:
+  - Existe un carrito único y vigente asociado al cliente, reconocible
+    desde cualquier canal, con los productos y su estado de disponibilidad
+    actualizados
+Relacionado con EaC: EaC-01 (consulta ≤ 5 s), EaC-03 (escalabilidad 8x),
+  EaC-08 (no bloqueado por falla de notificaciones)
+```
+
+### 5.4 CDU-02: Verificar y reservar inventario
+
+```
+ID: CDU-02
+Nombre: Verificar y reservar inventario
+Derivado de (CUN): Verificar y reservar inventario
+Actor(es): Sistema (invocado por CDU-01 y por CDU-07); Personal de
+  logística como consultante de disponibilidad
+Descripción breve: Verifica existencia de un producto en una ubicación y
+  reserva la cantidad solicitada para evitar que la misma unidad se
+  comprometa con más de un cliente, liberando la reserva cuando la compra
+  no concluye.
+Precondiciones:
+  - Existe un carrito o una orden con productos solicitados
+Flujo principal:
+  1. El módulo de Carrito/Órdenes solicita verificar disponibilidad de un
+     producto en una ubicación (tienda o centro de distribución)
+  2. El sistema consulta la fuente autoritativa de inventario (fuente
+     exacta abierta; ver 2.3)
+  3. Si hay existencia suficiente, el sistema reserva la cantidad
+     solicitada y la marca como comprometida para esa orden
+  4. El sistema responde con la confirmación de reserva y la ubicación
+     desde la que se reservó
+  5. Si la compra no concluye dentro de un tiempo acorde con la operación
+     comercial, el sistema libera automáticamente la reserva
+Flujos alternativos:
+  A1. No hay existencia en la ubicación preferida: el sistema evalúa otra
+      ubicación (tienda o centro de distribución) antes de declarar
+      indisponibilidad
+Flujo de excepción:
+  E1. Dos solicitudes intentan reservar la última unidad disponible casi al
+      mismo tiempo: el sistema debe garantizar que solo una reserva se
+      confirme y la otra reciba indisponibilidad, evitando el doble
+      compromiso de la misma unidad
+Postcondiciones:
+  - El inventario reservado queda comprometido y visible para el resto del
+    sistema
+  - Una reserva no concluida se libera en un tiempo acorde con la
+    operación comercial
+Relacionado con EaC: EaC-01 (consulta ≤ 5 s), EaC-03 (escalabilidad 8x)
+```
+
+### 5.5 CDU-07: Gestionar despacho
+
+```
+ID: CDU-07
+Nombre: Gestionar despacho
+Derivado de (CUN): Gestionar despacho
+Actor(es): Personal de logística; Cliente (elige o cambia el método de
+  entrega)
+Descripción breve: Determina el origen y el método de despacho de una
+  orden (centro de distribución, tienda o recogida por el cliente),
+  coordina su preparación y mantiene su estado visible hasta la entrega.
+Precondiciones:
+  - La orden tiene el inventario reservado (CDU-02) y su pago aprobado o en
+    proceso de aprobación según la política vigente
+Flujo principal:
+  1. El sistema determina las opciones de despacho disponibles para la
+     orden: centro de distribución, tienda o recogida por el cliente
+  2. El cliente o el sistema selecciona el método de entrega según
+     disponibilidad e inventario reservado
+  3. El sistema asigna la orden a la ubicación de despacho correspondiente
+     y notifica a Logística qué preparar
+  4. Personal de logística prepara el pedido y actualiza el estado de
+     despacho
+  5. El sistema genera la guía de envío mediante integración con
+     LogiExpress (CDU-08) cuando el método de entrega lo requiere
+  6. El sistema actualiza el estado de la orden conforme avanza el
+     despacho (preparación, tránsito, entrega)
+Flujos alternativos:
+  A1. El cliente cambia el método de entrega después de confirmada la
+      compra: el sistema reevalúa la ubicación de despacho y ajusta la
+      reserva de inventario si es necesario
+Flujo de excepción:
+  E1. LogiExpress no confirma la generación de la guía o responde con
+      timeout: el sistema reintenta según la política que defina ADR-004
+      (pendiente) sin bloquear la preparación física del pedido
+Postcondiciones:
+  - La orden queda asociada a un método y una ubicación de despacho, con
+    estado visible y trazable hasta la entrega
+Relacionado con EaC: EaC-05 (confiabilidad LogiExpress), EaC-06
+  (confiabilidad hacia POS/tienda), EaC-07 (trazabilidad)
+```
+
+### 5.6 CDU-09: Consultar estado de orden
+
+```
+ID: CDU-09
+Nombre: Consultar estado de orden
+Derivado de (CUN): Consultar estado de orden
+Actor(es): Cliente; Personal de atención al cliente
+Descripción breve: Entrega una vista consolidada del estado de una orden
+  (compra, pago, despacho, entrega y, si aplica, devolución o incidencia)
+  desde cualquier canal, sin que el solicitante deba consultar cada área
+  por separado.
+Precondiciones:
+  - La orden existe en el sistema, independientemente del canal donde se
+    originó
+Flujo principal:
+  1. El cliente o el personal de atención solicita el estado de una orden
+     desde cualquier canal
+  2. El sistema recupera el estado consolidado de la orden: compra, pago,
+     despacho, entrega y, si aplica, devolución o incidencia
+  3. El sistema muestra el resultado dentro del tiempo máximo aceptable
+     para el negocio
+Flujos alternativos:
+  A1. La orden tiene una incidencia registrada: el sistema incluye la
+      incidencia en la respuesta junto con el estado general
+Flujo de excepción:
+  E1. Alguno de los subsistemas de origen del dato (pago, despacho) no
+      responde a tiempo: el sistema muestra la última información conocida
+      indicando que puede no estar actualizada, en vez de fallar toda la
+      consulta
+Postcondiciones:
+  - El solicitante obtiene una vista consolidada del estado de la orden sin
+    necesidad de consultar cada canal o área por separado
+Relacionado con EaC: EaC-01 (consulta ≤ 5 s), EaC-07 (trazabilidad)
+```
+
+### 5.7 CDU-10: Gestionar devoluciones y reembolsos
+
+```
+ID: CDU-10
+Nombre: Gestionar devoluciones y reembolsos
+Derivado de (CUN): Gestionar devoluciones y reembolsos
+Actor(es): Cliente; Personal de atención al cliente; Personal de tienda
+Descripción breve: Registra una devolución referenciando la venta
+  original, calcula el reembolso o cambio correspondiente y conserva la
+  relación entre ambos para auditoría y conciliación fiscal.
+Precondiciones:
+  - Existe una venta original confirmada y facturada (CDU-04: Emitir
+    documentación fiscal)
+Flujo principal:
+  1. El cliente o el personal de atención inicia una devolución
+     referenciando la orden o venta original
+  2. El sistema recupera el historial completo de la compra (pago,
+     despacho, entrega) para validar la elegibilidad de la devolución
+  3. El personal de atención o de tienda registra el motivo y los
+     artículos a devolver
+  4. El sistema calcula el reembolso o cambio correspondiente y lo asocia
+     a la venta original
+  5. El sistema actualiza el inventario disponible con los artículos
+     devueltos, cuando aplica
+  6. El sistema genera la documentación fiscal de la devolución cuando la
+     operación lo requiere (relacionado con CDU-04)
+  7. El sistema notifica al cliente el resultado de la devolución
+     (relacionado con CUN-11: Notificar al cliente)
+Flujos alternativos:
+  A1. La devolución corresponde solo a una parte de la orden: el sistema
+      mantiene la relación entre la devolución parcial y la venta original
+      completa
+Flujo de excepción:
+  E1. La venta original no se encuentra o no cumple condición de
+      elegibilidad: el sistema informa el motivo y no continúa con el
+      reembolso hasta que el caso se resuelva manualmente
+Postcondiciones:
+  - La devolución queda registrada y vinculada a la venta original, con el
+    reembolso o cambio procesado y la evidencia disponible para auditoría
+Relacionado con EaC: EaC-02 (evidencia < 1 s), EaC-07 (trazabilidad)
+```
+
+### 5.8 CDU pendientes de expandir
+`[TODO: repetir la plantilla 5.1 para el resto de CUN según tiempo disponible: Emitir documentación
+fiscal, Sincronizar venta con ERP, Notificar eventos a POS, Integrar con LogiExpress, Notificar al
+cliente, Auditar operaciones. Los cinco priorizados en la Sección 8.2 y en la matriz de la Sección 9
+ya quedaron expandidos en 5.2 a 5.7.]`
 
 ---
 
