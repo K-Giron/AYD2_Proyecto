@@ -1,0 +1,183 @@
+digraph SGO_Componentes {
+  graph [
+    label=<<B>SGO-Logic - Vista de Componentes</B><BR/><FONT POINT-SIZE="11">Monolito modular, contratos explicitos e integracion desacoplada</FONT>>,
+    labelloc=t,
+    rankdir=TB,
+    bgcolor="#F8FAFC",
+    fontname="Arial",
+    fontsize=15,
+    pad=0.28,
+    nodesep=0.48,
+    ranksep=0.62,
+    splines=ortho,
+    compound=true
+  ];
+
+  node [
+    shape=component,
+    style="filled",
+    fillcolor="#FFFFFF",
+    color="#94A3B8",
+    fontcolor="#0F172A",
+    fontname="Arial",
+    fontsize=9,
+    margin="0.15,0.10"
+  ];
+  edge [
+    color="#64748B",
+    fontcolor="#334155",
+    fontname="Arial",
+    fontsize=7.5,
+    arrowsize=0.65
+  ];
+
+  canales [
+    shape=box,
+    style="rounded,filled",
+    color="#60A5FA",
+    fillcolor="#DBEAFE",
+    label="Canales\nWeb | App | Tienda | Atencion"
+  ];
+
+  api [
+    color="#818CF8",
+    fillcolor="#E0E7FF",
+    label=<<B>API Omnicanal</B><BR/><FONT POINT-SIZE="8">Provee: compras, consultas,<BR/>devoluciones y continuidad</FONT>>
+  ];
+  canales -> api [label="HTTPS / contrato de canal"];
+
+  subgraph cluster_nucleo {
+    label="<<subsystem>> Nucleo SGO-Logic - un desplegable modular";
+    color="#93C5FD";
+    fillcolor="#EFF6FF";
+    style="rounded,filled";
+    fontname="Arial";
+    fontcolor="#1E3A8A";
+
+    carrito [label=<<B>Carrito</B><BR/><FONT POINT-SIZE="7">Propietario: carrito e intencion</FONT>>];
+    orden [label=<<B>Ordenes y Coordinacion</B><BR/><FONT POINT-SIZE="7">Propietario: orden, estado y proceso</FONT>>];
+    inventario [label=<<B>Inventario y Reservas</B><BR/><FONT POINT-SIZE="7">Propietario: reserva y disponibilidad</FONT>>];
+    pagos [label=<<B>Pagos</B><BR/><FONT POINT-SIZE="7">Propietario: intento y resultado</FONT>>];
+    facturacion [label=<<B>Facturacion</B><BR/><FONT POINT-SIZE="7">Propietario: documento, CUI y serie</FONT>>];
+    despacho [label=<<B>Despacho</B><BR/><FONT POINT-SIZE="7">Propietario: plan, guia y entrega</FONT>>];
+    postventa [label=<<B>Postventa</B><BR/><FONT POINT-SIZE="7">Propietario: devolucion y reembolso</FONT>>];
+    notificaciones [label=<<B>Notificaciones</B><BR/><FONT POINT-SIZE="7">Propietario: solicitud y estado de envio</FONT>>];
+    auditoria [
+      color="#10B981",
+      fillcolor="#D1FAE5",
+      label=<<B>Auditoria y Consulta</B><BR/><FONT POINT-SIZE="7">Propietario: quien, cuando y que cambio</FONT>>
+    ];
+
+    carrito -> inventario [label="requiere IReservas\nsincrono"];
+    carrito -> orden [label="requiere ICrearOrden\nsincrono"];
+    orden -> pagos [label="requiere IProcesarPago\nsincrono"];
+    orden -> facturacion [label="requiere IEmitirFactura\nsincrono condicionado"];
+    orden -> despacho [label="requiere IPlanificarDespacho"];
+    postventa -> pagos [label="requiere IReembolso"];
+    postventa -> orden [label="requiere IHistorialOrden"];
+    orden -> notificaciones [style=dashed, label="EventoEstadoOrden"];
+    despacho -> notificaciones [style=dashed, label="EventoEstadoEntrega"];
+  }
+
+  api -> carrito [label="ICarrito"];
+  api -> orden [label="IOrdenes / IConsultaEstado"];
+  api -> postventa [label="IDevoluciones"];
+  api -> auditoria [label="IConsultaEvidencia"];
+
+  subgraph cluster_integracion {
+    label="<<layer>> Puertos, adaptadores y mensajeria";
+    color="#FCD34D";
+    fillcolor="#FFFBEB";
+    style="rounded,filled";
+    fontname="Arial";
+    fontcolor="#92400E";
+
+    publicacion [
+      color="#F59E0B",
+      fillcolor="#FEF3C7",
+      label=<<B>Publicacion confiable</B><BR/><FONT POINT-SIZE="7">Coordina cambio de negocio + mensaje<BR/>mecanismo final: ADR-002 pendiente</FONT>>
+    ];
+    broker [
+      shape=box3d,
+      color="#F59E0B",
+      fillcolor="#FEF3C7",
+      label=<<B>Bus / Broker de eventos</B><BR/><FONT POINT-SIZE="7">colas, reintentos y mensajes fallidos</FONT>>
+    ];
+    idempotencia [
+      color="#F59E0B",
+      fillcolor="#FEF3C7",
+      label=<<B>Control de idempotencia</B><BR/><FONT POINT-SIZE="7">clave, intento, deduplicacion y conciliacion</FONT>>
+    ];
+
+    ad_pay [label="Adaptador PayKlik\nREST + timeout + Circuit Breaker"];
+    ad_sat [label="Adaptador SAT\nXML + respuesta condicionante"];
+    ad_logi [label="Adaptador LogiExpress\nREST + retry con backoff"];
+    ad_erp [label="Adaptador ERP\nCSV/XML cada 30 min"];
+    ad_pos [label="Adaptador POS\neventos + entrega eventual"];
+    ad_notif [label="Adaptador Notificaciones\nconsumo asincrono no bloqueante"];
+
+    publicacion -> broker [label="eventos despues de confirmar"];
+    broker -> ad_erp [style=dashed, label="VentaConfirmada"];
+    broker -> ad_pos [style=dashed, label="eventos de orden/inventario"];
+    broker -> ad_notif [style=dashed, label="solicitud de notificacion"];
+    broker -> ad_logi [style=dashed, label="reintento / conciliacion"];
+    idempotencia -> ad_pay [style=dotted];
+    idempotencia -> ad_logi [style=dotted];
+    idempotencia -> ad_pos [style=dotted];
+    idempotencia -> ad_erp [style=dotted];
+  }
+
+  orden -> publicacion [style=dashed, label="eventos de dominio"];
+  inventario -> publicacion [style=dashed, label="cambios confirmados"];
+  pagos -> publicacion [style=dashed, label="resultado de intento"];
+  facturacion -> publicacion [style=dashed, label="factura emitida"];
+  despacho -> publicacion [style=dashed, label="estado de despacho"];
+  postventa -> publicacion [style=dashed, label="devolucion / reembolso"];
+  broker -> auditoria [style=dashed, label="hechos auditables"];
+  pagos -> ad_pay [label="IPasarelaPago"];
+  facturacion -> ad_sat [label="IFacturacionFiscal"];
+  despacho -> ad_logi [label="ILogisticaExterna"];
+
+  subgraph cluster_externos {
+    label="Sistemas fuera de SGO-Logic";
+    color="#FCA5A5";
+    fillcolor="#FEF2F2";
+    style="rounded,filled";
+    fontname="Arial";
+    fontcolor="#991B1B";
+
+    payklik [shape=box, label="PayKlik"];
+    sat [shape=box, label="SAT"];
+    logiexpress [shape=box, label="LogiExpress"];
+    erp [shape=box, label="ERP-Core"];
+    pos [shape=box, label="POS x32"];
+    notif_ext [shape=box, label="SMS / correo / push"];
+  }
+
+  ad_pay -> payklik [dir=both, label="REST"];
+  ad_sat -> sat [dir=both, label="XML / resultado"];
+  ad_logi -> logiexpress [dir=both, label="REST"];
+  ad_erp -> erp [label="CSV/XML"];
+  ad_pos -> pos [label="eventos"];
+  ad_notif -> notif_ext [label="solicitudes"];
+
+  regla_datos [
+    shape=note,
+    style="filled",
+    color="#A7F3D0",
+    fillcolor="#ECFDF5",
+    fontsize=8,
+    label="Regla de dependencia: cada modulo posee sus datos logicos.\nNingun modulo accede directamente a las estructuras internas de otro."
+  ];
+  nucleo_ref [shape=point, width=0.01, label="", style=invis];
+  regla_datos -> nucleo_ref [style=invis];
+
+  leyenda [
+    shape=note,
+    style="filled",
+    color="#CBD5E1",
+    fillcolor="#FFFFFF",
+    fontsize=8,
+    label="Linea solida: llamada sincrona / contrato requerido\nLinea discontinua: mensaje o evento asincrono\nLinea punteada: politica transversal"
+  ];
+}

@@ -1,0 +1,123 @@
+digraph SGO_Contexto {
+  graph [
+    label=<<B>SGO-Logic - Vista de Contexto</B><BR/><FONT POINT-SIZE="11">Sistema de interes, usuarios, canales, areas y entidades externas</FONT>>,
+    labelloc=t,
+    rankdir=LR,
+    bgcolor="#F8FAFC",
+    color="#CBD5E1",
+    fontname="Arial",
+    fontsize=15,
+    pad=0.30,
+    nodesep=0.42,
+    ranksep=0.70,
+    splines=ortho,
+    compound=true
+  ];
+
+  node [
+    shape=box,
+    style="rounded,filled",
+    fillcolor="#FFFFFF",
+    color="#94A3B8",
+    fontcolor="#0F172A",
+    fontname="Arial",
+    fontsize=10,
+    margin="0.14,0.10"
+  ];
+  edge [
+    color="#64748B",
+    fontcolor="#334155",
+    fontname="Arial",
+    fontsize=8.5,
+    arrowsize=0.7
+  ];
+
+  subgraph cluster_usuarios {
+    label="Usuarios y canales";
+    color="#93C5FD";
+    fillcolor="#EFF6FF";
+    style="rounded,filled";
+    fontname="Arial";
+    fontcolor="#1E3A8A";
+
+    cliente [shape=ellipse, fillcolor="#DBEAFE", color="#60A5FA", label="Cliente"];
+    personal_tienda [shape=ellipse, fillcolor="#DBEAFE", color="#60A5FA", label="Personal de tienda"];
+    personal_atencion [shape=ellipse, fillcolor="#DBEAFE", color="#60A5FA", label="Personal de atencion"];
+
+    web [label="Canal web"];
+    movil [label="Aplicacion movil"];
+    tienda [label="Canal tienda fisica"];
+    centro [label="Centro de atencion"];
+
+    cliente -> web [label="compra / consulta"];
+    cliente -> movil [label="compra / consulta"];
+    personal_tienda -> tienda [label="venta / continuidad"];
+    personal_atencion -> centro [label="gestion / consulta"];
+  }
+
+  sgo [
+    shape=box3d,
+    penwidth=2.2,
+    color="#2563EB",
+    fillcolor="#DBEAFE",
+    fontcolor="#1E3A8A",
+    fontsize=12,
+    label=<<B>SGO-Logic</B><BR/><FONT POINT-SIZE="9">Orquestacion e integracion omnicanal</FONT><BR/><FONT POINT-SIZE="8">Carrito, orden, inventario, pago, facturacion,<BR/>despacho, postventa, notificacion y auditoria</FONT>>
+  ];
+
+  web -> sgo [dir=both, label="solicitudes y estado\nHTTPS/API"];
+  movil -> sgo [dir=both, label="solicitudes y estado\nHTTPS/API"];
+  tienda -> sgo [dir=both, label="operacion omnicanal\ncontrato por definir"];
+  centro -> sgo [dir=both, label="orden, entrega y devolucion\nHTTPS/API"];
+
+  subgraph cluster_areas {
+    label="Areas y stakeholders organizacionales";
+    color="#C4B5FD";
+    fillcolor="#F5F3FF";
+    style="rounded,filled";
+    fontname="Arial";
+    fontcolor="#5B21B6";
+
+    ti [label="TI / Equipo interno\nopera y monitorea"];
+    finanzas [label="Finanzas\nconciliacion, evidencia y auditoria"];
+    logistica [label="Logistica\ninventario, ordenes y despacho"];
+    negocio [label="Direccion, Gerencia y Comercializacion\nobjetivos, presupuesto e indicadores"];
+  }
+
+  ti -> sgo [dir=both, style=dashed, label="operacion, metricas y alertas"];
+  finanzas -> sgo [dir=both, style=dashed, label="consultas y evidencia < 1 s"];
+  logistica -> sgo [dir=both, style=dashed, label="ordenes, inventario y despacho"];
+  negocio -> sgo [dir=both, style=dashed, label="politicas e indicadores"];
+
+  subgraph cluster_externos {
+    label="Entidades externas existentes (fuera del alcance de modificacion)";
+    color="#FCA5A5";
+    fillcolor="#FEF2F2";
+    style="rounded,filled";
+    fontname="Arial";
+    fontcolor="#991B1B";
+
+    erp [label="ERP-Core (AS/400)\ncontabilidad y cierre"];
+    pos [label="POS de 32 tiendas\ninstancias locales"];
+    payklik [label="PayKlik\npasarela de pago"];
+    logiexpress [label="LogiExpress\nguias y estados"];
+    sat [label="SAT\nfacturacion electronica"];
+    proveedor_notif [label="Proveedor de notificaciones\nSMS, correo y push"];
+  }
+
+  sgo -> erp [label="resumenes CSV/XML\ncada 30 min"];
+  sgo -> pos [label="eventos confiables\ncon errores y reintentos"];
+  sgo -> payklik [dir=both, label="autorizacion y resultado\nREST"];
+  sgo -> logiexpress [dir=both, label="guia y estados de entrega\nREST"];
+  sgo -> sat [dir=both, label="factura XML y resultado\nantes de finalizar orden"];
+  sgo -> proveedor_notif [label="solicitudes no bloqueantes\nSMS / correo / push"];
+
+  leyenda [
+    shape=note,
+    fillcolor="#FFF7ED",
+    color="#FDBA74",
+    fontsize=8,
+    label="Frontera: SGO-Logic se disena; ERP-Core, POS y proveedores solo se integran.\nLas etiquetas de protocolo aparecen unicamente cuando el caso las confirma."
+  ];
+  sgo -> leyenda [style=invis];
+}

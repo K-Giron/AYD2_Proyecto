@@ -6,9 +6,9 @@
 | Curso | Análisis y Diseño de Sistemas 2A |
 | Grupo | `AYD2_<seccion>_2S2025_PROYECTO_G<#>` |
 | Fase | 1 |
-| Versión | 0.4 (borrador de trabajo) |
-| Última actualización | 19/08/2026 |
-| Responsable de esta versión | Persona 1 — Rol A: Facilitación y Trazabilidad |
+| Versión | 0.5 (borrador de trabajo) |
+| Última actualización | 26/08/2026 |
+| Responsable de esta versión | Persona 4 — Rol D: Modelado y Vistas (sección 11) |
 
 > Leyenda de estado: Pendiente | En progreso | Borrador completo (requiere validación) | Completo | Propuesto (aplica a decisiones aún no aceptadas)
 > Cada sección indica quién es el dueño principal según el reparto de trabajo del equipo.
@@ -34,11 +34,13 @@
 ---
 
 ## 1. Resumen Ejecutivo
-**Estado:** Pendiente | **Dueño:** Persona 5 (Rol E)
+**Estado:** Borrador; pendiente de validación final cuando ADR-001 y las secciones 5 y 6 queden cerradas | **Dueño:** Persona 5 (Rol E)
 
-> Párrafo de 150–250 palabras: qué es MegaStore, cuál es el problema, qué propone SGO-Logic, y una síntesis de la arquitectura elegida. Se escribe **al final**, cuando ya existe el resto del documento — no antes.
+MegaStore es una cadena regional de retail con 32 tiendas en Guatemala, El Salvador y Costa Rica y una facturación anual de USD 450 millones, cuyo comercio electrónico crece un 15 % cada año. Su operación actual está fragmentada: cada tienda administra inventario local, el canal en línea opera por separado, la disponibilidad se confirma por teléfono y Finanzas concilia ventas manualmente desde hojas de cálculo, generando devoluciones de hasta siete días hábiles y exposición a errores de despacho y a pérdidas ya cuantificadas, como los USD 150,000 de un solo evento de indisponibilidad de la pasarela de pago.
 
-`[TODO: redactar]`
+SGO-Logic se propone como una capa de orquestación e integración omnicanal que permite iniciar, continuar y completar una compra desde cualquier canal sin modificar ERP-Core ni los POS existentes, cuya sustitución la Junta Directiva descartó. La arquitectura recomendada (ADR-001, propuesto) es un **monolito modular** organizado por capacidades de negocio, rodeado de una **capa de integración por puertos, adaptadores y mensajería** que aísla a SGO-Logic de PayKlik, LogiExpress, la SAT, los POS y el ERP. Este estilo protege los drivers críticos priorizados: continuidad de la orden ante fallas de PayKlik, escalabilidad de hasta 8x en Black Friday, trazabilidad completa para las auditorías de la SAT y mantenibilidad con las capacidades de Java, .NET y Docker del equipo interno, dentro del presupuesto aprobado y con una ruta planificada de evolución hacia la nube.
+
+`[Persona 5: revisar y ajustar este párrafo cuando ADR-001 se acepte formalmente y las secciones 5 (CDU) y 6 (EaC) estén completas, para asegurar que ningún dato quede desactualizado.]`
 
 ---
 
@@ -101,6 +103,7 @@ Los siguientes puntos no están definidos por el enunciado. No se adoptará una 
 | Volumen normal, concurrencia y distribución del tráfico por canal | “8x” es una proporción, pero falta una línea base para dimensionar y diseñar una prueba de carga reproducible | Persona 3 con TI |
 | Objetivos de disponibilidad, recuperación y pérdida de datos | Sin RTO, RPO y disponibilidad objetivo no puede justificarse redundancia ni recuperación ante desastres | Persona 3 con TI y Gerencia |
 | Jurisdicciones y controles concretos de protección de datos | MegaStore opera en tres países; deben confirmarse obligaciones aplicables, retención, cifrado y residencia de datos | Persona 3 con Legal/Finanzas |
+| Nombres de estado del ciclo de vida de la orden usados en el prototipo (Confirmada, Pago aprobado, En preparación, En tránsito, Entregada) | El prototipo de Persona 5 (§12) los usa para ilustrar la consulta de estado, pero el ciclo de vida completo todavía no tiene un CDU o ADR aceptado — ADR-005 (coordinación y estados) sigue pendiente de redactar (§10.3) | Personas 2 y 3, revisado por Persona 5 |
 
 ### 2.4 Diagrama de Casos de Uso de Negocio (CUN) — alto nivel
 `[TODO: insertar imagen del diagrama, ej. ![CUN](./diagramas/cun-alto-nivel.png)]`
@@ -400,7 +403,7 @@ Esta segunda lectura verifica que la priorización de la sección 8 no deje un d
 ### 9.2 Pendientes para cerrar las matrices
 
 - Persona 3 debe aceptar, cambiar o rechazar ADR-001 y asignar el contenido definitivo de ADR-002 a ADR-005.
-- Persona 4 debe proporcionar nombres y rutas finales de los diagramas para sustituir las referencias genéricas a vistas.
+- Persona 4 proporcionó las rutas versionadas `Docs/diagramas/contexto.svg`, `componentes.svg`, `despliegue.svg` y `bloques.svg`, junto con sus fuentes `.dot`; Persona 1 debe enlazar esas rutas en cualquier referencia genérica restante de las matrices.
 - Cada responsable debe conservar evidencia de los mecanismos de validación; en Fase 1 puede ser un diseño de prueba o criterio de aceptación verificable cuando aún no exista implementación.
 
 ---
@@ -518,56 +521,100 @@ CUN-01, CUN-03 a CUN-06, CUN-08, CUN-11 y CUN-12; EaC-03 a EaC-12; R1 a R7 y R9.
 ---
 
 ## 11. Vistas Arquitectónicas
-**Estado:** Pendiente | **Dueño:** Persona 4 (Rol D)
+**Estado:** Borrador completo; pendiente de validación del equipo y de la decisión final sobre ADR-001 | **Dueño:** Persona 4 (Rol D)
+
+Las cuatro vistas se generan desde fuentes Graphviz versionables y se publican en SVG para conservar legibilidad al ampliar. Se declara **UML 2.5.1 simplificado** para Componentes y Despliegue: los estereotipos, fronteras, interfaces y tipos de relación se indican explícitamente. Contexto y Bloques emplean notación complementaria declarada, apropiada para comunicar la frontera del sistema y la visión ejecutiva. La guía de notación, los comandos de regeneración y las decisiones abiertas se conservan en [`Docs/diagramas/README.md`](./diagramas/README.md).
 
 ### 11.1 Diagrama de Contexto
-`[TODO: insertar imagen]`
+
+![Diagrama de Contexto de SGO-Logic](./diagramas/contexto.svg)
+
+[Fuente versionable](./diagramas/contexto.dot) | [PNG para presentación](./diagramas/contexto.png)
+
+La frontera central identifica SGO-Logic como capa de orquestación e integración. A la izquierda se separan usuarios, canales y áreas organizacionales; a la derecha aparecen las seis entidades externas existentes. ERP-Core, POS y proveedores se integran sin presentarlos como componentes internos ni como sistemas que deban modificarse.
 
 **Criterios de aceptación:**
 
-- Delimita claramente SGO-Logic como sistema de interés.
-- Muestra canales, usuarios, áreas organizacionales y las seis entidades externas identificadas en 2.2 y 3.1.
-- Rotula el propósito y la dirección de cada interacción; incluye REST, eventos y CSV/XML solo donde el caso lo confirma.
-- No introduce componentes internos, productos tecnológicos ni dependencias que no pertenezcan a esta vista.
+- Delimita claramente SGO-Logic como sistema de interés y mantiene fuera de la frontera a ERP-Core, POS, PayKlik, LogiExpress, SAT y el proveedor de notificaciones.
+- Muestra los cuatro canales, sus usuarios principales y las áreas de TI, Finanzas, Logística, Dirección, Gerencia y Comercialización.
+- Rotula propósito y dirección; solo afirma REST para PayKlik y LogiExpress, CSV/XML para ERP-Core, XML para SAT y eventos hacia POS donde existe evidencia en el caso.
+- Marca como pendiente de definición el contrato del canal tienda, en vez de inventarlo.
 
 ### 11.2 Diagrama de Componentes
-`[TODO: insertar imagen]`
+
+![Diagrama de Componentes de SGO-Logic](./diagramas/componentes.svg)
+
+[Fuente versionable](./diagramas/componentes.dot) | [PNG para presentación](./diagramas/componentes.png)
+
+La vista materializa el ADR-001 **mientras permanezca propuesto**: un núcleo modular desplegable, una API omnicanal y una capa de puertos, adaptadores y mensajería. Cada módulo declara el propietario lógico de sus datos. La publicación confiable aparece como responsabilidad explícita, pero su mecanismo se deja sujeto a ADR-002 para no confundir Outbox, Event Store u otras alternativas.
 
 **Criterios de aceptación:**
 
-- Representa los módulos y adaptadores definidos por ADR-001, sujeto a su aprobación.
-- Identifica interfaces provistas y requeridas, dirección de dependencias y comunicación síncrona o asíncrona.
-- Señala la propiedad lógica de los datos y evita accesos directos a estructuras internas de otro módulo.
-- Ubica explícitamente auditoría, publicación confiable, idempotencia y adaptadores de ERP, POS, PayKlik, LogiExpress, SAT y notificaciones.
+- Representa Carrito, Órdenes y Coordinación, Inventario y Reservas, Pagos, Facturación, Despacho, Postventa, Notificaciones y Auditoría/Consulta.
+- Distingue contratos síncronos con línea sólida y mensajes/eventos asíncronos con línea discontinua; las políticas transversales se muestran con línea punteada.
+- Señala propiedad lógica de carrito, orden, reserva, intento de pago, factura, despacho, devolución, notificación y evidencia; prohíbe acceso directo a datos internos de otro módulo.
+- Ubica explícitamente publicación confiable, broker, idempotencia y los seis adaptadores externos requeridos.
 
 ### 11.3 Diagrama de Despliegue
-`[TODO: insertar imagen]`
+
+![Diagrama de Despliegue de SGO-Logic](./diagramas/despliegue.svg)
+
+[Fuente versionable](./diagramas/despliegue.dot) | [PNG para presentación](./diagramas/despliegue.png)
+
+El contorno azul representa el despliegue inicial **on-premises**. El número de instancias, los productos y la redundancia permanecen abiertos hasta contar con ADR y evidencia de pruebas. El contorno verde discontinuo muestra únicamente una ruta futura a nube; no afirma que esa infraestructura exista en la primera etapa.
+
+| Driver de calidad | Elemento visible en la vista |
+|---|---|
+| EaC-01 — consulta ≤ 5 s | Entrada segura y ruta al artefacto SGO-Logic |
+| EaC-02 — evidencia < 1 s | Registro y lectura de auditoría con objetivo explícito |
+| EaC-03 — demanda 8x | Instancias `N` dimensionadas por prueba de carga y observabilidad de capacidad |
+| EaC-04 — falla de PayKlik | Timeout, Circuit Breaker, intento persistido, broker y conciliación/reintento |
+| EaC-05 — timeout de LogiExpress | Adaptador con retry/backoff, cola y mensajes fallidos |
+| EaC-06 — entrega a POS | Broker, trabajador de integración, reintento y entrega eventual |
+| EaC-07 — auditabilidad | Registro de quién, cuándo y qué cambió |
+| EaC-08 — falla de notificaciones | Cola y consumidor no bloqueante |
+| EaC-09 — mantenibilidad | Un desplegable modular y operación/telemetría centralizada para el equipo interno |
+| EaC-10 — costo | Nota de validación contra el límite de USD 1,200 mensuales, sin inventar capacidad |
+| EaC-11 — evolución | Ruta futura a nube separada mediante contorno discontinuo |
+| EaC-12 — datos de pago | Adaptador de pago y restricción de no persistir PAN completo ni CVV; controles concretos por decidir |
 
 **Criterios de aceptación:**
 
-- Distingue nodos de infraestructura, entornos de ejecución, artefactos desplegados, almacenes, broker y conexiones externas.
-- Refleja explícitamente dónde se aplican los EaC: escalado, Circuit Breaker, límites de tiempo, colas, reintentos, mensajes fallidos, monitoreo, persistencia y auditoría.
-- Rotula protocolos y fronteras de red conocidas; cualquier supuesto de seguridad o redundancia queda marcado como tal.
-- Mantiene coherencia con el despliegue inicial on-premises y muestra la ruta de evolución a nube sin presentar la migración futura como estado actual.
-- No afirma cantidades de réplicas, capacidad, RTO, RPO o disponibilidad que aún no estén acordadas.
+- Distingue canales, entrada segura, entorno de ejecución, artefactos, base operacional, auditoría, broker, mensajes fallidos, intercambio ERP y observabilidad.
+- Hace visibles los doce EaC sin convertir medidas abiertas en afirmaciones inventadas.
+- Mantiene protocolos conocidos y marca como pendientes la selección de productos, redundancia, cifrado, retención y contrato del canal tienda.
+- No fija réplicas, capacidad, RTO, RPO ni disponibilidad; `N` debe resultar de la validación de carga a ocho veces el tráfico normal.
 
 ### 11.4 Diagrama de Bloques
-`[TODO: insertar imagen]`
+
+![Diagrama de Bloques de SGO-Logic](./diagramas/bloques.svg)
+
+[Fuente versionable](./diagramas/bloques.dot) | [PNG para presentación](./diagramas/bloques.png)
+
+Esta vista resume para el comité cómo la experiencia omnicanal atraviesa la entrada unificada, el núcleo modular y la integración confiable con legados y proveedores. Auditoría, seguridad y observabilidad aparecen como confianza transversal; el despliegue local y la ruta a nube se muestran como operación evolutiva. El resultado se expresa en términos de continuidad de ingresos, cumplimiento fiscal, reducción de errores logísticos y experiencia consistente.
 
 **Criterios de aceptación:**
 
-- Explica a una audiencia ejecutiva cómo canales, núcleo omnicanal, integración, legados y proveedores colaboran para entregar valor.
-- Hace visible el estilo de monolito modular con integración por adaptadores y eventos, mientras ADR-001 permanezca propuesto.
-- Relaciona los bloques con continuidad de ingresos, trazabilidad fiscal, confiabilidad logística y evolución sin sobrecargar la vista con detalle de implementación.
-- Corresponde con las fronteras y relaciones mostradas en Contexto, Componentes y Despliegue.
+- Mantiene el estilo propuesto visible sin presentar productos tecnológicos ni topología física detallada.
+- Relaciona capacidades con continuidad de ingresos, trazabilidad fiscal, reducción de errores de despacho, experiencia consistente y evolución sin romper legados.
+- Conserva la misma frontera: los sistemas legados y proveedores se integran y no se reemplazan.
+- Usa el mismo núcleo modular, la misma capa de integración y los mismos controles transversales de las otras tres vistas.
 
 ---
 
 ## 12. Prototipo / Mockups
-**Estado:** Pendiente | **Dueño:** Persona 5 (Rol E)
+**Estado:** Borrador completo; pendiente de contrastar contra los CDU expandidos de Persona 2 | **Dueño:** Persona 5 (Rol E)
 
-- Flujo principal a mostrar: iniciar compra en un canal → completar en otro → consultar estado → generar devolución
-- `[TODO: enlazar mockups, ej. Figma link]`
+Wireframes no funcionales del flujo principal: iniciar compra en la app móvil → continuar y pagar en la web → consultar estado desde cualquier canal → generar una devolución desde el centro de atención. Cada pantalla anota el CUN y el EaC que ilustra, para mantener trazabilidad con las secciones 2, 6 y 9.
+
+[`Docs/prototipo/mockups.html`](./prototipo/mockups.html) — abrir directamente en el navegador. Detalle en [`Docs/prototipo/README.md`](./prototipo/README.md).
+
+**Criterios de aceptación:**
+
+- No contiene lógica, datos reales ni backend; es explícitamente un mockup de alto nivel.
+- Cubre el flujo completo exigido por el enunciado en un solo recorrido (carrito → pago → consulta → devolución).
+- Cada pantalla referencia al menos un CUN y, cuando aplica, el EaC que motiva su diseño (ej. mensaje de pago pendiente para EaC-04).
+- Pendiente: revisar consistencia con los CDU expandidos de la sección 5 una vez estén completos, y decidir si se sustituyen los datos de ejemplo.
 
 ---
 
@@ -609,6 +656,7 @@ CUN-01, CUN-03 a CUN-06, CUN-08, CUN-11 y CUN-12; EaC-03 a EaC-12; R1 a R7 y R9.
 | Características y drivers priorizados | Borrador completo | Personas 1 y 3 + equipo | Priorización aprobada con valor, riesgo, urgencia e impacto |
 | ADR-001 | Propuesto | Persona 3 + equipo | Estado cambiado a Aceptado o decisión alternativa documentada |
 | Matrices de trazabilidad | Precargadas | Persona 1, con insumos de Personas 2, 3 y 4 | ADR y rutas finales de vistas incorporados; mecanismos de validación revisados |
+| Vistas de Contexto, Componentes, Despliegue y Bloques | Borrador completo | Personas 2 y 3 + equipo | Actores, EaC y ADR contrastados; observaciones resueltas y vistas aprobadas |
 
 ### 13.4 Responsabilidades, dependencias y bloqueos
 
@@ -619,7 +667,7 @@ Esta sección representa el estado observable en este repositorio. Una **depende
 | Persona 1 — Facilitación y Trazabilidad | Alcance, stakeholders, priorización, matrices, coherencia del DDA, Kanban y repositorio | Alcance, clasificación de stakeholders, características, priorización, matrices precargadas y borrador de ADR-001 | Coordinar validaciones, mantener el tablero, registrar acuerdos, revisar formato y preparar estructura de exposición | Cerrar matrices con artefactos reales y ejecutar revisión final de coherencia | Persona 2: CUN/CDU; Persona 3: EaC/ADR; Persona 4: vistas; equipo: aprobación de alcance y prioridades |
 | Persona 2 — Negocio y Drivers Funcionales | Actores, CUN, primera descomposición y CDU expandidos | Lista preliminar de 12 CUN, macroprocesos, plantilla CDU y ejemplo CDU-03 | Elaborar el diagrama CUN, validar actores y expandir CDU priorizados | Diagramas CUN/CDU definitivos y relación CDU–EaC | Equipo: validación del alcance; Persona 3: coordinación de EaC asociados |
 | Persona 3 — Calidad, Restricciones y ADR | EaC completos, restricciones y decisiones arquitectónicas | Resumen de 12 EaC, ejemplo EaC-04, restricciones y borrador de ADR-001 preparado por Persona 1 | Formalizar EaC prioritarios, revisar restricciones y decidir sobre ADR-001 | EaC completos; ADR-001 aceptado o sustituido; ADR-002 a ADR-005 y decisiones de observabilidad/notificaciones | Equipo: priorización; Personas 2 y stakeholders: aclaraciones de negocio; TI/Finanzas: medidas abiertas |
-| Persona 4 — Modelado y Vistas | Contexto, Componentes, Despliegue y Bloques | Criterios de aceptación y entidades externas identificadas; no hay diagramas incorporados | Bosquejar Contexto y estructura preliminar de Componentes usando el alcance y ADR-001 propuesto | Cuatro diagramas revisados, versionados y enlazados | Persona 2: actores/CUN; Persona 3: EaC y ADR aceptados |
+| Persona 4 — Modelado y Vistas | Contexto, Componentes, Despliegue y Bloques | Cuatro diagramas incorporados en SVG y PNG, fuentes `.dot`, notación declarada, correspondencia EaC-despliegue y decisiones abiertas documentadas | Coordinar revisión cruzada con Personas 2 y 3 y ajustar las vistas si cambian actores, EaC o ADR | Aprobación del equipo y sustitución de supuestos por decisiones aceptadas | Persona 2: validación final de actores/CUN; Persona 3: EaC y ADR aceptados |
 | Persona 5 — Documentación, Prototipo y QA | Resumen ejecutivo, ensamblado editorial, mockups, QA y presentación | Esqueleto del DDA y flujo principal indicado; no hay resumen ni prototipo enlazado | Iniciar mockups, plantilla editorial y estructura del guion | Resumen ejecutivo final, prototipo, QA integral y presentación consolidada | Personas 1 a 4: artefactos estabilizados; todo el equipo: ensayo |
 
 #### 13.4.1 Dependencias que requieren seguimiento

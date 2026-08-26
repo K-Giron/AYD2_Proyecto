@@ -1,0 +1,113 @@
+digraph SGO_Bloques {
+  graph [
+    label=<<B>SGO-Logic - Vista Ejecutiva de Bloques</B><BR/><FONT POINT-SIZE="11">Monolito modular con integracion por adaptadores y eventos</FONT>>,
+    labelloc=t,
+    rankdir=TB,
+    bgcolor="#F8FAFC",
+    fontname="Arial",
+    fontsize=15,
+    pad=0.32,
+    nodesep=0.50,
+    ranksep=0.58,
+    splines=ortho,
+    compound=true
+  ];
+
+  node [
+    shape=box,
+    style="rounded,filled",
+    color="#94A3B8",
+    fillcolor="#FFFFFF",
+    fontname="Arial",
+    fontcolor="#0F172A",
+    fontsize=10,
+    margin="0.18,0.13"
+  ];
+  edge [
+    color="#475569",
+    fontcolor="#334155",
+    fontname="Arial",
+    fontsize=8.5,
+    penwidth=1.2,
+    arrowsize=0.75
+  ];
+
+  canales [
+    color="#60A5FA",
+    fillcolor="#DBEAFE",
+    label=<<B>Experiencia omnicanal</B><BR/><FONT POINT-SIZE="9">Web | App movil | Tienda | Centro de atencion</FONT><BR/><FONT POINT-SIZE="8">El cliente inicia en un canal y continua en otro</FONT>>
+  ];
+
+  entrada [
+    color="#818CF8",
+    fillcolor="#E0E7FF",
+    label=<<B>Entrada y continuidad</B><BR/><FONT POINT-SIZE="9">Identidad de cliente | API omnicanal | Carrito unificado</FONT>>
+  ];
+
+  nucleo [
+    shape=box3d,
+    penwidth=2,
+    color="#2563EB",
+    fillcolor="#DBEAFE",
+    label=<<B>Nucleo SGO-Logic</B><BR/><FONT POINT-SIZE="10">Monolito modular</FONT><BR/><FONT POINT-SIZE="9">Ordenes | Inventario | Pagos | Facturacion<BR/>Despacho | Postventa | Notificaciones</FONT><BR/><FONT POINT-SIZE="8">Limites internos claros y datos con propietario</FONT>>
+  ];
+
+  integracion [
+    color="#F59E0B",
+    fillcolor="#FEF3C7",
+    label=<<B>Integracion confiable</B><BR/><FONT POINT-SIZE="9">Puertos y adaptadores | Mensajeria | Publicacion confiable</FONT><BR/><FONT POINT-SIZE="8">Circuit Breaker | Timeouts | Reintentos | Idempotencia</FONT>>
+  ];
+
+  externos [
+    color="#F87171",
+    fillcolor="#FEE2E2",
+    label=<<B>Legados y proveedores</B><BR/><FONT POINT-SIZE="9">ERP-Core | POS | PayKlik | SAT<BR/>LogiExpress | SMS/correo/push</FONT><BR/><FONT POINT-SIZE="8">Se integran; no se reemplazan ni modifican</FONT>>
+  ];
+
+  canales -> entrada [label="compra y consulta"];
+  entrada -> nucleo [dir=both, label="comandos y estado"];
+  nucleo -> integracion [dir=both, label="contratos sin acoplar el dominio"];
+  integracion -> externos [dir=both, label="sincrono cuando condiciona\nasincrono cuando admite espera"];
+
+  confianza [
+    shape=component,
+    color="#10B981",
+    fillcolor="#D1FAE5",
+    label=<<B>Confianza transversal</B><BR/><FONT POINT-SIZE="9">Auditoria: quien, cuando y que cambio</FONT><BR/><FONT POINT-SIZE="9">Seguridad: sin PAN completo ni CVV</FONT><BR/><FONT POINT-SIZE="9">Observabilidad: metricas, logs y alertas</FONT>>
+  ];
+
+  operacion [
+    shape=component,
+    color="#8B5CF6",
+    fillcolor="#EDE9FE",
+    label=<<B>Operacion evolutiva</B><BR/><FONT POINT-SIZE="9">Inicio on-premises | Stack mantenible</FONT><BR/><FONT POINT-SIZE="9">Escala para 8x | Ruta planificada a nube</FONT><BR/><FONT POINT-SIZE="9">Costo operativo sujeto a USD 1,200/mes</FONT>>
+  ];
+
+  { rank=same; confianza; operacion; }
+  nucleo -> confianza [style=dashed, dir=both, label="trazabilidad y controles"];
+  integracion -> confianza [style=dashed, dir=both, label="evidencia de cada intento"];
+  nucleo -> operacion [style=dashed, dir=both, label="despliegue y escalado"];
+
+  resultados [
+    shape=plain,
+    label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="8" COLOR="#0F766E" BGCOLOR="#CCFBF1">
+      <TR><TD COLSPAN="2"><B>Valor para MegaStore</B></TD></TR>
+      <TR><TD>Continuidad de ingresos</TD><TD>Cumplimiento fiscal y evidencia</TD></TR>
+      <TR><TD>Menos errores de despacho</TD><TD>Experiencia consistente entre canales</TD></TR>
+      <TR><TD COLSPAN="2">Evolucion sin romper legados</TD></TR>
+    </TABLE>>
+  ];
+
+  nucleo -> resultados [color="#0F766E", penwidth=1.7, label="habilita"];
+  confianza -> resultados [color="#0F766E", style=dashed];
+  operacion -> resultados [color="#0F766E", style=dashed];
+
+  nota [
+    shape=note,
+    color="#FDBA74",
+    fillcolor="#FFF7ED",
+    fontsize=8,
+    label="Vista ejecutiva: resume el estilo y el valor.\nEl detalle de componentes y nodos se conserva en las otras vistas."
+  ];
+  externos -> nota [style=invis];
+}
