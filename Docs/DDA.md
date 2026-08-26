@@ -532,6 +532,180 @@ Reflejado en diagrama de despliegue como: adaptador de PayKlik con Circuit Break
 
 ### 6.4 EaC formalizados (formato completo de 6.1)
 
+**EaC-01 — Consulta de estado de orden en menos de 5 segundos**
+```
+ID: EaC-01
+Atributo de calidad: Rendimiento
+Fuente del estímulo: Cliente o personal de atención al cliente
+Estímulo: Solicita el estado consolidado de una orden desde cualquier canal
+Artefacto: Módulo de Notificaciones/Consulta (vista de lectura de orden)
+Ambiente: Operación normal y picos de demanda (hasta 8x en Black Friday)
+Respuesta: El sistema recupera y presenta el estado consolidado (compra, pago,
+  despacho, entrega, devolución/incidencia) dentro del tiempo máximo aceptable
+Medida de respuesta: Tiempo de respuesta ≤ 5 segundos para el percentil relevante
+Reflejado en diagrama de despliegue como: entrada segura, ruta a SGO-Logic y
+  lectura de la vista de orden; sin dependencias bloqueantes a subsistemas externos
+```
+
+**EaC-02 — Evidencia de transacción recuperable en menos de 1 segundo**
+```
+ID: EaC-02
+Atributo de calidad: Rendimiento / Auditabilidad
+Fuente del estímulo: Directora de Finanzas o auditor de la SAT
+Estímulo: Solicita reconstruir quién ejecutó una operación, cuándo ocurrió y qué cambió
+Artefacto: Registro de auditoría de SGO-Logic
+Ambiente: Operación normal; disponible para auditoría anual y conciliación diaria
+Respuesta: El sistema entrega el registro de la operación (actor, instante, cambio)
+  desde el almacén de auditoría, indexado por identificador de orden o transacción
+Medida de respuesta: Recuperación de la evidencia en menos de 1 segundo
+Reflejado en diagrama de despliegue como: nodo de auditoría con lectura de baja
+  latencia y persistencia separada del núcleo transaccional
+```
+
+**EaC-03 — Escalabilidad para 8x la demanda normal**
+```
+ID: EaC-03
+Atributo de calidad: Escalabilidad
+Fuente del estímulo: Pico comercial (Black Friday, noviembre; fecha no movable)
+Estímulo: Demanda hasta ocho veces superior a un día normal concentrada en ventas
+Artefacto: Núcleo de SGO-Logic y su capa de entrada/integración
+Ambiente: Ventana de alta demanda con picos sostenidos y ráfagas de solicitudes
+Respuesta: El sistema mantiene el servicio y no degrada EaC-01 (≤5 s) ni EaC-02
+  (<1 s); las instancias N se dimensionan por prueba de carga y observabilidad
+Medida de respuesta: Soportar 8x el tráfico normal sin superar los umbrales de
+  EaC-01 y EaC-02, y sin exceder el presupuesto de EaC-10
+Reflejado en diagrama de despliegue como: instancias N del artefacto SGO-Logic,
+  balanceador de entrada y broker con particionamiento dimensionado por carga
+```
+
+**EaC-05 — Tolerancia a timeout de LogiExpress (2%)**
+```
+ID: EaC-05
+Atributo de calidad: Confiabilidad
+Fuente del estímulo: LogiExpress (proveedor de logística externo)
+Estímulo: Aproximadamente 1 de cada 50 solicitudes termina en timeout
+Artefacto: Adaptador de LogiExpress en la capa de integración de SGO-Logic
+Ambiente: Operación normal y picos; contrato vigente por dos años (R3)
+Respuesta: El sistema reintenta con backoff, registra el mensaje fallido y mantiene
+  la preparación física del pedido sin bloquearse por la falla del proveedor
+Medida de respuesta: 0 pedidos bloqueados por falla de LogiExpress; reintentos
+  según política y umbral acordados (ver ADR-004)
+Reflejado en diagrama de despliegue como: adaptador LogiExpress con retry/backoff,
+  cola de mensajes y bandeja de mensajes fallidos
+```
+
+**EaC-06 — Entrega eventual de eventos a los 32 POS**
+```
+ID: EaC-06
+Atributo de calidad: Confiabilidad
+Fuente del estímulo: Las 32 instancias POS (sistemas locales no modificables)
+Estímulo: SGO-Logic publica un evento de orden/estado hacia cada POS
+Artefacto: Trabajador de integración hacia POS en la capa de integración
+Ambiente: Operación normal; los POS no se modifican y requieren reintentos (R1)
+Respuesta: El sistema entrega el evento de forma eventual con idempotencia y
+  reintento, sin pérdida del hecho de negocio aunque haya caídas transitorias
+Medida de respuesta: Entrega eventual garantizada; confirmación o reintento
+  persistente hasta acuse de recibo o política de degradación acordada (ver ADR-004)
+Reflejado en diagrama de despliegue como: broker, trabajador de integración y
+  cola de reintentos hacia los POS con idempotencia en el receptor
+```
+
+**EaC-07 — Auditabilidad completa para la SAT**
+```
+ID: EaC-07
+Atributo de calidad: Auditabilidad / Trazabilidad
+Fuente del estímulo: Directora de Finanzas y auditoría anual de la SAT
+Estímulo: Requiere reconstruir quién ejecutó cada operación, cuándo y qué cambió
+Artefacto: Registro de auditoría y eventos de negocio de SGO-Logic
+Ambiente: Operación normal; obligación no negociable con veto de Finanzas (R4)
+Respuesta: El sistema conserva traza de cada transición de orden, intento de pago,
+  factura y despacho, vinculada al actor, instante y cambio
+Medida de respuesta: Reconstrucción completa de quién/cuándo/qué para cualquier
+  operación; evidencia recuperable en menos de 1 segundo (EaC-02)
+Reflejado en diagrama de despliegue como: nodo de registro auditable, publicación
+  confiable del hecho de negocio y correlación por identificador de orden
+```
+
+**EaC-08 — Continuidad ante falla del proveedor de notificaciones**
+```
+ID: EaC-08
+Atributo de calidad: Disponibilidad parcial
+Fuente del estímulo: Proveedor externo de SMS, correo y push
+Estímulo: El proveedor de notificaciones cae o degrada su disponibilidad
+Artefacto: Adaptador de notificaciones en la capa de integración
+Ambiente: Operación normal; disponibilidad fuera del control de MegaStore
+Respuesta: La venta, el pago, la facturación y el despacho continúan sin esperar
+  al proveedor; la notificación se encola y reintenta de forma no bloqueante
+Medida de respuesta: 0 operaciones principales bloqueadas por falla de notificación
+Reflejado en diagrama de despliegue como: cola de notificaciones y consumidor
+  asíncrono desacoplado del flujo principal de la orden
+```
+
+**EaC-09 — Mantenibilidad por el equipo interno**
+```
+ID: EaC-09
+Atributo de calidad: Mantenibilidad
+Fuente del estímulo: Equipo interno de desarrollo y operación
+Estímulo: Debe operar, diagnosticar y evolucionar SGO-Logic tras el despliegue
+Artefacto: Conjunto de módulos del núcleo y componentes de integración
+Ambiente: Operación continua con capacidades declaradas (Java, .NET, Docker básico)
+Respuesta: El sistema se mantiene con el stack conocido, sin dependencia de
+  consultoría externa ni tecnologías fuera de la capacidad del equipo (R5)
+Medida de respuesta: Operación y evolución viables con Java/.NET/Docker básico
+Reflejado en diagrama de despliegue como: un desplegable modular y operación/
+  telemetría centralizada que el equipo interno puede administrar
+```
+
+**EaC-10 — Límite de costo de infraestructura**
+```
+ID: EaC-10
+Atributo de calidad: Costo / Eficiencia
+Fuente del estímulo: Gerencia (presupuesto aprobado)
+Estímulo: La infraestructura en operación debe respetar el límite financiero
+Artefacto: Despliegue on-premises inicial de SGO-Logic
+Ambiente: Operación continua tras la puesta en marcha
+Respuesta: El sistema opera sin superar USD 1,200 mensuales salvo justificación y
+  aprobación adicional; se minimiza el consumo energético (R9)
+Medida de respuesta: Costo operativo ≤ USD 1,200/mes o excepción documentada
+Reflejado en diagrama de despliegue como: nota de validación contra el límite de
+  costo, sin inventar redundancia o capacidad no justificada
+```
+
+**EaC-11 — Evolución desde on-premises hacia la nube**
+```
+ID: EaC-11
+Atributo de calidad: Portabilidad / Evolutividad
+Fuente del estímulo: Crecimiento de demanda y operación regional
+Estímulo: La demanda supera la capacidad física instalada o requiere elasticidad
+Artefacto: Frontera de despliegue de SGO-Logic
+Ambiente: Despliegue inicial on-premises con ruta planificada (R6)
+Respuesta: La arquitectura permite migrar módulos a la nube sin reescritura del
+  núcleo, aprovechando elasticidad para Black Friday y recuperación
+Medida de respuesta: Ruta de migración planificada y no inmediata; sin dependencia
+  permanente de ampliar capacidad física
+Reflejado en diagrama de despliegue como: contorno on-premises inicial y ruta
+  futura a nube (contorno verde discontinuo) separada de la primera etapa
+```
+
+**EaC-12 — Protección de datos de pago**
+```
+ID: EaC-12
+Atributo de calidad: Seguridad
+Fuente del estímulo: Políticas corporativas y normativa de protección de datos
+Estímulo: Se procesa un pago con tarjeta o billetera digital
+Artefacto: Adaptador de pago (PayKlik y otros métodos) en la capa de integración
+Ambiente: Operación normal y picos; contrato PayKlik vigente (R3)
+Respuesta: El sistema no almacena el PAN completo ni el CVV; cada intento queda
+  relacionado con la orden, canal, fecha y resultado (EaC-07)
+Medida de respuesta: 0 almacenamiento de PAN completo ni CVV en SGO-Logic
+Reflejado en diagrama de despliegue como: adaptador de pago con restricción de no
+  persistir PAN/CVV y controles de tokenización por decidir
+```
+
+> Nota de consistencia: EaC-04 quedó formalizado como ejemplo en §6.2. Los doce
+> escenarios (EaC-01 a EaC-12) están ahora completos en formato de 6 partes y
+> coinciden con la tabla de correspondencia del diagrama de despliegue (§11.3).
+
 ---
 
 ## 7. Drivers de Restricción
