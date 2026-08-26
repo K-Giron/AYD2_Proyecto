@@ -34,11 +34,13 @@
 ---
 
 ## 1. Resumen Ejecutivo
-**Estado:** Pendiente | **Dueño:** Persona 5 (Rol E)
+**Estado:** Borrador; pendiente de validación final cuando ADR-001 y las secciones 5 y 6 queden cerradas | **Dueño:** Persona 5 (Rol E)
 
-> Párrafo de 150–250 palabras: qué es MegaStore, cuál es el problema, qué propone SGO-Logic, y una síntesis de la arquitectura elegida. Se escribe **al final**, cuando ya existe el resto del documento — no antes.
+MegaStore es una cadena regional de retail con 32 tiendas en Guatemala, El Salvador y Costa Rica y una facturación anual de USD 450 millones, cuyo comercio electrónico crece un 15 % cada año. Su operación actual está fragmentada: cada tienda administra inventario local, el canal en línea opera por separado, la disponibilidad se confirma por teléfono y Finanzas concilia ventas manualmente desde hojas de cálculo, generando devoluciones de hasta siete días hábiles y exposición a errores de despacho y a pérdidas ya cuantificadas, como los USD 150,000 de un solo evento de indisponibilidad de la pasarela de pago.
 
-`[TODO: redactar]`
+SGO-Logic se propone como una capa de orquestación e integración omnicanal que permite iniciar, continuar y completar una compra desde cualquier canal sin modificar ERP-Core ni los POS existentes, cuya sustitución la Junta Directiva descartó. La arquitectura recomendada (ADR-001, propuesto) es un **monolito modular** organizado por capacidades de negocio, rodeado de una **capa de integración por puertos, adaptadores y mensajería** que aísla a SGO-Logic de PayKlik, LogiExpress, la SAT, los POS y el ERP. Este estilo protege los drivers críticos priorizados: continuidad de la orden ante fallas de PayKlik, escalabilidad de hasta 8x en Black Friday, trazabilidad completa para las auditorías de la SAT y mantenibilidad con las capacidades de Java, .NET y Docker del equipo interno, dentro del presupuesto aprobado y con una ruta planificada de evolución hacia la nube.
+
+`[Persona 5: revisar y ajustar este párrafo cuando ADR-001 se acepte formalmente y las secciones 5 (CDU) y 6 (EaC) estén completas, para asegurar que ningún dato quede desactualizado.]`
 
 ---
 
@@ -101,6 +103,7 @@ Los siguientes puntos no están definidos por el enunciado. No se adoptará una 
 | Volumen normal, concurrencia y distribución del tráfico por canal | “8x” es una proporción, pero falta una línea base para dimensionar y diseñar una prueba de carga reproducible | Persona 3 con TI |
 | Objetivos de disponibilidad, recuperación y pérdida de datos | Sin RTO, RPO y disponibilidad objetivo no puede justificarse redundancia ni recuperación ante desastres | Persona 3 con TI y Gerencia |
 | Jurisdicciones y controles concretos de protección de datos | MegaStore opera en tres países; deben confirmarse obligaciones aplicables, retención, cifrado y residencia de datos | Persona 3 con Legal/Finanzas |
+| Nombres de estado del ciclo de vida de la orden usados en el prototipo (Confirmada, Pago aprobado, En preparación, En tránsito, Entregada) | El prototipo de Persona 5 (§12) los usa para ilustrar la consulta de estado, pero el ciclo de vida completo todavía no tiene un CDU o ADR aceptado — ADR-005 (coordinación y estados) sigue pendiente de redactar (§10.3) | Personas 2 y 3, revisado por Persona 5 |
 
 ### 2.4 Diagrama de Casos de Uso de Negocio (CUN) — alto nivel
 `[TODO: insertar imagen del diagrama, ej. ![CUN](./diagramas/cun-alto-nivel.png)]`
@@ -600,10 +603,18 @@ Esta vista resume para el comité cómo la experiencia omnicanal atraviesa la en
 ---
 
 ## 12. Prototipo / Mockups
-**Estado:** Pendiente | **Dueño:** Persona 5 (Rol E)
+**Estado:** Borrador completo; pendiente de contrastar contra los CDU expandidos de Persona 2 | **Dueño:** Persona 5 (Rol E)
 
-- Flujo principal a mostrar: iniciar compra en un canal → completar en otro → consultar estado → generar devolución
-- `[TODO: enlazar mockups, ej. Figma link]`
+Wireframes no funcionales del flujo principal: iniciar compra en la app móvil → continuar y pagar en la web → consultar estado desde cualquier canal → generar una devolución desde el centro de atención. Cada pantalla anota el CUN y el EaC que ilustra, para mantener trazabilidad con las secciones 2, 6 y 9.
+
+[`Docs/prototipo/mockups.html`](./prototipo/mockups.html) — abrir directamente en el navegador. Detalle en [`Docs/prototipo/README.md`](./prototipo/README.md).
+
+**Criterios de aceptación:**
+
+- No contiene lógica, datos reales ni backend; es explícitamente un mockup de alto nivel.
+- Cubre el flujo completo exigido por el enunciado en un solo recorrido (carrito → pago → consulta → devolución).
+- Cada pantalla referencia al menos un CUN y, cuando aplica, el EaC que motiva su diseño (ej. mensaje de pago pendiente para EaC-04).
+- Pendiente: revisar consistencia con los CDU expandidos de la sección 5 una vez estén completos, y decidir si se sustituyen los datos de ejemplo.
 
 ---
 
