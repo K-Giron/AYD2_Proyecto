@@ -1,0 +1,131 @@
+digraph SGO_CUN_Descomposicion {
+  graph [
+    label=<<B>SGO-Logic - Primera Descomposicion del Core</B><BR/><FONT POINT-SIZE="11">12 Casos de Uso de Negocio (CUN) agrupados por macro-proceso, Sec. 2.5-2.6</FONT>>,
+    labelloc=t,
+    rankdir=LR,
+    bgcolor="#F8FAFC",
+    color="#CBD5E1",
+    fontname="Arial",
+    fontsize=15,
+    pad=0.30,
+    nodesep=0.32,
+    ranksep=0.65,
+    splines=true,
+    compound=true
+  ];
+
+  node [
+    fontname="Arial",
+    fontsize=9,
+    fontcolor="#0F172A"
+  ];
+  edge [
+    color="#64748B",
+    fontcolor="#334155",
+    fontname="Arial",
+    fontsize=8,
+    arrowsize=0.65,
+    dir=none
+  ];
+
+  /* Notacion: mismos ovalos de doble borde (CUN) y actores "(negocio)"
+     declarados en cun-alto-nivel.dot. Este diagrama aun no incluye
+     relaciones entre casos de uso (extend/include): esas solo aparecen
+     en los CDU expandidos de la Seccion 5, una vez terminado el core. */
+
+  cun01 [shape=ellipse, style=filled, peripheries=2, fillcolor="#DBEAFE", color="#2563EB", label="CUN-01\nGestionar carrito\nomnicanal"];
+  cun02 [shape=ellipse, style=filled, peripheries=2, fillcolor="#DBEAFE", color="#2563EB", label="CUN-02\nVerificar y reservar\ninventario"];
+  cun03 [shape=ellipse, style=filled, peripheries=2, fillcolor="#DBEAFE", color="#2563EB", label="CUN-03\nProcesar pago"];
+  cun04 [shape=ellipse, style=filled, peripheries=2, fillcolor="#FDE68A", color="#B45309", label="CUN-04\nEmitir documentacion\nfiscal"];
+  cun05 [shape=ellipse, style=filled, peripheries=2, fillcolor="#FDE68A", color="#B45309", label="CUN-05\nSincronizar venta\ncon ERP"];
+  cun06 [shape=ellipse, style=filled, peripheries=2, fillcolor="#BBF7D0", color="#15803D", label="CUN-06\nNotificar eventos\na POS"];
+  cun07 [shape=ellipse, style=filled, peripheries=2, fillcolor="#BBF7D0", color="#15803D", label="CUN-07\nGestionar despacho"];
+  cun08 [shape=ellipse, style=filled, peripheries=2, fillcolor="#BBF7D0", color="#15803D", label="CUN-08\nIntegrar con\nLogiExpress"];
+  cun09 [shape=ellipse, style=filled, peripheries=2, fillcolor="#E9D5FF", color="#7E22CE", label="CUN-09\nConsultar estado\nde orden"];
+  cun10 [shape=ellipse, style=filled, peripheries=2, fillcolor="#FBCFE8", color="#BE185D", label="CUN-10\nGestionar devoluciones\ny reembolsos"];
+  cun11 [shape=ellipse, style=filled, peripheries=2, fillcolor="#E9D5FF", color="#7E22CE", label="CUN-11\nNotificar al cliente"];
+  cun12 [shape=ellipse, style=filled, peripheries=2, fillcolor="#E2E8F0", color="#334155", label="CUN-12\nAuditar operaciones"];
+
+  subgraph cluster_venta {
+    label="Macro-proceso: Venta omnicanal";
+    color="#93C5FD"; fillcolor="#EFF6FF"; style="rounded,filled"; fontcolor="#1E3A8A";
+    cun01; cun02; cun03;
+  }
+  subgraph cluster_fiscal {
+    label="Macro-proceso: Cumplimiento fiscal";
+    color="#FCD34D"; fillcolor="#FFFBEB"; style="rounded,filled"; fontcolor="#92400E";
+    cun04; cun05;
+  }
+  subgraph cluster_logistica {
+    label="Macro-proceso: Logistica";
+    color="#86EFAC"; fillcolor="#F0FDF4"; style="rounded,filled"; fontcolor="#166534";
+    cun06; cun07; cun08;
+  }
+  subgraph cluster_atencion {
+    label="Macro-proceso: Atencion al cliente";
+    color="#D8B4FE"; fillcolor="#FAF5FF"; style="rounded,filled"; fontcolor="#6B21A8";
+    cun09; cun11;
+  }
+  subgraph cluster_postventa {
+    label="Macro-proceso: Postventa";
+    color="#F9A8D4"; fillcolor="#FDF2F8"; style="rounded,filled"; fontcolor="#9D174D";
+    cun10;
+  }
+  subgraph cluster_gobernanza {
+    label="Macro-proceso: Gobernanza";
+    color="#CBD5E1"; fillcolor="#F8FAFC"; style="rounded,filled"; fontcolor="#1E293B";
+    cun12;
+  }
+
+  node [shape=ellipse, style=filled, fillcolor="#F1F5F9", color="#94A3B8"];
+  cliente [label="Cliente\n(negocio)"];
+  personal_tienda [label="Personal de tienda\n(negocio)"];
+  personal_atencion [label="Personal de atencion\n(negocio)"];
+  logistica_actor [label="Logistica\n(negocio)"];
+  finanzas [label="Finanzas\n(negocio)"];
+  erp [label="ERP-Core\n(negocio)"];
+  pos [label="POS de tiendas\n(negocio)"];
+  payklik [label="PayKlik\n(negocio)"];
+  logiexpress [label="LogiExpress\n(negocio)"];
+  sat [label="SAT\n(negocio)"];
+  proveedor_notif [label="Proveedor de\nnotificaciones\n(negocio)"];
+
+  cliente -> cun01;
+  personal_tienda -> cun01;
+  personal_atencion -> cun01;
+  cliente -> cun02;
+  logistica_actor -> cun02;
+  cliente -> cun03;
+  payklik -> cun03;
+
+  finanzas -> cun04;
+  sat -> cun04;
+  finanzas -> cun05;
+  erp -> cun05;
+
+  logistica_actor -> cun06;
+  pos -> cun06;
+  logistica_actor -> cun07;
+  cliente -> cun07;
+  logistica_actor -> cun08;
+  logiexpress -> cun08;
+
+  cliente -> cun09;
+  personal_atencion -> cun09;
+  cliente -> cun11;
+  proveedor_notif -> cun11;
+
+  cliente -> cun10;
+  personal_atencion -> cun10;
+  personal_tienda -> cun10;
+
+  finanzas -> cun12;
+  sat -> cun12;
+
+  leyenda [
+    shape=note, style=filled, fillcolor="#FFF7ED", color="#FDBA74",
+    fontsize=8, fontname="Arial",
+    label="Cada CUN corresponde a un proceso de negocio real (Sec. 2.5).\nSin relaciones extend/include: esas se agregan al expandir cada CUN en CDU (Sec. 5)."
+  ];
+  cun12 -> leyenda [style=invis];
+}
