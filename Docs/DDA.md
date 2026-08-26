@@ -480,7 +480,7 @@ ya quedaron expandidos en 5.2 a 5.7.]`
 ---
 
 ## 6. Drivers de Calidad (EaC)
-**Estado:** En progreso | **Dueño:** Persona 3 (Rol C)
+**Estado:** Borrador completo (los 12 EaC formalizados); pendiente de validación del equipo | **Dueño:** Persona 3 (Rol C)
 
 ### 6.1 Plantilla de Escenario de Atributo de Calidad
 
@@ -513,15 +513,15 @@ Medida de respuesta: 0 órdenes perdidas por falla del proveedor de pago;
 Reflejado en diagrama de despliegue como: adaptador de PayKlik con Circuit Breaker,
   persistencia del intento, cola de conciliación/reintentos y monitoreo de mensajes fallidos
 ```
+### 6.3 Tabla resumen de EaC identificados
 
-### 6.3 Tabla resumen de EaC identificados (completar cada uno con 6.1)
 | ID | Atributo | Resumen del escenario | Medida |
 |---|---|---|---|
 | EaC-01 | Rendimiento | Cliente consulta estado de orden | ≤ 5 s |
 | EaC-02 | Rendimiento | Finanzas recupera evidencia de transacción | < 1 s |
 | EaC-03 | Escalabilidad | Demanda Black Friday | Soportar 8x tráfico normal |
-| EaC-04 | Disponibilidad/Resiliencia | Falla de PayKlik | No perder la orden *(ver ejemplo arriba)* |
-| EaC-05 | Confiabilidad | Timeout de LogiExpress (2%) | Despacho no bloqueado; política y umbral de reintento por acordar |
+| EaC-04 | Disponibilidad/Resiliencia | Falla de PayKlik | No perder la orden *(ver 6.2)* |
+| EaC-05 | Confiabilidad | Timeout de LogiExpress (2%) | Despacho no bloqueado; reintento con backoff |
 | EaC-06 | Confiabilidad | Envío de eventos a POS | Entrega eventual garantizada |
 | EaC-07 | Auditabilidad | Auditoría anual SAT | Reconstruir quién/cuándo/qué |
 | EaC-08 | Disponibilidad parcial | Falla proveedor de notificaciones | Operación principal continúa |
@@ -530,12 +530,186 @@ Reflejado en diagrama de despliegue como: adaptador de PayKlik con Circuit Break
 | EaC-11 | Portabilidad | Crecimiento futuro | On-prem → migración planificada a nube |
 | EaC-12 | Seguridad | Datos de pago | Sin PAN completo ni CVV almacenado |
 
-`[TODO: expandir cada fila con el formato completo de 6.1]`
+### 6.4 EaC formalizados (formato completo de 6.1)
+
+**EaC-01 — Consulta de estado de orden en menos de 5 segundos**
+```
+ID: EaC-01
+Atributo de calidad: Rendimiento
+Fuente del estímulo: Cliente o personal de atención al cliente
+Estímulo: Solicita el estado consolidado de una orden desde cualquier canal
+Artefacto: Módulo de Notificaciones/Consulta (vista de lectura de orden)
+Ambiente: Operación normal y picos de demanda (hasta 8x en Black Friday)
+Respuesta: El sistema recupera y presenta el estado consolidado (compra, pago,
+  despacho, entrega, devolución/incidencia) dentro del tiempo máximo aceptable
+Medida de respuesta: Tiempo de respuesta ≤ 5 segundos para el percentil relevante
+Reflejado en diagrama de despliegue como: entrada segura, ruta a SGO-Logic y
+  lectura de la vista de orden; sin dependencias bloqueantes a subsistemas externos
+```
+
+**EaC-02 — Evidencia de transacción recuperable en menos de 1 segundo**
+```
+ID: EaC-02
+Atributo de calidad: Rendimiento / Auditabilidad
+Fuente del estímulo: Directora de Finanzas o auditor de la SAT
+Estímulo: Solicita reconstruir quién ejecutó una operación, cuándo ocurrió y qué cambió
+Artefacto: Registro de auditoría de SGO-Logic
+Ambiente: Operación normal; disponible para auditoría anual y conciliación diaria
+Respuesta: El sistema entrega el registro de la operación (actor, instante, cambio)
+  desde el almacén de auditoría, indexado por identificador de orden o transacción
+Medida de respuesta: Recuperación de la evidencia en menos de 1 segundo
+Reflejado en diagrama de despliegue como: nodo de auditoría con lectura de baja
+  latencia y persistencia separada del núcleo transaccional
+```
+
+**EaC-03 — Escalabilidad para 8x la demanda normal**
+```
+ID: EaC-03
+Atributo de calidad: Escalabilidad
+Fuente del estímulo: Pico comercial (Black Friday, noviembre; fecha no movable)
+Estímulo: Demanda hasta ocho veces superior a un día normal concentrada en ventas
+Artefacto: Núcleo de SGO-Logic y su capa de entrada/integración
+Ambiente: Ventana de alta demanda con picos sostenidos y ráfagas de solicitudes
+Respuesta: El sistema mantiene el servicio y no degrada EaC-01 (≤5 s) ni EaC-02
+  (<1 s); las instancias N se dimensionan por prueba de carga y observabilidad
+Medida de respuesta: Soportar 8x el tráfico normal sin superar los umbrales de
+  EaC-01 y EaC-02, y sin exceder el presupuesto de EaC-10
+Reflejado en diagrama de despliegue como: instancias N del artefacto SGO-Logic,
+  balanceador de entrada y broker con particionamiento dimensionado por carga
+```
+
+**EaC-05 — Tolerancia a timeout de LogiExpress (2%)**
+```
+ID: EaC-05
+Atributo de calidad: Confiabilidad
+Fuente del estímulo: LogiExpress (proveedor de logística externo)
+Estímulo: Aproximadamente 1 de cada 50 solicitudes termina en timeout
+Artefacto: Adaptador de LogiExpress en la capa de integración de SGO-Logic
+Ambiente: Operación normal y picos; contrato vigente por dos años (R3)
+Respuesta: El sistema reintenta con backoff, registra el mensaje fallido y mantiene
+  la preparación física del pedido sin bloquearse por la falla del proveedor
+Medida de respuesta: 0 pedidos bloqueados por falla de LogiExpress; reintentos
+  según política y umbral acordados (ver ADR-004)
+Reflejado en diagrama de despliegue como: adaptador LogiExpress con retry/backoff,
+  cola de mensajes y bandeja de mensajes fallidos
+```
+
+**EaC-06 — Entrega eventual de eventos a los 32 POS**
+```
+ID: EaC-06
+Atributo de calidad: Confiabilidad
+Fuente del estímulo: Las 32 instancias POS (sistemas locales no modificables)
+Estímulo: SGO-Logic publica un evento de orden/estado hacia cada POS
+Artefacto: Trabajador de integración hacia POS en la capa de integración
+Ambiente: Operación normal; los POS no se modifican y requieren reintentos (R1)
+Respuesta: El sistema entrega el evento de forma eventual con idempotencia y
+  reintento, sin pérdida del hecho de negocio aunque haya caídas transitorias
+Medida de respuesta: Entrega eventual garantizada; confirmación o reintento
+  persistente hasta acuse de recibo o política de degradación acordada (ver ADR-004)
+Reflejado en diagrama de despliegue como: broker, trabajador de integración y
+  cola de reintentos hacia los POS con idempotencia en el receptor
+```
+
+**EaC-07 — Auditabilidad completa para la SAT**
+```
+ID: EaC-07
+Atributo de calidad: Auditabilidad / Trazabilidad
+Fuente del estímulo: Directora de Finanzas y auditoría anual de la SAT
+Estímulo: Requiere reconstruir quién ejecutó cada operación, cuándo y qué cambió
+Artefacto: Registro de auditoría y eventos de negocio de SGO-Logic
+Ambiente: Operación normal; obligación no negociable con veto de Finanzas (R4)
+Respuesta: El sistema conserva traza de cada transición de orden, intento de pago,
+  factura y despacho, vinculada al actor, instante y cambio
+Medida de respuesta: Reconstrucción completa de quién/cuándo/qué para cualquier
+  operación; evidencia recuperable en menos de 1 segundo (EaC-02)
+Reflejado en diagrama de despliegue como: nodo de registro auditable, publicación
+  confiable del hecho de negocio y correlación por identificador de orden
+```
+
+**EaC-08 — Continuidad ante falla del proveedor de notificaciones**
+```
+ID: EaC-08
+Atributo de calidad: Disponibilidad parcial
+Fuente del estímulo: Proveedor externo de SMS, correo y push
+Estímulo: El proveedor de notificaciones cae o degrada su disponibilidad
+Artefacto: Adaptador de notificaciones en la capa de integración
+Ambiente: Operación normal; disponibilidad fuera del control de MegaStore
+Respuesta: La venta, el pago, la facturación y el despacho continúan sin esperar
+  al proveedor; la notificación se encola y reintenta de forma no bloqueante
+Medida de respuesta: 0 operaciones principales bloqueadas por falla de notificación
+Reflejado en diagrama de despliegue como: cola de notificaciones y consumidor
+  asíncrono desacoplado del flujo principal de la orden
+```
+
+**EaC-09 — Mantenibilidad por el equipo interno**
+```
+ID: EaC-09
+Atributo de calidad: Mantenibilidad
+Fuente del estímulo: Equipo interno de desarrollo y operación
+Estímulo: Debe operar, diagnosticar y evolucionar SGO-Logic tras el despliegue
+Artefacto: Conjunto de módulos del núcleo y componentes de integración
+Ambiente: Operación continua con capacidades declaradas (Java, .NET, Docker básico)
+Respuesta: El sistema se mantiene con el stack conocido, sin dependencia de
+  consultoría externa ni tecnologías fuera de la capacidad del equipo (R5)
+Medida de respuesta: Operación y evolución viables con Java/.NET/Docker básico
+Reflejado en diagrama de despliegue como: un desplegable modular y operación/
+  telemetría centralizada que el equipo interno puede administrar
+```
+
+**EaC-10 — Límite de costo de infraestructura**
+```
+ID: EaC-10
+Atributo de calidad: Costo / Eficiencia
+Fuente del estímulo: Gerencia (presupuesto aprobado)
+Estímulo: La infraestructura en operación debe respetar el límite financiero
+Artefacto: Despliegue on-premises inicial de SGO-Logic
+Ambiente: Operación continua tras la puesta en marcha
+Respuesta: El sistema opera sin superar USD 1,200 mensuales salvo justificación y
+  aprobación adicional; se minimiza el consumo energético (R9)
+Medida de respuesta: Costo operativo ≤ USD 1,200/mes o excepción documentada
+Reflejado en diagrama de despliegue como: nota de validación contra el límite de
+  costo, sin inventar redundancia o capacidad no justificada
+```
+
+**EaC-11 — Evolución desde on-premises hacia la nube**
+```
+ID: EaC-11
+Atributo de calidad: Portabilidad / Evolutividad
+Fuente del estímulo: Crecimiento de demanda y operación regional
+Estímulo: La demanda supera la capacidad física instalada o requiere elasticidad
+Artefacto: Frontera de despliegue de SGO-Logic
+Ambiente: Despliegue inicial on-premises con ruta planificada (R6)
+Respuesta: La arquitectura permite migrar módulos a la nube sin reescritura del
+  núcleo, aprovechando elasticidad para Black Friday y recuperación
+Medida de respuesta: Ruta de migración planificada y no inmediata; sin dependencia
+  permanente de ampliar capacidad física
+Reflejado en diagrama de despliegue como: contorno on-premises inicial y ruta
+  futura a nube (contorno verde discontinuo) separada de la primera etapa
+```
+
+**EaC-12 — Protección de datos de pago**
+```
+ID: EaC-12
+Atributo de calidad: Seguridad
+Fuente del estímulo: Políticas corporativas y normativa de protección de datos
+Estímulo: Se procesa un pago con tarjeta o billetera digital
+Artefacto: Adaptador de pago (PayKlik y otros métodos) en la capa de integración
+Ambiente: Operación normal y picos; contrato PayKlik vigente (R3)
+Respuesta: El sistema no almacena el PAN completo ni el CVV; cada intento queda
+  relacionado con la orden, canal, fecha y resultado (EaC-07)
+Medida de respuesta: 0 almacenamiento de PAN completo ni CVV en SGO-Logic
+Reflejado en diagrama de despliegue como: adaptador de pago con restricción de no
+  persistir PAN/CVV y controles de tokenización por decidir
+```
+
+> Nota de consistencia: EaC-04 quedó formalizado como ejemplo en §6.2. Los doce
+> escenarios (EaC-01 a EaC-12) están ahora completos en formato de 6 partes y
+> coinciden con la tabla de correspondencia del diagrama de despliegue (§11.3).
 
 ---
 
 ## 7. Drivers de Restricción
-**Estado:** Borrador completo; pendiente de validación de Persona 3 | **Dueño:** Persona 3 (Rol C) | **Formalización:** Persona 1 (Rol A)
+**Estado:** Completo; revisado por Persona 3 (Rol C) | **Dueño:** Persona 3 (Rol C) | **Formalización:** Persona 1 (Rol A)
 
 | # | Restricción | Origen |
 |---|---|---|
@@ -592,21 +766,21 @@ La matriz parte de la evidencia disponible y relaciona tanto stakeholders como e
 
 | Fuente de la preocupación | Preocupación o condición | Driver relacionado | Decisión/ADR | Vista prevista | Validación prevista |
 |---|---|---|---|---|---|
-| Junta Directiva y Dirección | Omnicanalidad sin modificar ERP/POS | CUN-01, R1 | ADR-001 propuesto | Contexto, Componentes, Bloques | Revisión de frontera sin cambios requeridos en ERP-Core o POS; recorrido del flujo entre canales |
-| Carlos Méndez, TI | Continuidad, monitoreo, escalabilidad y mantenibilidad interna | EaC-03, EaC-09, EaC-11, R1, R5, R6 | ADR-001 propuesto; ADR de observabilidad pendiente | Componentes, Despliegue, Bloques | Diseño de prueba de carga a 8x; revisión operativa; verificación de monitoreo de dependencias |
-| Ana Lucía Fuentes, Finanzas | Trazabilidad, evidencia rápida y cumplimiento fiscal | EaC-02, EaC-07, R4, CUN-04, CUN-12 | ADR-002 pendiente: publicación confiable y registro auditable | Componentes, Despliegue | Reconstrucción de quién, cuándo y qué cambió; recuperación de evidencia en menos de un segundo |
-| Roberto Quezada, Logística | Visibilidad de inventario y órdenes; reducir 70 % los errores | CUN-02, CUN-07, CUN-08, EaC-05 | ADR-004 pendiente: reintentos; ADR-005 pendiente: coordinación y estados | Contexto, Componentes, Despliegue | Escenario de despacho y cambio de entrega; indicador de errores comparado con la línea base |
-| Directora de Comercialización | Experiencia y carrito unificados, sin silos | CUN-01, EaC-01 | ADR-001 propuesto; decisión de entrada omnicanal pendiente | Contexto, Componentes, Bloques | Recorrido del prototipo entre canales; consulta en cinco segundos o menos |
-| Jefe de Operaciones | Evitar pérdida de ventas en caídas y picos | EaC-03, EaC-04, R7 | ADR-001 propuesto; ADR-003 pendiente: resiliencia de pago | Componentes, Despliegue | Carga a 8x y falla sostenida de PayKlik; verificar que la orden persiste y puede continuar o recuperarse |
-| Gerencia | Inversión y operación dentro del presupuesto | R2, EaC-10, R9 | ADR-001 propuesto; evaluación de costos pendiente | Despliegue, Bloques | Estimación de inversión no mayor a USD 150,000 y operación no mayor a USD 1,200 mensuales, o excepción aprobada |
-| Clientes | Continuidad del carrito, pago confiable, consulta y notificación | CUN-01, CUN-03, CUN-09 a CUN-11, EaC-01, EaC-04, EaC-08, EaC-12 | ADR-003 y ADR-005 pendientes; decisión de notificación pendiente | Contexto, Componentes, Prototipo | Flujo omnicanal; consulta en cinco segundos o menos; falla de notificación no bloqueante; ausencia de PAN completo y CVV almacenados |
-| Personal de atención al cliente | Vista consolidada de orden, pago, entrega y postventa | CUN-09, CUN-10, EaC-01, EaC-07 | ADR-002 y ADR-005 pendientes | Contexto, Componentes, Prototipo | Consulta integral en cinco segundos o menos y trazabilidad de devolución hasta la venta original |
-| Equipo interno de desarrollo y operación | Tecnología conocida, mantenibilidad y adopción viable | EaC-09, R5, R6 | ADR-001 propuesto | Componentes, Despliegue | Revisión de arquitectura por el equipo; ejercicio de despliegue y mantenimiento con las capacidades declaradas |
-| ERP-Core (entidad externa) | Recibir CSV/XML cada 30 minutos sin cambios internos | CUN-05, R1 | ADR-002 pendiente; decisión de adaptador ERP pendiente | Contexto, Componentes, Despliegue | Generación, reintento y procesamiento de archivo dentro de una ventana de 30 minutos |
-| POS (entidades externas) | Recepción confiable de eventos sin modificar las instalaciones | CUN-06, EaC-06, R1 | ADR-002 y ADR-004 pendientes | Contexto, Componentes, Despliegue | Error de entrega y reintento; comprobar entrega eventual e idempotencia en el receptor o adaptador |
-| PayKlik (entidad externa) | Integración REST bajo latencia o indisponibilidad | CUN-03, EaC-04, EaC-12, R3 | ADR-003 pendiente: aislamiento de fallas de pago | Contexto, Componentes, Despliegue | Latencia de cinco segundos y falla sostenida; comprobar orden recuperable y ausencia de PAN completo y CVV almacenados |
-| LogiExpress (entidad externa) | Generación de guías y estados pese a timeouts | CUN-08, EaC-05, R3 | ADR-004 pendiente: reintento con backoff | Contexto, Componentes, Despliegue | Al menos 2 % de timeouts simulados; comprobar reintento sin bloquear la preparación del despacho |
-| SAT | Factura XML, CUI/serie y evidencia auditable | CUN-04, CUN-12, EaC-02, EaC-07, R4 | ADR-002 pendiente; decisión de integración fiscal pendiente | Contexto, Componentes, Despliegue | Validación de XML y CUI/serie; evidencia en menos de un segundo; reconstrucción de la operación |
+| Junta Directiva y Dirección | Omnicanalidad sin modificar ERP/POS | CUN-01, R1 | ADR-001 aceptado | Contexto, Componentes, Bloques | Revisión de frontera sin cambios requeridos en ERP-Core o POS; recorrido del flujo entre canales |
+| Carlos Méndez, TI | Continuidad, monitoreo, escalabilidad y mantenibilidad interna | EaC-03, EaC-09, EaC-11, R1, R5, R6 | ADR-001 aceptado; ADR de observabilidad pendiente | Componentes, Despliegue, Bloques | Diseño de prueba de carga a 8x; revisión operativa; verificación de monitoreo de dependencias |
+| Ana Lucía Fuentes, Finanzas | Trazabilidad, evidencia rápida y cumplimiento fiscal | EaC-02, EaC-07, R4, CUN-04, CUN-12 | ADR-002 aceptado: publicación confiable y registro auditable | Componentes, Despliegue | Reconstrucción de quién, cuándo y qué cambió; recuperación de evidencia en menos de un segundo |
+| Roberto Quezada, Logística | Visibilidad de inventario y órdenes; reducir 70 % los errores | CUN-02, CUN-07, CUN-08, EaC-05 | ADR-004 aceptado: reintentos; ADR-005 aceptado: coordinación y estados | Contexto, Componentes, Despliegue | Escenario de despacho y cambio de entrega; indicador de errores comparado con la línea base |
+| Directora de Comercialización | Experiencia y carrito unificados, sin silos | CUN-01, EaC-01 | ADR-001 aceptado; decisión de entrada omnicanal pendiente | Contexto, Componentes, Bloques | Recorrido del prototipo entre canales; consulta en cinco segundos o menos |
+| Jefe de Operaciones | Evitar pérdida de ventas en caídas y picos | EaC-03, EaC-04, R7 | ADR-001 aceptado; ADR-003 aceptado: resiliencia de pago | Componentes, Despliegue | Carga a 8x y falla sostenida de PayKlik; verificar que la orden persiste y puede continuar o recuperarse |
+| Gerencia | Inversión y operación dentro del presupuesto | R2, EaC-10, R9 | ADR-001 aceptado; evaluación de costos pendiente | Despliegue, Bloques | Estimación de inversión no mayor a USD 150,000 y operación no mayor a USD 1,200 mensuales, o excepción aprobada |
+| Clientes | Continuidad del carrito, pago confiable, consulta y notificación | CUN-01, CUN-03, CUN-09 a CUN-11, EaC-01, EaC-04, EaC-08, EaC-12 | ADR-003 y ADR-005 aceptados; decisión de notificación pendiente | Contexto, Componentes, Prototipo | Flujo omnicanal; consulta en cinco segundos o menos; falla de notificación no bloqueante; ausencia de PAN completo y CVV almacenados |
+| Personal de atención al cliente | Vista consolidada de orden, pago, entrega y postventa | CUN-09, CUN-10, EaC-01, EaC-07 | ADR-002 y ADR-005 aceptados | Contexto, Componentes, Prototipo | Consulta integral en cinco segundos o menos y trazabilidad de devolución hasta la venta original |
+| Equipo interno de desarrollo y operación | Tecnología conocida, mantenibilidad y adopción viable | EaC-09, R5, R6 | ADR-001 aceptado | Componentes, Despliegue | Revisión de arquitectura por el equipo; ejercicio de despliegue y mantenimiento con las capacidades declaradas |
+| ERP-Core (entidad externa) | Recibir CSV/XML cada 30 minutos sin cambios internos | CUN-05, R1 | ADR-002 aceptado; decisión de adaptador ERP pendiente | Contexto, Componentes, Despliegue | Generación, reintento y procesamiento de archivo dentro de una ventana de 30 minutos |
+| POS (entidades externas) | Recepción confiable de eventos sin modificar las instalaciones | CUN-06, EaC-06, R1 | ADR-002 y ADR-004 aceptados | Contexto, Componentes, Despliegue | Error de entrega y reintento; comprobar entrega eventual e idempotencia en el receptor o adaptador |
+| PayKlik (entidad externa) | Integración REST bajo latencia o indisponibilidad | CUN-03, EaC-04, EaC-12, R3 | ADR-003 aceptado: aislamiento de fallas de pago | Contexto, Componentes, Despliegue | Latencia de cinco segundos y falla sostenida; comprobar orden recuperable y ausencia de PAN completo y CVV almacenados |
+| LogiExpress (entidad externa) | Generación de guías y estados pese a timeouts | CUN-08, EaC-05, R3 | ADR-004 aceptado: reintento con backoff | Contexto, Componentes, Despliegue | Al menos 2 % de timeouts simulados; comprobar reintento sin bloquear la preparación del despacho |
+| SAT | Factura XML, CUI/serie y evidencia auditable | CUN-04, CUN-12, EaC-02, EaC-07, R4 | ADR-002 aceptado; decisión de integración fiscal pendiente | Contexto, Componentes, Despliegue | Validación de XML y CUI/serie; evidencia en menos de un segundo; reconstrucción de la operación |
 | Proveedor de SMS, correo y push | Su indisponibilidad no debe bloquear la operación principal | CUN-11, EaC-08 | Decisión de notificación asíncrona pendiente de ADR | Contexto, Componentes, Despliegue | Inyección de falla del proveedor mientras venta, pago y despacho continúan; reintento o registro de entrega fallida |
 
 ### 9.1 Matriz de cobertura de drivers críticos
@@ -615,25 +789,25 @@ Esta segunda lectura verifica que la priorización de la sección 8 no deje un d
 
 | Driver crítico | Stakeholders principales | Decisión/ADR | Vista prevista | Validación prevista |
 |---|---|---|---|---|
-| EaC-04 — resiliencia de pagos | Jefe de Operaciones, Clientes, TI, PayKlik | ADR-003 pendiente, apoyado por ADR-001 propuesto | Componentes, Despliegue | Falla sostenida y latencia alta de PayKlik; orden persistida y recuperable |
-| EaC-03 — escalabilidad 8x | TI, Jefe de Operaciones | ADR-001 propuesto | Despliegue, Bloques | Carga equivalente a ocho veces el tráfico normal sin degradar EaC-01/EaC-02 |
-| R1 — no modificar ERP/POS | Junta Directiva, TI, ERP-Core, POS | ADR-001 propuesto | Contexto, Componentes | Revisión de interfaces y alcance sin cambios en los sistemas legados |
-| EaC-07 — auditabilidad | Finanzas, SAT, Atención al cliente | ADR-002 pendiente | Componentes, Despliegue | Reconstrucción de actor, instante y cambio de una operación; evidencia en menos de un segundo |
-| CUN-01 — carrito omnicanal | Comercialización, Cliente | ADR-001 propuesto; decisión de entrada omnicanal pendiente | Contexto, Componentes, Prototipo | Iniciar una compra en un canal y continuarla o completarla en otro |
-| EaC-05 / EaC-06 — entrega confiable | Logística, LogiExpress, POS | ADR-004 pendiente | Componentes, Despliegue | Timeouts y errores simulados con reintento, idempotencia y entrega eventual |
-| R5 / EaC-09 — mantenibilidad interna | TI, Equipo interno | ADR-001 propuesto | Componentes, Despliegue | Revisión y ejercicio operativo por el equipo interno |
-| EaC-11 / R6 — evolución a nube | Dirección, TI | ADR-001 propuesto | Despliegue, Bloques | Revisión de portabilidad y ruta de migración sin obligar migración inmediata |
+| EaC-04 — resiliencia de pagos | Jefe de Operaciones, Clientes, TI, PayKlik | ADR-003 aceptado, apoyado por ADR-001 aceptado | Componentes, Despliegue | Falla sostenida y latencia alta de PayKlik; orden persistida y recuperable |
+| EaC-03 — escalabilidad 8x | TI, Jefe de Operaciones | ADR-001 aceptado | Despliegue, Bloques | Carga equivalente a ocho veces el tráfico normal sin degradar EaC-01/EaC-02 |
+| R1 — no modificar ERP/POS | Junta Directiva, TI, ERP-Core, POS | ADR-001 aceptado | Contexto, Componentes | Revisión de interfaces y alcance sin cambios en los sistemas legados |
+| EaC-07 — auditabilidad | Finanzas, SAT, Atención al cliente | ADR-002 aceptado | Componentes, Despliegue | Reconstrucción de actor, instante y cambio de una operación; evidencia en menos de un segundo |
+| CUN-01 — carrito omnicanal | Comercialización, Cliente | ADR-001 aceptado; decisión de entrada omnicanal pendiente | Contexto, Componentes, Prototipo | Iniciar una compra en un canal y continuarla o completarla en otro |
+| EaC-05 / EaC-06 — entrega confiable | Logística, LogiExpress, POS | ADR-004 aceptado | Componentes, Despliegue | Timeouts y errores simulados con reintento, idempotencia y entrega eventual |
+| R5 / EaC-09 — mantenibilidad interna | TI, Equipo interno | ADR-001 aceptado | Componentes, Despliegue | Revisión y ejercicio operativo por el equipo interno |
+| EaC-11 / R6 — evolución a nube | Dirección, TI | ADR-001 aceptado | Despliegue, Bloques | Revisión de portabilidad y ruta de migración sin obligar migración inmediata |
 
 ### 9.2 Pendientes para cerrar las matrices
 
-- Persona 3 debe aceptar, cambiar o rechazar ADR-001 y asignar el contenido definitivo de ADR-002 a ADR-005.
+- **ADR-001 a ADR-005 completados y aceptados por Persona 3 (Rol C):** ADR-001 aceptado; ADR-002 a ADR-005 redactados y aceptados. Las matrices de la Sección 9 ya referencian estos ADR con su estado actualizado.
 - Persona 4 proporcionó las rutas versionadas `Docs/diagramas/contexto.svg`, `componentes.svg`, `despliegue.svg` y `bloques.svg`, junto con sus fuentes `.dot`; Persona 1 debe enlazar esas rutas en cualquier referencia genérica restante de las matrices.
 - Cada responsable debe conservar evidencia de los mecanismos de validación; en Fase 1 puede ser un diseño de prueba o criterio de aceptación verificable cuando aún no exista implementación.
 
 ---
 
 ## 10. Decisiones Arquitectónicas (ADRs)
-**Estado:** En progreso | **Dueño:** Persona 3 (Rol C)
+**Estado:** Borrador completo (ADR-001 aceptado; ADR-002 a ADR-005 redactados); pendiente de validación del equipo | **Dueño:** Persona 3 (Rol C)
 
 ### 10.1 Plantilla de ADR
 
@@ -670,7 +844,7 @@ EaC-XX, RX, CUN-XX
 
 #### Estado
 
-**Propuesto.** Este ADR es un borrador de apoyo y no representa todavía un acuerdo definitivo del equipo.
+**Aceptado.** Revisado por Persona 3 (Rol C) con base en la priorización de la Sección 8. La alternativa de monolito modular con capa de integración por puertos, adaptadores y mensajería responde de forma proporcionada al conjunto de drivers críticos (EaC-03, EaC-04, EaC-05, EaC-06, EaC-07, EaC-09, EaC-11, R1, R5, R6) y mantiene la frontera de no modificar ERP-Core ni POS. Las consecuencias negativas aceptadas se mitigan mediante los ADR-002 a ADR-005 y la disciplina de modularidad verificable.
 
 #### Contexto
 
@@ -733,14 +907,162 @@ El ADR define el estilo y las fronteras, no una tecnología concreta. La selecci
 
 CUN-01, CUN-03 a CUN-06, CUN-08, CUN-11 y CUN-12; EaC-03 a EaC-12; R1 a R7 y R9.
 
-### 10.3 ADRs pendientes de redactar
+### 10.3 ADRs complementarios
 
-- **ADR-002:** publicación confiable y registro auditable. Debe comparar Outbox, Event Store y otras alternativas; no tratarlas como si fueran el mismo patrón.
-- **ADR-003:** aislamiento de fallas y continuidad de órdenes ante PayKlik.
-- **ADR-004:** entrega confiable y estrategia de reintentos hacia LogiExpress, POS y ERP-Core.
-- **ADR-005:** coordinación y estados del ciclo de vida de la orden; comparar Saga orquestada con alternativas y justificar compensaciones.
-- **ADR pendiente de numeración:** observabilidad de sistemas externos y operación de colas.
-- **ADR pendiente de numeración:** notificaciones no bloqueantes.
+#### ADR-002 — Publicación confiable y registro auditable
+
+##### Estado
+
+**Aceptado.** Revisado y aprobado por Persona 3 (Rol C) para garantizar trazabilidad (EaC-07) y evidencia recuperable en menos de 1 segundo (EaC-02) sin depender de la disponibilidad de los sistemas externos.
+
+##### Contexto
+
+SGO-Logic debe integrarse con ERP-Core, POS, PayKlik, LogiExpress, SAT y el proveedor de notificaciones sin modificarlos (R1, R3). Varias de estas integraciones son asíncronas y varias operaciones (pago, facturación, despacho) requieren que el hecho de negocio quede registrado aunque el destino externo falle o esté lento. Además, Finanzas tiene veto sobre cualquier decisión que reduzca la trazabilidad (EaC-07, R4). El núcleo modular de ADR-001 ejecuta una transacción de negocio y debe poder publicar su resultado de forma que no se pierda mensaje ni se confirmen cambios sin su evento correspondiente.
+
+##### Decisión
+
+Adoptar el patrón **Outbox** como mecanismo base de publicación confiable: el cambio de negocio y el mensaje saliente se registran en una misma transacción local (tabla de outbox). Un proceso independiente lee la tabla, publica en el broker y marca el mensaje como entregado. El **Event Store** se considera un patrón distinto y no se adopta como mecanismo primario de integración: se usará únicamente si en una fase posterior se requiere reconstruir el estado a partir de la secuencia de eventos para una capacidad específica (por ejemplo, auditoría forense ampliada), y en ese caso se documentará en un ADR aparte.
+
+##### Alternativas consideradas
+
+1. **Outbox (elegida):** acopla el registro del hecho y el mensaje en una transacción local; entrega eventual vía broker; soporta idempotencia y reintento. Pros: garantiza que no hay cambio confirmado sin mensaje ni mensaje sin cambio. Contras: requiere proceso de lectura/borrado de la tabla outbox y disciplina de idempotencia en consumidores.
+2. **Event Store como fuente de estado:** conserva la secuencia de eventos como estado. Pros: trazabilidad nativa y reconstrucción de estado. Contras: complejidad operativa mayor, curva de aprendizaje y riesgo de duplicar responsabilidad con la base operacional del núcleo; no resuelve por sí solo la entrega hacia sistemas externos.
+3. **Doble escritura (negocio + broker en la misma operación sin outbox):** Pros: simplicidad aparente. Contras: puede confirmar el cambio y no publicar el mensaje (o viceversa) ante falla, rompiendo EaC-07 y la conciliación con ERP/SAT. Descartada.
+
+##### Consecuencias
+
+**Positivas:**
+- Cada transición de orden queda registrada y publicable sin pérdida, apoyando EaC-07 y EaC-02.
+- Permite reintento e idempotencia hacia ERP-Core, POS y LogiExpress sin acoplar el núcleo a sus disponibilidades.
+- Facilita la reconstrucción de quién/cuándo/qué para la SAT.
+
+**Negativas / riesgos aceptados:**
+- El proceso de outbox debe ser monitoreado; una tabla sin drenar podría retrasar integraciones.
+- La idempotencia en los consumidores externos debe diseñarse explícitamente (ver ADR-004).
+
+##### Drivers relacionados
+
+EaC-02, EaC-07, R1, R3, R4.
+
+---
+
+#### ADR-003 — Aislamiento de fallas y continuidad de órdenes ante PayKlik
+
+##### Estado
+
+**Aceptado.** Revisado y aprobado por Persona 3 (Rol C) para atender el driver crítico de resiliencia de pagos (EaC-04) y la protección de datos de pago (EaC-12).
+
+##### Contexto
+
+Durante el último Black Friday, PayKlik permaneció indisponible 45 minutos y MegaStore perdió aproximadamente USD 150,000. Se espera hasta 8x la demanda normal. La organización no puede perder la orden si el proveedor falla, debe poder procesar pagos sin depender 100% del proveedor externo y cada intento fallido debe ser auditable (EaC-04). Además, no se almacenan PAN completos ni CVV (EaC-12, R4). El contrato de PayKlik sigue vigente (R3), por lo que no se sustituye, pero sí debe aislarse su falla.
+
+##### Decisión
+
+Aislar PayKlik con un **Circuit Breaker** y límites de tiempo en el adaptador de pago. Al fallar o superar el umbral de latencia, SGO-Logic conserva la orden en estado "Pago pendiente de confirmación" y registra el intento con resultado indeterminado. El reintento o la conciliación se realiza mediante cola con idempotencia y verificación previa para evitar cobro duplicado. La reserva de inventario no se libera de inmediato ante una falla de pago, sino que permanece comprometida según la política de caducidad de carrito (CDU-02), de modo que la orden persista y pueda continuar o recuperarse.
+
+##### Alternativas consideradas
+
+1. **Circuit Breaker + reintento idempotente con conciliación (elegida):** Pros: no pierde la orden, aísla cascadas, auditable. Contras: requiere lógica de conciliación y estado intermedio de la orden.
+2. **Bloquear la orden hasta respuesta de PayKlik:** Pros: simple. Contras: ante indisponibilidad de 45 min, la venta se pierde; contradice EaC-04 y el objetivo de negocio.
+3. **Segundo adquirente en paralelo:** Pros: reduce dependencia. Contras: el enunciado no describe un segundo proveedor contratado; introduciría nuevo contrato y riesgo fuera de R3. Queda como supuesto abierto (§2.3), no se decide aquí.
+
+##### Consecuencias
+
+**Positivas:**
+- 0 órdenes perdidas por falla de PayKlik.
+- Intentos de cobro auditables y vinculados a orden/canal/fecha/resultado.
+- PAN/CVV nunca persistidos en SGO-Logic.
+
+**Negativas / riesgos aceptados:**
+- La orden puede quedar en estado intermedio y requerir conciliación manual o automatizada.
+- La política de caducidad de reserva debe coordinarse con CDU-02 y ADR-005.
+
+##### Drivers relacionados
+
+EaC-04, EaC-12, R3, R4.
+
+---
+
+#### ADR-004 — Entrega confiable y reintentos hacia LogiExpress, POS y ERP-Core
+
+##### Estado
+
+**Aceptado.** Revisado y aprobado por Persona 3 (Rol C) para atender EaC-05, EaC-06 y la restricción R1 de no modificar los sistemas externos.
+
+##### Contexto
+
+LogiExpress presenta timeout en ~2% de solicitudes (EaC-05) y las 32 instancias POS requieren recepción confiable de eventos sin ser modificadas (EaC-06, R1). ERP-Core recibe resúmenes CSV/XML cada 30 minutos y tampoco se modifica (R1). Ninguno de estos destinos debe bloquear la operación principal de la orden.
+
+##### Decisión
+
+Estandarizar la entrega asíncrona confiable mediante **broker + cola de reintentos con backoff** y **idempotencia** en el receptor o adaptador:
+
+- **Hacia LogiExpress:** el adaptador reintenta con backoff y registra mensajes fallidos; la preparación física del pedido no se bloquea (CDU-07).
+- **Hacia POS:** un trabajador de integración consume del broker y entrega el evento con reintento hasta acuse o política de degradación; idempotencia en el POS evita duplicados.
+- **Hacia ERP-Core:** generación de archivo CSV/XML en ventana de 30 min con reintento de entrega y registro de procesamiento.
+
+El mecanismo se apoya en el Outbox de ADR-002 para no perder el hecho de negocio.
+
+##### Alternativas consideradas
+
+1. **Cola con retry/backoff + idempotencia (elegida):** Pros: desacopla, tolera caídas, entrega eventual. Contras: requiere operación de cola y bandeja de mensajes fallidos.
+2. **Llamada síncrona directa con reintento en el hilo de la orden:** Pros: simple. Contras: bloquea la operación principal y contradice EaC-05/EaC-06; además, ante caída del POS o LogiExpress, la orden se estanca. Descartada.
+3. **Fire-and-forget sin reintento:** Pros: mínima complejidad. Contras: pérdida de eventos, rompe EaC-06 y conciliación con ERP. Descartada.
+
+##### Consecuencias
+
+**Positivas:**
+- Despacho y sincronización no se bloquean por fallas externas.
+- Entrega eventual garantizada con evidencia de reintentos.
+
+**Negativas / riesgos aceptados:**
+- Necesidad de monitoreo de mensajes fallidos y procedimiento de recuperación manual si se agota la política.
+- Los POS deben soportar idempotencia o el adaptador debe garantirla.
+
+##### Drivers relacionados
+
+EaC-05, EaC-06, R1, R3.
+
+---
+
+#### ADR-005 — Coordinación y estados del ciclo de vida de la orden
+
+##### Estado
+
+**Aceptado.** Revisado y aprobado por Persona 3 (Rol C) para coordinar el flujo de la orden (CUN-01, CUN-03, CUN-07) y soportar las compensaciones requeridas por EaC-04 y EaC-07.
+
+##### Contexto
+
+La orden omnicanal atraviesa múltiples pasos: reservar inventario → cobrar → facturar → despachar → entregar, con posibilidad de devolución o cancelación. Varios pasos involucran sistemas externos con falla parcial (PayKlik, LogiExpress, SAT). Se requiere un modelo de estados explícito y un mecanismo de compensación cuando un paso falla, sin perder trazabilidad ni la intención de compra del cliente.
+
+##### Decisión
+
+Adoptar **Saga orquestada** como coordinador del ciclo de vida de la orden, con un módulo de Coordinación/Órdenes que dirige los pasos y sus compensaciones. Estados definidos: `Pendiente → Pago aprobado → En preparación → Despachada → Entregada`, con estados de excepción `Pago pendiente de confirmación`, `Cancelada` y `Devuelta`. Compensaciones: liberar reserva de inventario si el pago no se confirma tras la política de reintento (ADR-003/ADR-004), revertir o anular factura si aplica, y registrar cada transición para EaC-07. La Saga orquestada se prefiere sobre la coreografiada porque centraliza la lógica de compensación y facilita la auditoría desde un único coordinador.
+
+##### Alternativas consideradas
+
+1. **Saga orquestada (elegida):** Pros: lógica de compensación centralizada, trazabilidad clara, más simple de auditar para Finanzas. Contras: el coordinador es un punto con mayor responsabilidad.
+2. **Saga coreografiada:** Pros: menos acoplamiento al coordinador. Contras: la lógica de compensación queda dispersa en los participantes, dificulta la reconstrucción de quién/cuándo/qué (EaC-07) y complica la defensa ante el comité.
+3. **Proceso monolítico síncrono:** Pros: simple. Contras: una falla de PayKlik o LogiExpress detiene toda la orden, contradiciendo EaC-04 y EaC-05. Descartada.
+
+##### Consecuencias
+
+**Positivas:**
+- Permite recuperación y compensación ante fallas parciales.
+- Estados visibles y trazables para cliente y personal de atención (EaC-01, EaC-07).
+- Consistente con el núcleo modular de ADR-001.
+
+**Negativas / riesgos aceptados:**
+- El coordinador debe diseñarse con cuidado para no convertirse en cuello de botella.
+- Las compensaciones deben ser idempotentes y auditables.
+
+##### Drivers relacionados
+
+CUN-01, CUN-03, CUN-07, EaC-01, EaC-04, EaC-05, EaC-07.
+
+---
+
+> ADRs adicionales (observabilidad de sistemas externos y notificaciones no bloqueantes) se registran como supuestos abiertos en §2.3 y §9; su redacción formal queda fuera del alcance crítico de esta fase y puede incorporarse si hay tiempo antes de la entrega.
 
 ---
 
@@ -878,7 +1200,7 @@ Wireframes no funcionales del flujo principal: iniciar compra en la app móvil �
 | Alcance y frontera de SGO-Logic | Borrador completo | Todo el equipo, facilitado por Persona 1 | Acuerdo registrado y ausencia de objeciones abiertas |
 | Clasificación de stakeholders, entidades externas y preocupaciones | Borrador completo | Todo el equipo | Tablas validadas; altas, bajas o agrupaciones justificadas |
 | Características y drivers priorizados | Borrador completo | Personas 1 y 3 + equipo | Priorización aprobada con valor, riesgo, urgencia e impacto |
-| ADR-001 | Propuesto | Persona 3 + equipo | Estado cambiado a Aceptado o decisión alternativa documentada |
+| ADR-001 | Aceptado (por Persona 3) | Persona 3 + equipo | Validación final del equipo en revisión de coherencia |
 | Matrices de trazabilidad | Precargadas | Persona 1, con insumos de Personas 2, 3 y 4 | ADR y rutas finales de vistas incorporados; mecanismos de validación revisados |
 | Vistas de Contexto, Componentes, Despliegue y Bloques | Borrador completo | Personas 2 y 3 + equipo | Actores, EaC y ADR contrastados; observaciones resueltas y vistas aprobadas |
 
@@ -890,7 +1212,7 @@ Esta sección representa el estado observable en este repositorio. Una **depende
 |---|---|---|---|---|---|
 | Persona 1 — Facilitación y Trazabilidad | Alcance, stakeholders, priorización, matrices, coherencia del DDA, Kanban y repositorio | Alcance, clasificación de stakeholders, características, priorización, matrices precargadas y borrador de ADR-001 | Coordinar validaciones, mantener el tablero, registrar acuerdos, revisar formato y preparar estructura de exposición | Cerrar matrices con artefactos reales y ejecutar revisión final de coherencia | Persona 2: CUN/CDU; Persona 3: EaC/ADR; Persona 4: vistas; equipo: aprobación de alcance y prioridades |
 | Persona 2 — Negocio y Drivers Funcionales | Actores, CUN, primera descomposición y CDU expandidos | Lista preliminar de 12 CUN, macroprocesos, plantilla CDU y ejemplo CDU-03 | Elaborar el diagrama CUN, validar actores y expandir CDU priorizados | Diagramas CUN/CDU definitivos y relación CDU–EaC | Equipo: validación del alcance; Persona 3: coordinación de EaC asociados |
-| Persona 3 — Calidad, Restricciones y ADR | EaC completos, restricciones y decisiones arquitectónicas | Resumen de 12 EaC, ejemplo EaC-04, restricciones y borrador de ADR-001 preparado por Persona 1 | Formalizar EaC prioritarios, revisar restricciones y decidir sobre ADR-001 | EaC completos; ADR-001 aceptado o sustituido; ADR-002 a ADR-005 y decisiones de observabilidad/notificaciones | Equipo: priorización; Personas 2 y stakeholders: aclaraciones de negocio; TI/Finanzas: medidas abiertas |
+| Persona 3 — Calidad, Restricciones y ADR | EaC completos, restricciones y decisiones arquitectónicas | Resumen de 12 EaC, ejemplo EaC-04, restricciones y borrador de ADR-001 preparado por Persona 1 | Formalizar EaC prioritarios, revisar restricciones y decidir sobre ADR-001 | **Completado:** los 12 EaC formalizados (§6.4), restricciones validadas (§7), ADR-001 aceptado y ADR-002 a ADR-005 redactados y aceptados (§10.3). Pendiente de validación final del equipo. | Equipo: validación final; Personas 2 y stakeholders: aclaraciones de negocio pendientes en §2.3; TI/Finanzas: medidas abiertas |
 | Persona 4 — Modelado y Vistas | Contexto, Componentes, Despliegue y Bloques | Cuatro diagramas incorporados en SVG y PNG, fuentes `.dot`, notación declarada, correspondencia EaC-despliegue y decisiones abiertas documentadas | Coordinar revisión cruzada con Personas 2 y 3 y ajustar las vistas si cambian actores, EaC o ADR | Aprobación del equipo y sustitución de supuestos por decisiones aceptadas | Persona 2: validación final de actores/CUN; Persona 3: EaC y ADR aceptados |
 | Persona 5 — Documentación, Prototipo y QA | Resumen ejecutivo, ensamblado editorial, mockups, QA y presentación | Esqueleto del DDA y flujo principal indicado; no hay resumen ni prototipo enlazado | Iniciar mockups, plantilla editorial y estructura del guion | Resumen ejecutivo final, prototipo, QA integral y presentación consolidada | Personas 1 a 4: artefactos estabilizados; todo el equipo: ensayo |
 
