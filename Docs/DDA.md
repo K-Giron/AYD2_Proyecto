@@ -1431,7 +1431,7 @@ Esta vista resume para el comité cómo la experiencia omnicanal atraviesa la en
 
 Wireframes no funcionales del flujo principal: iniciar compra en la app móvil → continuar y pagar en la web → consultar estado desde cualquier canal → generar una devolución desde el centro de atención. Cada pantalla anota el CUN y el EaC que ilustra, para mantener trazabilidad con las secciones 2, 6 y 9.
 
-[`Docs/prototipo/mockups.html`](./prototipo/mockups.html) — abrir directamente en el navegador. Detalle en [`Docs/prototipo/README.md`](./prototipo/README.md).
+[`Docs/prototipo/mockups.html`](./prototipo/mockups.html) — abrir directamente en el navegador. Captura estática de cada pantalla, para usar en diapositivas o impresión sin depender del HTML: [carrito móvil](./prototipo/screenshots/01-carrito-movil.png) · [pago web](./prototipo/screenshots/02-pago-web.png) · [consulta de estado](./prototipo/screenshots/03-consulta-estado.png) · [devolución](./prototipo/screenshots/04-devolucion.png).
 
 **Criterios de aceptación:**
 

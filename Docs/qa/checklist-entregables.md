@@ -140,6 +140,8 @@
 - [x] Crear la presentación visual final (`Docs/presentacion/slides.html`, 11 diapositivas siguiendo el guion, con las 4 vistas de Rol D incrustadas).
 - [x] Realizar una revisión editorial final del DDA, las figuras y el prototipo: se verificó que no quedan marcadores `TODO`, que todas las imágenes referenciadas existen en el repositorio, y se completó la sección 13.2 (Referencias), que había quedado como encabezado vacío tras la consolidación a v1.0.
 - [x] Registrar que las imágenes proyectadas son legibles a tamaño de presentación: los PNG de las 4 vistas están entre 1665×1490 y 5088×2892 px (bien sobre un proyector 1920×1080); Componentes y Despliegue son diagramas densos y conviene mostrarlos con zoom por secciones en vivo en vez de a tamaño completo.
+- [x] Generar capturas estáticas del prototipo (`Docs/prototipo/screenshots/01-carrito-movil.png` a `04-devolucion.png`, 2400 px de ancho) para no depender de abrir el HTML en vivo; incrustadas también como respaldo en la diapositiva 10.
+- [x] Redactar el guion completo palabra por palabra (fuera del repositorio, en `Guion_Presentacion_Completo_SGO-Logic.md`) calibrado a ~130 palabras/min para llenar los 45 minutos reales, no solo los puntos de apoyo.
 
 ### Pendientes verificables
 
