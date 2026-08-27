@@ -171,5 +171,5 @@ Ninguno.
 
 - [x] Todos los criterios de cierre individuales están completos — confirmado por Personas 1 a 4 en sus propias secciones (3 a 6 de este documento).
 - [x] No existen contradicciones entre DDA, diagramas, prototipo y guion — verificado en la revisión editorial de Persona 5 (sin `TODO` residuales, imágenes referenciadas existentes, estados del prototipo alineados con ADR-005).
-- [ ] El equipo registró la aprobación final.
+- [x] El equipo registró la aprobación final.
 - [x] La presentación visual y el ensayo están completos.
