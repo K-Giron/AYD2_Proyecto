@@ -164,7 +164,7 @@ Ninguno.
 | Cuatro vistas | DOT/SVG/PNG y draw.io | Revisión visual y aprobación | Producido |
 | Prototipo | `Docs/prototipo/mockups.html` + `screenshots/` | Revisión editorial | Producido |
 | Guion de presentación | `Docs/presentacion/guion-45min.md` + `Guion_Presentacion_Completo_SGO-Logic.md` (fuera del repo), con nombres reales del equipo | — | Producido |
-| Diapositivas | `Docs/presentacion/slides.html` (11 diapositivas, con capturas del prototipo incrustadas y nombres reales) | — | Producido |
+| Diapositivas | `Docs/presentacion/slides.html` (con zoom en diagramas) + `Docs/presentacion/slides.pptx` (mismo diseño, formato PowerPoint) | — | Producido |
 | Ensayo de 45 min + 5 min de preguntas | Realizado el 26/08/2026 | — | Completo |
 
 ## 9. Criterio de cierre de la Fase 1

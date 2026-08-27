@@ -1463,7 +1463,8 @@ Wireframes no funcionales del flujo principal: iniciar compra en la app móvil �
 ### 13.2 Referencias
 
 - [Guion de presentación (45 min + preguntas)](../presentacion/guion-45min.md)
-- [Diapositivas de la presentación](../presentacion/slides.html)
+- [Diapositivas de la presentación (HTML, con zoom en diagramas)](../presentacion/slides.html)
+- [Diapositivas de la presentación (PowerPoint)](../presentacion/slides.pptx)
 - [Checklist unificado de entregables por persona](../qa/checklist-entregables.md)
 - [Prototipo / mockups no funcionales](../prototipo/mockups.html)
 - [Notación y regeneración de las cuatro vistas arquitectónicas](./diagramas/README.md)

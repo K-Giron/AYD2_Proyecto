@@ -58,6 +58,13 @@
   .figure{
     background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px;
     box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center;
+    cursor:zoom-in; position:relative;
+  }
+  .figure::after, .thumb::after{
+    content:"⤢ clic para ampliar"; position:absolute; bottom:8px; right:12px;
+    font-family:"IBM Plex Mono", monospace; font-size:.62rem; letter-spacing:.02em;
+    color:var(--text-muted); background:var(--surface); padding:2px 7px; border-radius:10px;
+    border:1px solid var(--border); pointer-events:none; opacity:.85;
   }
   .figure svg{ width:100%; height:auto; max-height:62vh; }
   .figure img{ width:100%; height:auto; border-radius:6px; }
@@ -106,7 +113,24 @@
   .thumb-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px; }
   .thumb{
     background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden;
-    box-shadow:var(--shadow);
+    box-shadow:var(--shadow); cursor:zoom-in; position:relative;
+  }
+  #lightbox{
+    position:fixed; inset:0; background:rgba(10,14,16,.86); z-index:100;
+    display:none; align-items:center; justify-content:center; padding:5vh 5vw;
+    cursor:zoom-out;
+  }
+  #lightbox.open{ display:flex; }
+  #lightbox .lb-inner{
+    background:var(--surface); border-radius:10px; padding:24px; max-width:92vw; max-height:90vh;
+    overflow:auto; box-shadow:0 20px 60px rgba(0,0,0,.5); cursor:default;
+  }
+  #lightbox .lb-inner svg{ width:min(88vw, 1600px); height:auto; display:block; }
+  #lightbox .lb-inner img{ max-width:88vw; max-height:82vh; display:block; margin:0 auto; }
+  #lightbox .lb-close{
+    position:fixed; top:22px; right:28px; font-family:"IBM Plex Mono", monospace; font-size:.85rem;
+    color:#fff; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3);
+    border-radius:20px; padding:6px 14px; cursor:pointer;
   }
   .thumb img{ width:100%; display:block; }
   .thumb figcaption{
@@ -116,7 +140,7 @@
 </style>
 
 <!-- SLIDE 1 : TITLE -->
-<section class="slide title">
+<section id="slide-01" class="slide title">
   <span class="eyebrow">Análisis y Diseño de Sistemas 2A · USAC · Grupo 5</span>
   <h1>SGO-Logic</h1>
   <p class="sub">Sistema de Gestión de Órdenes y Logística Omnicanal — MegaStore</p>
@@ -124,7 +148,7 @@
 </section>
 
 <!-- SLIDE 2 : APERTURA -->
-<section class="slide">
+<section id="slide-02" class="slide">
   <span class="timebox">0–3 min · Jairo Gómez</span>
   <span class="eyebrow">Apertura</span>
   <div class="cols">
@@ -143,7 +167,7 @@
 </section>
 
 <!-- SLIDE 3 : NEGOCIO CUN -->
-<section class="slide">
+<section id="slide-03" class="slide">
   <span class="timebox">3–10 min · Jorge Pumay</span>
   <span class="eyebrow">Negocio y drivers funcionales</span>
   <div class="cols reverse">
@@ -331,7 +355,7 @@
 </section>
 
 <!-- SLIDE 4 : STAKEHOLDERS -->
-<section class="slide">
+<section id="slide-04" class="slide">
   <span class="timebox">10–16 min · Jairo Gómez</span>
   <span class="eyebrow">Stakeholders y priorización</span>
   <h2>Dos vetos que definen la arquitectura</h2>
@@ -353,7 +377,7 @@
 </section>
 
 <!-- SLIDE 5 : CALIDAD Y ADR-001 -->
-<section class="slide">
+<section id="slide-05" class="slide">
   <span class="timebox">16–24 min · Edson Sosa</span>
   <span class="eyebrow">Calidad, restricciones y ADR-001</span>
   <h2>Monolito modular + integración por eventos</h2>
@@ -385,7 +409,7 @@
 </section>
 
 <!-- SLIDE 6 : VISTA CONTEXTO -->
-<section class="slide">
+<section id="slide-06" class="slide">
   <span class="timebox">24–34 min · Andy Sánchez</span>
   <span class="eyebrow">Vistas arquitectónicas · Contexto</span>
   <div class="cols reverse">
@@ -705,7 +729,7 @@
 </section>
 
 <!-- SLIDE 7 : VISTA COMPONENTES -->
-<section class="slide">
+<section id="slide-07" class="slide">
   <span class="timebox">24–34 min · Andy Sánchez</span>
   <span class="eyebrow">Vistas arquitectónicas · Componentes</span>
   <h2>El núcleo modular de ADR-001</h2>
@@ -1257,7 +1281,7 @@
 </section>
 
 <!-- SLIDE 8 : VISTA DESPLIEGUE -->
-<section class="slide">
+<section id="slide-08" class="slide">
   <span class="timebox">24–34 min · Andy Sánchez</span>
   <span class="eyebrow">Vistas arquitectónicas · Despliegue</span>
   <h2>Donde viven los EaC críticos</h2>
@@ -1751,7 +1775,7 @@
 </section>
 
 <!-- SLIDE 9 : VISTA BLOQUES -->
-<section class="slide">
+<section id="slide-09" class="slide">
   <span class="timebox">24–34 min · Andy Sánchez</span>
   <span class="eyebrow">Vistas arquitectónicas · Bloques</span>
   <h2>Síntesis para el comité</h2>
@@ -1941,7 +1965,7 @@
 </section>
 
 <!-- SLIDE 10 : PROTOTIPO -->
-<section class="slide">
+<section id="slide-10" class="slide">
   <span class="timebox">34–40 min · Kevin de la Cruz</span>
   <span class="eyebrow">Prototipo · recorrido en vivo</span>
   <h2>Un mismo pedido, cuatro canales</h2>
@@ -1965,7 +1989,7 @@
 </section>
 
 <!-- SLIDE 11 : CIERRE -->
-<section class="slide">
+<section id="slide-11" class="slide">
   <span class="timebox">40–45 min · Kevin de la Cruz + Jairo Gómez</span>
   <span class="eyebrow">Consecuencias y cierre</span>
   <h2>Lo que MegaStore gana — y lo que acepta</h2>
@@ -1991,6 +2015,11 @@
 
 <div class="nav"><span id="nav-cur">1</span> / <span id="nav-total"></span></div>
 
+<div id="lightbox">
+  <span class="lb-close">Cerrar (Esc)</span>
+  <div class="lb-inner"></div>
+</div>
+
 <script>
   const slides = Array.from(document.querySelectorAll('.slide'));
   document.getElementById('nav-total').textContent = slides.length;
@@ -2010,6 +2039,29 @@
     } else if (['ArrowUp','ArrowLeft','PageUp'].includes(e.key)) {
       e.preventDefault();
       slides[Math.max(i - 1, 0)].scrollIntoView({behavior:'smooth'});
+    } else if (e.key === 'Escape') {
+      closeLightbox();
     }
   });
+
+  // Lightbox: click any diagram (.figure) or prototype thumbnail (.thumb) to enlarge it
+  const lightbox = document.getElementById('lightbox');
+  const lbInner = lightbox.querySelector('.lb-inner');
+
+  function openLightbox(sourceEl) {
+    lbInner.innerHTML = sourceEl.innerHTML;
+    lightbox.classList.add('open');
+  }
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    lbInner.innerHTML = '';
+  }
+
+  document.querySelectorAll('.figure, .thumb').forEach(el => {
+    el.addEventListener('click', () => openLightbox(el));
+  });
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+  lightbox.querySelector('.lb-close').addEventListener('click', closeLightbox);
 </script>
