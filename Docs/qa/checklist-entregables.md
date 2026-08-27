@@ -24,7 +24,7 @@
 | Persona 2 — Rol B | Negocio, CUN y CDU | Completa | Revisión formal con prototipo y aprobación del equipo |
 | Persona 3 — Rol C | EaC, restricciones y ADR | Completa | Aprobación arquitectónica conjunta |
 | Persona 4 — Rol D | Contexto, Componentes, Despliegue y Bloques | Completa | Revisión visual y aprobación conjunta |
-| Persona 5 — Rol E | Edición, prototipo, QA y presentación | Completa | Sustituir nombres reales en guion y diapositivas |
+| Persona 5 — Rol E | Edición, prototipo, QA y presentación | Completa | Ninguno |
 
 ## 3. Persona 1 — Rol A: Consolidación y Trazabilidad del DDA
 
@@ -142,15 +142,16 @@
 - [x] Registrar que las imágenes proyectadas son legibles a tamaño de presentación: los PNG de las 4 vistas están entre 1665×1490 y 5088×2892 px (bien sobre un proyector 1920×1080); Componentes y Despliegue son diagramas densos y conviene mostrarlos con zoom por secciones en vivo en vez de a tamaño completo.
 - [x] Generar capturas estáticas del prototipo (`Docs/prototipo/screenshots/01-carrito-movil.png` a `04-devolucion.png`, 2400 px de ancho) para no depender de abrir el HTML en vivo; incrustadas también como respaldo en la diapositiva 10.
 - [x] Redactar el guion completo palabra por palabra (fuera del repositorio, en `Guion_Presentacion_Completo_SGO-Logic.md`) calibrado a ~130 palabras/min para llenar los 45 minutos reales, no solo los puntos de apoyo.
-- [x] Coordinar y registrar el ensayo de 45 minutos más cinco minutos de preguntas — realizado por el equipo el 26/08/2026, confirmado directamente por Persona 5.
+- [x] Coordinar y registrar el ensayo de 45 minutos más cinco minutos de preguntas — realizado por el equipo el 26/08/2026, confirmado directamente por Kevin de la Cruz.
+- [x] Sustituir `Persona 1` a `Persona 5` por los nombres reales (Jairo Gómez, Jorge Pumay, Edson Sosa, Andy Sánchez, Kevin de la Cruz) en `Docs/presentacion/guion-45min.md`, `Docs/presentacion/slides.html` y el guion completo fuera del repositorio.
 
 ### Pendientes verificables
 
-- [ ] Sustituir `Persona 1` a `Persona 5` por los nombres reales en el guion y las diapositivas — falta confirmar los nombres reales del equipo.
+Ninguno.
 
 ### Criterio de cierre del Rol E
 
-- [x] La presentación final existe, respeta los tiempos y todos los integrantes pueden defender decisiones fuera de su sección — validado en el ensayo del 26/08/2026. Único punto abierto: sustituir los nombres reales en guion y diapositivas.
+- [x] La presentación final existe, respeta los tiempos y todos los integrantes pueden defender decisiones fuera de su sección — validado en el ensayo del 26/08/2026.
 
 ## 8. Estado de los entregables obligatorios
 
@@ -162,8 +163,8 @@
 | ADR-001 a ADR-008 y costos | DDA §10 | Aprobación conjunta | Producido |
 | Cuatro vistas | DOT/SVG/PNG y draw.io | Revisión visual y aprobación | Producido |
 | Prototipo | `Docs/prototipo/mockups.html` + `screenshots/` | Revisión editorial | Producido |
-| Guion de presentación | `Docs/presentacion/guion-45min.md` + `Guion_Presentacion_Completo_SGO-Logic.md` (fuera del repo) | Nombres reales | Producido |
-| Diapositivas | `Docs/presentacion/slides.html` (11 diapositivas, con capturas del prototipo incrustadas) | Nombres reales | Producido |
+| Guion de presentación | `Docs/presentacion/guion-45min.md` + `Guion_Presentacion_Completo_SGO-Logic.md` (fuera del repo), con nombres reales del equipo | — | Producido |
+| Diapositivas | `Docs/presentacion/slides.html` (11 diapositivas, con capturas del prototipo incrustadas y nombres reales) | — | Producido |
 | Ensayo de 45 min + 5 min de preguntas | Realizado el 26/08/2026 | — | Completo |
 
 ## 9. Criterio de cierre de la Fase 1
@@ -171,4 +172,4 @@
 - [ ] Todos los criterios de cierre individuales están completos — verificar con Personas 1 a 4 que sus propios criterios de cierre (secciones 3 a 6 de este documento) ya estén marcados; no verificado en esta pasada por Persona 5.
 - [x] No existen contradicciones entre DDA, diagramas, prototipo y guion — verificado en la revisión editorial de Persona 5 (sin `TODO` residuales, imágenes referenciadas existentes, estados del prototipo alineados con ADR-005).
 - [ ] El equipo registró la aprobación final.
-- [x] La presentación visual y el ensayo están completos — pendiente únicamente sustituir los nombres reales.
+- [x] La presentación visual y el ensayo están completos.
