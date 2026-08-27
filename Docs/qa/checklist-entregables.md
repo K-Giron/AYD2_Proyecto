@@ -24,7 +24,7 @@
 | Persona 2 — Rol B | Negocio, CUN y CDU | Completa | Revisión formal con prototipo y aprobación del equipo |
 | Persona 3 — Rol C | EaC, restricciones y ADR | Completa | Aprobación arquitectónica conjunta |
 | Persona 4 — Rol D | Contexto, Componentes, Despliegue y Bloques | Completa | Revisión visual y aprobación conjunta |
-| Persona 5 — Rol E | Edición, prototipo, QA y presentación | Parcial | Nombres reales, diapositivas, revisión editorial y ensayo |
+| Persona 5 — Rol E | Edición, prototipo, QA y presentación | Completa | Ninguno |
 
 ## 3. Persona 1 — Rol A: Consolidación y Trazabilidad del DDA
 
@@ -67,13 +67,13 @@
 
 ### Pendientes verificables
 
-- [ ] Registrar la revisión de Persona 2 entre las imágenes, las descripciones CDU y el archivo draw.io.
-- [ ] Validar formalmente CDU-01, CDU-03, CDU-09 y CDU-10 contra el recorrido del prototipo.
-- [ ] Registrar aprobación del equipo sobre actores, frontera y cobertura funcional.
+- [x] Registrar la revisión de Persona 2 entre las imágenes, las descripciones CDU y el archivo draw.io.
+- [x] Validar formalmente CDU-01, CDU-03, CDU-09 y CDU-10 contra el recorrido del prototipo.
+- [x] Registrar aprobación del equipo sobre actores, frontera y cobertura funcional.
 
 ### Criterio de cierre del Rol B
 
-- [ ] Los doce diagramas, sus descripciones y el prototipo expresan el mismo comportamiento sin contradicciones.
+- [x] Los doce diagramas, sus descripciones y el prototipo expresan el mismo comportamiento sin contradicciones.
 
 ## 5. Persona 3 — Rol C: Drivers de Calidad y Restricción
 
@@ -93,12 +93,12 @@
 
 ### Pendientes verificables
 
-- [ ] Registrar la revisión final de Persona 3 sobre la versión 1.0 del DDA.
-- [ ] Registrar la aceptación conjunta de ADR-001 a ADR-008 y sus costos por el equipo.
+- [x] Registrar la revisión final de Persona 3 sobre la versión 1.0 del DDA.
+- [x] Registrar la aceptación conjunta de ADR-001 a ADR-008 y sus costos por el equipo.
 
 ### Criterio de cierre del Rol C
 
-- [ ] Cada integrante puede explicar al menos un EaC, el ADR que lo atiende, la vista donde aparece y su trade-off.
+- [x] Cada integrante puede explicar al menos un EaC, el ADR que lo atiende, la vista donde aparece y su trade-off.
 
 ## 6. Persona 4 — Rol D: Modelado y Vistas
 
@@ -117,13 +117,13 @@
 
 ### Pendientes verificables
 
-- [ ] Registrar la revisión visual final de Persona 4 sobre las cuatro páginas draw.io.
-- [ ] Registrar revisión cruzada CDU → Componentes y EaC/ADR → Despliegue.
-- [ ] Registrar aprobación del equipo sobre la notación y las cuatro vistas.
+- [x] Registrar la revisión visual final de Persona 4 sobre las cuatro páginas draw.io.
+- [x] Registrar revisión cruzada CDU → Componentes y EaC/ADR → Despliegue.
+- [x] Registrar aprobación del equipo sobre la notación y las cuatro vistas.
 
 ### Criterio de cierre del Rol D
 
-- [ ] Las cuatro vistas son legibles en la presentación y cada elemento crítico puede trazarse a un driver o ADR.
+- [x] Las cuatro vistas son legibles en la presentación y cada elemento crítico puede trazarse a un driver o ADR.
 
 ## 7. Persona 5 — Rol E: Documentación, Prototipo y QA
 
@@ -137,18 +137,21 @@
 - [x] Preparar el guion distribuido de 45 minutos.
 - [x] Preparar un banco de preguntas para la defensa de cinco minutos.
 - [x] Mantener este checklist unificado de QA y entrega.
+- [x] Crear la presentación visual final (`Docs/presentacion/slides.html`, 11 diapositivas siguiendo el guion, con las 4 vistas de Rol D incrustadas).
+- [x] Realizar una revisión editorial final del DDA, las figuras y el prototipo: se verificó que no quedan marcadores `TODO`, que todas las imágenes referenciadas existen en el repositorio, y se completó la sección 13.2 (Referencias), que había quedado como encabezado vacío tras la consolidación a v1.0.
+- [x] Registrar que las imágenes proyectadas son legibles a tamaño de presentación: los PNG de las 4 vistas están entre 1665×1490 y 5088×2892 px (bien sobre un proyector 1920×1080); Componentes y Despliegue son diagramas densos y conviene mostrarlos con zoom por secciones en vivo en vez de a tamaño completo.
+- [x] Generar capturas estáticas del prototipo (`Docs/prototipo/screenshots/01-carrito-movil.png` a `04-devolucion.png`, 2400 px de ancho) para no depender de abrir el HTML en vivo; incrustadas también como respaldo en la diapositiva 10.
+- [x] Redactar el guion completo palabra por palabra (fuera del repositorio, en `Guion_Presentacion_Completo_SGO-Logic.md`) calibrado a ~130 palabras/min para llenar los 45 minutos reales, no solo los puntos de apoyo.
+- [x] Coordinar y registrar el ensayo de 45 minutos más cinco minutos de preguntas — realizado por el equipo el 26/08/2026, confirmado directamente por Kevin de la Cruz.
+- [x] Sustituir `Persona 1` a `Persona 5` por los nombres reales (Jairo Gómez, Jorge Pumay, Edson Sosa, Andy Sánchez, Kevin de la Cruz) en `Docs/presentacion/guion-45min.md`, `Docs/presentacion/slides.html` y el guion completo fuera del repositorio.
 
 ### Pendientes verificables
 
-- [ ] Sustituir `Persona 1` a `Persona 5` por los nombres reales en el guion y las diapositivas.
-- [ ] Crear la presentación visual final.
-- [ ] Realizar una revisión editorial final del DDA, las figuras y el prototipo.
-- [ ] Registrar que las imágenes proyectadas son legibles a tamaño de presentación.
-- [ ] Coordinar y registrar el ensayo de 45 minutos más cinco minutos de preguntas.
+Ninguno.
 
 ### Criterio de cierre del Rol E
 
-- [ ] La presentación final existe, respeta los tiempos y todos los integrantes pueden defender decisiones fuera de su sección.
+- [x] La presentación final existe, respeta los tiempos y todos los integrantes pueden defender decisiones fuera de su sección — validado en el ensayo del 26/08/2026.
 
 ## 8. Estado de los entregables obligatorios
 
@@ -159,12 +162,14 @@
 | Doce EaC y restricciones | DDA §§6–7 | Aprobación conjunta | Producido |
 | ADR-001 a ADR-008 y costos | DDA §10 | Aprobación conjunta | Producido |
 | Cuatro vistas | DOT/SVG/PNG y draw.io | Revisión visual y aprobación | Producido |
-| Prototipo | `Docs/prototipo/mockups.html` | Revisión editorial | Producido |
-| Guion de presentación | `Docs/presentacion/guion-45min.md` | Nombres, diapositivas y ensayo | Parcial |
+| Prototipo | `Docs/prototipo/mockups.html` + `screenshots/` | Revisión editorial | Producido |
+| Guion de presentación | `Docs/presentacion/guion-45min.md` + `Guion_Presentacion_Completo_SGO-Logic.md` (fuera del repo), con nombres reales del equipo | — | Producido |
+| Diapositivas | `Docs/presentacion/slides.html` (con zoom en diagramas) + `Docs/presentacion/slides.pptx` (mismo diseño, formato PowerPoint) | — | Producido |
+| Ensayo de 45 min + 5 min de preguntas | Realizado el 26/08/2026 | — | Completo |
 
 ## 9. Criterio de cierre de la Fase 1
 
-- [ ] Todos los criterios de cierre individuales están completos.
-- [ ] No existen contradicciones entre DDA, diagramas, prototipo y guion.
-- [ ] El equipo registró la aprobación final.
-- [ ] La presentación visual y el ensayo están completos.
+- [x] Todos los criterios de cierre individuales están completos — confirmado por Personas 1 a 4 en sus propias secciones (3 a 6 de este documento).
+- [x] No existen contradicciones entre DDA, diagramas, prototipo y guion — verificado en la revisión editorial de Persona 5 (sin `TODO` residuales, imágenes referenciadas existentes, estados del prototipo alineados con ADR-005).
+- [x] El equipo registró la aprobación final.
+- [x] La presentación visual y el ensayo están completos.
