@@ -137,13 +137,13 @@
 - [x] Preparar el guion distribuido de 45 minutos.
 - [x] Preparar un banco de preguntas para la defensa de cinco minutos.
 - [x] Mantener este checklist unificado de QA y entrega.
+- [x] Crear la presentación visual final (`Docs/presentacion/slides.html`, 11 diapositivas siguiendo el guion, con las 4 vistas de Rol D incrustadas).
+- [x] Realizar una revisión editorial final del DDA, las figuras y el prototipo: se verificó que no quedan marcadores `TODO`, que todas las imágenes referenciadas existen en el repositorio, y se completó la sección 13.2 (Referencias), que había quedado como encabezado vacío tras la consolidación a v1.0.
+- [x] Registrar que las imágenes proyectadas son legibles a tamaño de presentación: los PNG de las 4 vistas están entre 1665×1490 y 5088×2892 px (bien sobre un proyector 1920×1080); Componentes y Despliegue son diagramas densos y conviene mostrarlos con zoom por secciones en vivo en vez de a tamaño completo.
 
 ### Pendientes verificables
 
-- [ ] Sustituir `Persona 1` a `Persona 5` por los nombres reales en el guion y las diapositivas.
-- [ ] Crear la presentación visual final.
-- [ ] Realizar una revisión editorial final del DDA, las figuras y el prototipo.
-- [ ] Registrar que las imágenes proyectadas son legibles a tamaño de presentación.
+- [ ] Sustituir `Persona 1` a `Persona 5` por los nombres reales en el guion y las diapositivas — falta confirmar los nombres reales del equipo.
 - [ ] Coordinar y registrar el ensayo de 45 minutos más cinco minutos de preguntas.
 
 ### Criterio de cierre del Rol E

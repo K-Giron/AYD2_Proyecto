@@ -1461,3 +1461,12 @@ Wireframes no funcionales del flujo principal: iniciar compra en la app móvil �
 | Saga | Coordinación de una transacción de negocio distribuida mediante pasos y acciones de compensación |
 
 ### 13.2 Referencias
+
+- [Guion de presentación (45 min + preguntas)](../presentacion/guion-45min.md)
+- [Diapositivas de la presentación](../presentacion/slides.html)
+- [Checklist unificado de entregables por persona](../qa/checklist-entregables.md)
+- [Prototipo / mockups no funcionales](../prototipo/mockups.html)
+- [Notación y regeneración de las cuatro vistas arquitectónicas](./diagramas/README.md)
+- [Vistas arquitectónicas editables (draw.io)](./diagramas/vistas-arquitectonicas-sgo-logic.drawio)
+- [CDU de negocio y expansiones editables (draw.io)](./diagramas/cdu-negocio-y-expandidos.drawio)
+- [Tablero Kanban del equipo (Trello)](https://trello.com/b/ySQoRziE/megastore-fase-1)
