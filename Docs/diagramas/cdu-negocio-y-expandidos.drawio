@@ -1,0 +1,1022 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" pages="13">
+  <diagram name="00-CDU del Negocio - Core" id="sgo-core">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CDU DEL NEGOCIO — SGO-LOGIC" vertex="1">
+          <mxGeometry as="geometry" x="500" y="20" width="800" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic — Gestión de Órdenes y Logística Omnicanal" vertex="1">
+          <mxGeometry as="geometry" x="260" y="90" width="1280" height="1020" />
+        </mxCell>
+        <mxCell id="case-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-01&lt;br&gt;Gestionar carrito omnicanal" vertex="1">
+          <mxGeometry as="geometry" x="370" y="160" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-02&lt;br&gt;Verificar y reservar inventario" vertex="1">
+          <mxGeometry as="geometry" x="780" y="160" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-03&lt;br&gt;Procesar pago" vertex="1">
+          <mxGeometry as="geometry" x="1190" y="160" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-04&lt;br&gt;Emitir documentación fiscal" vertex="1">
+          <mxGeometry as="geometry" x="370" y="375" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-05&lt;br&gt;Sincronizar venta con ERP" vertex="1">
+          <mxGeometry as="geometry" x="780" y="375" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-06&lt;br&gt;Notificar eventos a POS" vertex="1">
+          <mxGeometry as="geometry" x="1190" y="375" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-7" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-07&lt;br&gt;Gestionar despacho" vertex="1">
+          <mxGeometry as="geometry" x="370" y="590" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-08&lt;br&gt;Integrar con LogiExpress" vertex="1">
+          <mxGeometry as="geometry" x="780" y="590" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-09&lt;br&gt;Consultar estado de orden" vertex="1">
+          <mxGeometry as="geometry" x="1190" y="590" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-10" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-10&lt;br&gt;Gestionar devoluciones y reembolsos" vertex="1">
+          <mxGeometry as="geometry" x="370" y="805" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-11" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-11&lt;br&gt;Notificar al cliente" vertex="1">
+          <mxGeometry as="geometry" x="780" y="805" width="280" height="115" />
+        </mxCell>
+        <mxCell id="case-12" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="CUN-12&lt;br&gt;Auditar operaciones" vertex="1">
+          <mxGeometry as="geometry" x="1190" y="805" width="280" height="115" />
+        </mxCell>
+        <mxCell id="actor-cliente" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Cliente" vertex="1">
+          <mxGeometry as="geometry" x="20" y="145" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-tienda" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de tienda" vertex="1">
+          <mxGeometry as="geometry" x="20" y="315" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-atencion" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de atención" vertex="1">
+          <mxGeometry as="geometry" x="20" y="485" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-logistica" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de logística" vertex="1">
+          <mxGeometry as="geometry" x="20" y="655" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-finanzas" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Finanzas" vertex="1">
+          <mxGeometry as="geometry" x="20" y="825" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-payklik" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="PayKlik" vertex="1">
+          <mxGeometry as="geometry" x="1670" y="125" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-sat" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="SAT" vertex="1">
+          <mxGeometry as="geometry" x="1670" y="280" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-erp" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="ERP-Core" vertex="1">
+          <mxGeometry as="geometry" x="1670" y="435" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-pos" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="POS" vertex="1">
+          <mxGeometry as="geometry" x="1670" y="590" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-logiexpress" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="LogiExpress" vertex="1">
+          <mxGeometry as="geometry" x="1670" y="745" width="80" height="105" />
+        </mxCell>
+        <mxCell id="actor-notificaciones" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Proveedor de notificaciones" vertex="1">
+          <mxGeometry as="geometry" x="1670" y="900" width="80" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1" edge="1" parent="1" source="actor-cliente" target="case-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2" edge="1" parent="1" source="actor-cliente" target="case-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-3" edge="1" parent="1" source="actor-cliente" target="case-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-4" edge="1" parent="1" source="actor-cliente" target="case-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-5" edge="1" parent="1" source="actor-cliente" target="case-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-6" edge="1" parent="1" source="actor-cliente" target="case-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-7" edge="1" parent="1" source="actor-tienda" target="case-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-8" edge="1" parent="1" source="actor-tienda" target="case-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-9" edge="1" parent="1" source="actor-tienda" target="case-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-10" edge="1" parent="1" source="actor-tienda" target="case-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-11" edge="1" parent="1" source="actor-atencion" target="case-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-12" edge="1" parent="1" source="actor-atencion" target="case-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-13" edge="1" parent="1" source="actor-atencion" target="case-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-14" edge="1" parent="1" source="actor-logistica" target="case-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-15" edge="1" parent="1" source="actor-logistica" target="case-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-16" edge="1" parent="1" source="actor-logistica" target="case-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-17" edge="1" parent="1" source="actor-finanzas" target="case-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-18" edge="1" parent="1" source="actor-finanzas" target="case-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-19" edge="1" parent="1" source="actor-finanzas" target="case-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-20" edge="1" parent="1" source="actor-payklik" target="case-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-21" edge="1" parent="1" source="actor-sat" target="case-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-22" edge="1" parent="1" source="actor-sat" target="case-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-23" edge="1" parent="1" source="actor-erp" target="case-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-24" edge="1" parent="1" source="actor-pos" target="case-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-25" edge="1" parent="1" source="actor-logiexpress" target="case-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-26" edge="1" parent="1" source="actor-notificaciones" target="case-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="1 - CUN-01-Gestionar carrito omnicanal" id="sgo-cun-01">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — GESTIONAR CARRITO OMNICANAL" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Gestionar carrito omnicanal" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Identificar al cliente" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Agregar, modificar o eliminar productos" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Verificar y reservar inventario" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Conservar carrito entre canales" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Recuperar carrito en otro canal" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[cambio de canal]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Procesar pago" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[carrito confirmado]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Cliente" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-2" edge="1" parent="1" source="actor-1" target="uc-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-3" edge="1" parent="1" source="actor-1" target="uc-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de tienda" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-3" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de atención" vertex="1">
+          <mxGeometry as="geometry" x="45" y="650" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-3-1" edge="1" parent="1" source="actor-3" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="2 - CUN-02-Verificar y reservar inventario" id="sgo-cun-02">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — VERIFICAR Y RESERVAR INVENTARIO" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Verificar y reservar inventario" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Consultar disponibilidad por ubicación" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Reservar unidades disponibles" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Evitar doble compromiso" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Liberar reserva vencida" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Buscar ubicación alternativa" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[sin existencia preferida]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Informar indisponibilidad" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[sin existencia global]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Cliente" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-2" edge="1" parent="1" source="actor-1" target="uc-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de logística" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="3 - CUN-03-Procesar pago" id="sgo-cun-03">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — PROCESAR PAGO" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Procesar pago" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Validar método disponible por canal" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Registrar intento de pago" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Proteger PAN y CVV" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Procesar tarjeta con PayKlik" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="uc-4" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[método tarjeta]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Conservar orden pendiente" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[timeout o caída]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Conciliar o reintentar sin duplicar" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[resultado indeterminado]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Cliente" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-2" edge="1" parent="1" source="actor-1" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="PayKlik" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="4 - CUN-04-Emitir documentación fiscal" id="sgo-cun-04">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — EMITIR DOCUMENTACIÓN FISCAL" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Emitir documentación fiscal" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Generar factura XML" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Asignar y conservar CUI y serie" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Enviar documento a SAT" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Registrar respuesta fiscal" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Mantener orden sin finalizar" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[SAT no confirma]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Reintentar envío fiscal" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[falla transitoria]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Finanzas" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-2" edge="1" parent="1" source="actor-1" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="SAT" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="5 - CUN-05-Sincronizar venta con ERP" id="sgo-cun-05">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — SINCRONIZAR VENTA CON ERP" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Sincronizar venta con ERP" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Consolidar ventas confirmadas" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Generar archivo CSV o XML" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Entregar resumen en ventana de 30 minutos" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Registrar resultado de procesamiento" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Reintentar entrega" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[error de transferencia]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Enviar a bandeja de fallidos" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[reintentos agotados]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Finanzas" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-2" edge="1" parent="1" source="actor-1" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="ERP-Core" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="6 - CUN-06-Notificar eventos a POS" id="sgo-cun-06">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — NOTIFICAR EVENTOS A POS" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Notificar eventos a POS" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Publicar evento de orden" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Identificar POS destinatario" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Entregar evento con idempotencia" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Registrar acuse o resultado" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Reintentar entrega" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[POS no disponible]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Alertar mensaje no entregado" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[límite agotado]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="POS" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-2" edge="1" parent="1" source="actor-1" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="7 - CUN-07-Gestionar despacho" id="sgo-cun-07">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — GESTIONAR DESPACHO" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Gestionar despacho" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Determinar origen y método de entrega" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Asignar ubicación de despacho" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Preparar pedido" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Actualizar estado de despacho" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Integrar con LogiExpress" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[entrega con operador externo]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Modificar método de entrega" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[después de confirmar]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Cliente" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-2" edge="1" parent="1" source="actor-1" target="uc-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de logística" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-3" edge="1" parent="1" source="actor-2" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-3" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="LogiExpress" vertex="1">
+          <mxGeometry as="geometry" x="45" y="650" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-3-1" edge="1" parent="1" source="actor-3" target="uc-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="8 - CUN-08-Integrar con LogiExpress" id="sgo-cun-08">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — INTEGRAR CON LOGIEXPRESS" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Integrar con LogiExpress" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Solicitar generación de guía" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Correlacionar guía con orden" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Recibir estado de entrega" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Registrar intercambio logístico" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Reintentar con backoff" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[timeout]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Registrar mensaje fallido" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[reintentos agotados]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de logística" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-2" edge="1" parent="1" source="actor-1" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="LogiExpress" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="9 - CUN-09-Consultar estado de orden" id="sgo-cun-09">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — CONSULTAR ESTADO DE ORDEN" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Consultar estado de orden" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Identificar orden" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Consolidar compra, pago y despacho" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Mostrar estado actual" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Mostrar devolución o incidencia" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="uc-4" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[si existe]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Mostrar última información conocida" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[dependencia no disponible]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Cliente" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de atención" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="10 - CUN-10-Gestionar devoluciones y reembolsos" id="sgo-cun-10">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — GESTIONAR DEVOLUCIONES Y REEMBOLSOS" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Gestionar devoluciones y reembolsos" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Recuperar venta original" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Validar elegibilidad" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Registrar motivo y artículos" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Calcular reembolso o cambio" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Vincular devolución con la venta" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="base" target="uc-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Emitir documentación fiscal" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[requiere ajuste fiscal]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-7" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Procesar devolución parcial" vertex="1">
+          <mxGeometry as="geometry" x="920" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-7" edge="1" parent="1" source="uc-7" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[parte de la orden]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Cliente" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de atención" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-3" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Personal de tienda" vertex="1">
+          <mxGeometry as="geometry" x="45" y="650" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-3-1" edge="1" parent="1" source="actor-3" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-3-2" edge="1" parent="1" source="actor-3" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="11 - CUN-11-Notificar al cliente" id="sgo-cun-11">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — NOTIFICAR AL CLIENTE" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Notificar al cliente" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Crear solicitud de notificación" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Encolar notificación" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Enviar por SMS, correo o push" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Registrar resultado de entrega" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Reintentar sin bloquear la orden" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="uc-5" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[proveedor no disponible]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Alertar entrega fallida" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[reintentos agotados]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Cliente" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Proveedor de notificaciones" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="12 - CUN-12-Auditar operaciones" id="sgo-cun-12">
+    <mxGraphModel dx="1800" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;align=center;fontSize=24;fontStyle=1;" value="CUN EXPANDIDO — AUDITAR OPERACIONES" vertex="1">
+          <mxGeometry as="geometry" x="350" y="20" width="900" height="40" />
+        </mxCell>
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=17;spacingTop=10;strokeWidth=2;fillColor=none;strokeColor=#000000;" value="SGO-Logic" vertex="1">
+          <mxGeometry as="geometry" x="230" y="90" width="1140" height="810" />
+        </mxCell>
+        <mxCell id="base" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;" value="Auditar operaciones" vertex="1">
+          <mxGeometry as="geometry" x="380" y="175" width="360" height="125" />
+        </mxCell>
+        <mxCell id="uc-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Buscar orden o transacción" vertex="1">
+          <mxGeometry as="geometry" x="920" y="125" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-1" edge="1" parent="1" source="base" target="uc-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Reconstruir quién, cuándo y qué" vertex="1">
+          <mxGeometry as="geometry" x="920" y="255" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-2" edge="1" parent="1" source="base" target="uc-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Correlacionar pago, factura y despacho" vertex="1">
+          <mxGeometry as="geometry" x="920" y="385" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-3" edge="1" parent="1" source="base" target="uc-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Relacionar devolución con venta original" vertex="1">
+          <mxGeometry as="geometry" x="920" y="515" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-4" edge="1" parent="1" source="base" target="uc-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Presentar evidencia auditable" vertex="1">
+          <mxGeometry as="geometry" x="420" y="490" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-5" edge="1" parent="1" source="base" target="uc-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«include»">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="uc-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeWidth=2;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Exportar evidencia" vertex="1">
+          <mxGeometry as="geometry" x="420" y="650" width="310" height="100" />
+        </mxCell>
+        <mxCell id="rel-6" edge="1" parent="1" source="uc-6" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;dashed=1;endArrow=open;endFill=0;html=1;fontSize=14;strokeWidth=1;" value="«extend»&lt;br&gt;[solicitud de auditoría]">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-1" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Finanzas" vertex="1">
+          <mxGeometry as="geometry" x="45" y="160" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-1-1" edge="1" parent="1" source="actor-1" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-1-2" edge="1" parent="1" source="actor-1" target="uc-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="actor-2" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=15;fillColor=#ffffff;strokeColor=#000000;" value="Auditor de SAT" vertex="1">
+          <mxGeometry as="geometry" x="45" y="405" width="90" height="105" />
+        </mxCell>
+        <mxCell id="assoc-2-1" edge="1" parent="1" source="actor-2" target="base" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+        <mxCell id="assoc-2-2" edge="1" parent="1" source="actor-2" target="uc-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;endArrow=none;html=1;strokeWidth=2;">
+          <mxGeometry as="geometry" relative="1" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

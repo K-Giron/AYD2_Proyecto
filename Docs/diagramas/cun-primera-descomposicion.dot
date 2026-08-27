@@ -31,7 +31,7 @@ digraph SGO_CUN_Descomposicion {
   /* Notacion: mismos ovalos de doble borde (CUN) y actores "(negocio)"
      declarados en cun-alto-nivel.dot. Este diagrama aun no incluye
      relaciones entre casos de uso (extend/include): esas solo aparecen
-     en los CDU expandidos de la Seccion 5, una vez terminado el core. */
+     en los CDU expandidos editables de la Seccion 5. */
 
   cun01 [shape=ellipse, style=filled, peripheries=2, fillcolor="#DBEAFE", color="#2563EB", label="CUN-01\nGestionar carrito\nomnicanal"];
   cun02 [shape=ellipse, style=filled, peripheries=2, fillcolor="#DBEAFE", color="#2563EB", label="CUN-02\nVerificar y reservar\ninventario"];

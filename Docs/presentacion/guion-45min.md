@@ -1,7 +1,7 @@
 # Guion de presentación — SGO-Logic (45 min + 5 min de preguntas)
 
 **Dueño:** Persona 5 (Rol E) · **Cierre coordinado con:** Persona 1 (Rol A)
-**Basado en:** estructura preliminar del DDA §13.6
+**Basado en:** DDA §§1–12 y matriz de trazabilidad §9
 
 > Regla del equipo: cada integrante debe poder explicar al menos un driver, una decisión, una vista relacionada y la consecuencia de cambiarla — no solo su propia sección.
 
@@ -48,7 +48,8 @@
 - Presentar EaC-04 completo (fuente/estímulo/artefacto/ambiente/respuesta/medida) como ejemplo de referencia.
 - Resumen de los 12 EaC y las 10 restricciones — enfatizar las no negociables (R1: no tocar ERP/POS; R7: Black Friday no se mueve).
 - ADR-001: contexto → decisión → alternativas descartadas (monolito sin eventos, microservicios completos) → por qué gana el híbrido.
-- Mencionar el estado de los ADR secundarios (002–005) como trabajo en progreso, sin ocultarlo.
+- Explicar cómo ADR-002 a ADR-008 concretan Outbox, resiliencia de pago, entrega confiable, Saga, observabilidad, SAT y notificaciones.
+- Defender la estimación ROM de inversión y operación de ADR-001 frente a los límites de R2.
 
 **Evidencia a mostrar:** DDA §6 (EaC), §7 (restricciones), §10.2 (ADR-001).
 
@@ -94,9 +95,9 @@
 |---|---|---|
 | ¿Qué pasa si PayKlik y LogiExpress fallan al mismo tiempo? | Persona 3 o 4 | EaC-04 + EaC-05, circuit breaker y colas independientes por adaptador |
 | ¿Por qué no reemplazar el ERP si es de los 90? | Persona 1 | R1, decisión no negociable de Junta; costo/riesgo de reemplazo fuera de alcance |
-| ¿Cómo garantizan que no se duplica un cobro en un reintento? | Persona 2 o 3 | Idempotencia mencionada en CDU-03 y ADR-001; detalle final pendiente de ADR-003 |
+| ¿Cómo garantizan que no se duplica un cobro en un reintento? | Persona 2 o 3 | CDU-03 y ADR-003 exigen conciliación previa, clave idempotente y registro del intento |
 | ¿Qué pasa si el equipo interno no sabe operar mensajería? | Persona 3 | R5/EaC-09 justifican broker simple, no microservicios completos |
-| ¿Cómo cumplen el límite de USD 1,200/mes? | Persona 4 | Nota de validación de costo en el diagrama de despliegue (EaC-10) |
+| ¿Cómo cumplen el límite de USD 1,200/mes? | Persona 3 o 4 | ADR-001 estima USD 700–1,100/mes y Despliegue conserva capacidad `N` hasta medir carga |
 | ¿Este prototipo es la app real? | Persona 5 | No — mockup no funcional, Entregable 4 según enunciado §4.4 |
 
 ---
@@ -106,4 +107,4 @@
 - [ ] Confirmar nombres reales en vez de "Persona N".
 - [ ] Cronometrar cada bloque en un ensayo real; ajustar si algún rol se pasa de tiempo.
 - [ ] Verificar que quien presenta cada sección haya revisado también la sección anterior y la siguiente (para sostener preguntas cruzadas).
-- [ ] Confirmar que ADR-001 siga como "propuesto" o actualizar el guion si el equipo lo acepta antes de la entrega.
+- [ ] Confirmar que las diapositivas nombren ADR-001 a ADR-008 como aceptados y no como trabajo en progreso.

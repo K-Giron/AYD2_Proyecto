@@ -1,0 +1,629 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" agent="Codex - uml-casos-uso-drawio adaptado" version="24.7.17" pages="4" compressed="false">
+  <diagram name="01 - Contexto" id="sgo-contexto-v2">
+    <mxGraphModel dx="1920" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ctx_title" value="SGO-Logic — Diagrama de Contexto" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="300" y="18" width="1320" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_subtitle" value="Sistema de interés, usuarios, canales, áreas organizacionales y entidades externas" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="300" y="62" width="1320" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_users_b" value="USUARIOS Y CANALES" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="40" y="125" width="530" height="510" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_cliente" value="Cliente" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="85" y="205" width="70" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_tienda_user" value="Personal de&lt;br&gt;tienda" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="85" y="345" width="70" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_atencion_user" value="Personal de&lt;br&gt;atención" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="85" y="485" width="70" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_web" value="Canal web" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="320" y="180" width="205" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_mobile" value="Aplicación móvil" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="320" y="275" width="205" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_store" value="Canal tienda física" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="320" y="390" width="205" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_service" value="Centro de atención" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="320" y="510" width="205" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e01" value="compra / consulta" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;endArrow=none;" edge="1" parent="1" source="ctx_cliente" target="ctx_web">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e02" value="compra / consulta" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;endArrow=none;" edge="1" parent="1" source="ctx_cliente" target="ctx_mobile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e03" value="venta / continuidad" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;endArrow=none;" edge="1" parent="1" source="ctx_tienda_user" target="ctx_store">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e04" value="gestión / consulta" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;endArrow=none;" edge="1" parent="1" source="ctx_atencion_user" target="ctx_service">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_areas_b" value="ÁREAS Y STAKEHOLDERS ORGANIZACIONALES" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="40" y="690" width="530" height="395" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_ti" value="&lt;b&gt;TI / Equipo interno&lt;/b&gt;&lt;br&gt;Opera y monitorea" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="75" y="760" width="225" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_fin" value="&lt;b&gt;Finanzas&lt;/b&gt;&lt;br&gt;Conciliación, evidencia y auditoría" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="310" y="760" width="225" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_log" value="&lt;b&gt;Logística&lt;/b&gt;&lt;br&gt;Inventario, órdenes y despacho" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="75" y="910" width="225" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_bus" value="&lt;b&gt;Dirección, Gerencia y Comercialización&lt;/b&gt;&lt;br&gt;Objetivos, presupuesto e indicadores" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="310" y="910" width="225" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_sgo" value="&lt;b&gt;SGO-Logic&lt;/b&gt;&lt;br&gt;&lt;br&gt;Orquestación e integración omnicanal&lt;br&gt;&lt;br&gt;Carrito · orden · inventario · pago · facturación&lt;br&gt;despacho · postventa · notificación · auditoría" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;fontStyle=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="735" y="395" width="450" height="285" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_scope" value="SISTEMA DE INTERÉS" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fillColor=#f5f5f5;strokeColor=#777777;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="860" y="350" width="200" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e05" value="solicitudes y estado&lt;br&gt;HTTPS / API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="ctx_web" target="ctx_sgo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e06" value="solicitudes y estado&lt;br&gt;HTTPS / API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="ctx_mobile" target="ctx_sgo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e07" value="operación omnicanal&lt;br&gt;contrato por definir" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="ctx_store" target="ctx_sgo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e08" value="orden, entrega y devolución&lt;br&gt;HTTPS / API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="ctx_service" target="ctx_sgo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e09" value="operación, métricas y alertas" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="ctx_ti" target="ctx_sgo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e10" value="consultas y evidencia &lt; 1 s" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="ctx_fin" target="ctx_sgo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e11" value="órdenes, inventario y despacho" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="ctx_log" target="ctx_sgo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e12" value="políticas e indicadores" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="ctx_bus" target="ctx_sgo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_ext_b" value="SISTEMAS Y PROVEEDORES EXTERNOS" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1370" y="125" width="510" height="960" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_erp" value="&lt;b&gt;ERP-Core (AS/400)&lt;/b&gt;&lt;br&gt;Contabilidad y cierre" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1515" y="205" width="230" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_pos" value="&lt;b&gt;POS de 32 tiendas&lt;/b&gt;&lt;br&gt;Instancias locales" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1515" y="340" width="230" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_pay" value="&lt;b&gt;PayKlik&lt;/b&gt;&lt;br&gt;Pasarela de pago" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1515" y="475" width="230" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_logi" value="&lt;b&gt;LogiExpress&lt;/b&gt;&lt;br&gt;Guías y estados" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1515" y="610" width="230" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_sat" value="&lt;b&gt;SAT&lt;/b&gt;&lt;br&gt;Facturación electrónica" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1515" y="745" width="230" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_notif" value="&lt;b&gt;Proveedor de notificaciones&lt;/b&gt;&lt;br&gt;SMS, correo y push" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1515" y="880" width="230" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e13" value="resúmenes CSV/XML&lt;br&gt;cada 30 min" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="ctx_sgo" target="ctx_erp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e14" value="eventos confiables&lt;br&gt;con errores y reintentos" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="ctx_sgo" target="ctx_pos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e15" value="autorización y resultado&lt;br&gt;REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="ctx_sgo" target="ctx_pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e16" value="guía y estado de entrega&lt;br&gt;REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="ctx_sgo" target="ctx_logi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e17" value="factura XML y resultado&lt;br&gt;antes de finalizar orden" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="ctx_sgo" target="ctx_sat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_e18" value="solicitudes no bloqueantes&lt;br&gt;SMS / correo / push" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="ctx_sgo" target="ctx_notif">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ctx_note" value="&lt;b&gt;Frontera.&lt;/b&gt; Se diseña SGO-Logic. ERP-Core, POS y proveedores solo se integran; no se reemplazan ni modifican.&lt;br&gt;Los protocolos se indican únicamente cuando están confirmados." style="shape=note;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fontSize=12;fillColor=#ffffff;strokeColor=#666666;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="690" y="810" width="540" height="145" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="02 - Componentes" id="sgo-componentes-v2">
+    <mxGraphModel dx="2200" dy="1750" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1750" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cmp_title" value="SGO-Logic — Diagrama de Componentes" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="300" y="18" width="1600" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_subtitle" value="Monolito modular, contratos explícitos e integración desacoplada" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="300" y="62" width="1600" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_channels" value="&lt;b&gt;Canales&lt;/b&gt;&lt;br&gt;Web · App · Tienda · Atención" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="730" y="115" width="740" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_api" value="&lt;b&gt;API Omnicanal&lt;/b&gt;&lt;br&gt;Compras · consultas · devoluciones · continuidad" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;fontStyle=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="730" y="220" width="740" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e01" value="HTTPS / contrato de canal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_channels" target="cmp_api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_core_b" value="«subsystem» NÚCLEO SGO-LOGIC — UN DESPLEGABLE MODULAR" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="100" y="350" width="2000" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_cart" value="&lt;b&gt;Carrito&lt;/b&gt;&lt;br&gt;Datos: carrito e intención" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="155" y="425" width="410" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_order" value="&lt;b&gt;Órdenes y Coordinación&lt;/b&gt;&lt;br&gt;Saga orquestada · ADR-005&lt;br&gt;Datos: orden, estado y proceso" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="815" y="425" width="410" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_inv" value="&lt;b&gt;Inventario y Reservas&lt;/b&gt;&lt;br&gt;Datos: reserva y disponibilidad" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="425" width="410" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_pay" value="&lt;b&gt;Pagos&lt;/b&gt;&lt;br&gt;Datos: intento y resultado" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="155" y="610" width="410" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_bill" value="&lt;b&gt;Facturación&lt;/b&gt;&lt;br&gt;Datos: documento, CUI y serie" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="815" y="610" width="410" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_ship" value="&lt;b&gt;Despacho&lt;/b&gt;&lt;br&gt;Datos: plan, guía y entrega" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="610" width="410" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_after" value="&lt;b&gt;Postventa&lt;/b&gt;&lt;br&gt;Datos: devolución y reembolso" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="155" y="780" width="410" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_notify" value="&lt;b&gt;Notificaciones&lt;/b&gt;&lt;br&gt;Datos: solicitud y estado de envío" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="815" y="780" width="410" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_audit" value="&lt;b&gt;Auditoría y Consulta&lt;/b&gt;&lt;br&gt;Datos: quién, cuándo y qué cambió" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="780" width="410" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e02" value="ICarrito" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_api" target="cmp_cart">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e03" value="IÓrdenes / IConsultaEstado" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_api" target="cmp_order">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e04" value="IDevoluciones" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_api" target="cmp_after">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e05" value="IConsultaEvidencia" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_api" target="cmp_audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e06" value="IReservas" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_cart" target="cmp_inv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e07" value="ICrearOrden" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_cart" target="cmp_order">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e08" value="IProcesarPago" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_order" target="cmp_pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e09" value="IEmitirFactura&lt;br&gt;condicionado" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_order" target="cmp_bill">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e10" value="IPlanificarDespacho" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_order" target="cmp_ship">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e11" value="IReembolso" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_after" target="cmp_pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e12" value="IHistorialOrden" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_after" target="cmp_order">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e13" value="EventoEstadoOrden" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_order" target="cmp_notify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e14" value="EventoEstadoEntrega" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_ship" target="cmp_notify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_int_b" value="«layer» PUERTOS, ADAPTADORES Y MENSAJERÍA" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="100" y="960" width="2000" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_outbox" value="&lt;b&gt;Outbox transaccional&lt;/b&gt;&lt;br&gt;Cambio de negocio + mensaje&lt;br&gt;ADR-002" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="260" y="1030" width="410" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_broker" value="&lt;b&gt;Bus / Broker de eventos&lt;/b&gt;&lt;br&gt;Colas · reintentos · mensajes fallidos" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="895" y="1030" width="410" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_idem" value="&lt;b&gt;Libro idempotente en adaptadores&lt;/b&gt;&lt;br&gt;Clave · intento · acuse · conciliación&lt;br&gt;Sin modificar POS ni ERP" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="1530" y="1030" width="410" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e15" value="publica después de confirmar" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_outbox" target="cmp_broker">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_ad_pay" value="&lt;b&gt;Adaptador PayKlik&lt;/b&gt;&lt;br&gt;REST · timeout · Circuit Breaker" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="130" y="1220" width="290" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_ad_sat" value="&lt;b&gt;Adaptador SAT&lt;/b&gt;&lt;br&gt;XML · estado fiscal pendiente · ADR-007" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="460" y="1220" width="290" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_ad_logi" value="&lt;b&gt;Adaptador LogiExpress&lt;/b&gt;&lt;br&gt;REST · retry con backoff" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="790" y="1220" width="290" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_ad_erp" value="&lt;b&gt;Adaptador ERP&lt;/b&gt;&lt;br&gt;CSV/XML cada 30 min" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="1220" width="290" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_ad_pos" value="&lt;b&gt;Adaptador POS&lt;/b&gt;&lt;br&gt;Eventos · entrega eventual" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="1220" width="290" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_ad_notif" value="&lt;b&gt;Adaptador Notificaciones&lt;/b&gt;&lt;br&gt;Cola no bloqueante · ADR-008" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="1220" width="290" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e16" value="orden" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_order" target="cmp_outbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e17" value="inventario" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_inv" target="cmp_outbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e18" value="resultado de pago" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_pay" target="cmp_outbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e19" value="factura" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_bill" target="cmp_outbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e20" value="despacho" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_ship" target="cmp_outbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e21" value="devolución / reembolso" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_after" target="cmp_outbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e22" value="IPasarelaPago" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_pay" target="cmp_ad_pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e23" value="IFacturaciónFiscal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_bill" target="cmp_ad_sat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e24" value="ILogísticaExterna" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_ship" target="cmp_ad_logi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e25" value="VentaConfirmada" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_broker" target="cmp_ad_erp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e26" value="orden / inventario" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_broker" target="cmp_ad_pos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e27" value="solicitud de notificación" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_broker" target="cmp_ad_notif">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e28" value="reintento / conciliación" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_broker" target="cmp_ad_logi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e29" value="hechos auditables" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="cmp_broker" target="cmp_audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e30" value="idempotencia" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="cmp_idem" target="cmp_ad_pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e31" value="idempotencia" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="cmp_idem" target="cmp_ad_logi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e32" value="idempotencia" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="cmp_idem" target="cmp_ad_erp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e33" value="idempotencia" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="cmp_idem" target="cmp_ad_pos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_ext_b" value="SISTEMAS FUERA DE SGO-LOGIC" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1450" width="2000" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_payklik" value="PayKlik" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="130" y="1520" width="290" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_sat" value="SAT" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="460" y="1520" width="290" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_logiexpress" value="LogiExpress" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="790" y="1520" width="290" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_erp" value="ERP-Core" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="1520" width="290" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_pos" value="POS × 32" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="1520" width="290" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_notif_ext" value="SMS / correo / push" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="1520" width="290" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e34" value="REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="cmp_ad_pay" target="cmp_payklik">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e35" value="XML / resultado" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="cmp_ad_sat" target="cmp_sat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e36" value="REST" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="cmp_ad_logi" target="cmp_logiexpress">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e37" value="CSV/XML" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_ad_erp" target="cmp_erp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e38" value="eventos" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_ad_pos" target="cmp_pos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_e39" value="solicitudes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="cmp_ad_notif" target="cmp_notif_ext">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_rule" value="&lt;b&gt;Regla de datos.&lt;/b&gt; Cada módulo posee sus datos lógicos; ningún módulo accede directamente a las estructuras internas de otro." style="shape=note;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fontSize=12;fillColor=#ffffff;strokeColor=#666666;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1640" width="1050" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="cmp_legend" value="&lt;b&gt;Notación:&lt;/b&gt; línea sólida = llamada síncrona · discontinua = mensaje/evento asíncrono · punteada = política transversal." style="shape=note;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fontSize=12;fillColor=#ffffff;strokeColor=#666666;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="1640" width="910" height="72" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="03 - Despliegue" id="sgo-despliegue-v2">
+    <mxGraphModel dx="2200" dy="1500" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1500" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="dep_title" value="SGO-Logic — Diagrama de Despliegue Inicial y Evolución" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="300" y="18" width="1600" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_subtitle" value="Estado objetivo inicial on-premises; cantidades y productos se determinan mediante ADR y pruebas" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="300" y="62" width="1600" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_clients_b" value="CANALES Y REDES DE USUARIO" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="340" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_web" value="&lt;b&gt;Web y aplicación móvil&lt;/b&gt;&lt;br&gt;Dispositivos cliente" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="85" y="230" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_store" value="&lt;b&gt;Tiendas&lt;/b&gt;&lt;br&gt;Canal de venta" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="85" y="375" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_service" value="&lt;b&gt;Centro de atención&lt;/b&gt;&lt;br&gt;Estaciones de trabajo" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="85" y="520" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_onprem_b" value="CENTRO DE DATOS MEGASTORE — DESPLIEGUE INICIAL ON-PREMISES" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="430" y="120" width="1290" height="1120" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_entry" value="&lt;b&gt;«node» Entrada segura&lt;/b&gt;&lt;br&gt;Proxy / balanceo lógico · producto y redundancia por decidir" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="520" y="200" width="1110" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_runtime_b" value="«executionEnvironment» RUNTIME DE APLICACIONES" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="485" y="340" width="540" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_sgo" value="&lt;b&gt;«artifact» SGO-Logic&lt;/b&gt;&lt;br&gt;Monolito modular + API&lt;br&gt;N instancias según prueba 8×&lt;br&gt;[EaC-01, EaC-03, EaC-09]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=note;size=15;" vertex="1" parent="1">
+          <mxGeometry x="545" y="410" width="420" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_workers" value="&lt;b&gt;«artifact» Trabajadores de integración&lt;/b&gt;&lt;br&gt;Consumidores · reintentos · exportador ERP&lt;br&gt;[EaC-05, EaC-06, EaC-08]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=note;size=15;" vertex="1" parent="1">
+          <mxGeometry x="545" y="560" width="420" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_adapters" value="&lt;b&gt;Adaptadores de salida&lt;/b&gt;&lt;br&gt;Timeout / Circuit Breaker · retry/backoff&lt;br&gt;Idempotencia · TLS/tokenización · sin PAN/CVV&lt;br&gt;[EaC-04, EaC-05, EaC-12]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="545" y="675" width="420" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_data_b" value="«node» PERSISTENCIA Y MENSAJERÍA" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1070" y="340" width="590" height="590" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_db" value="&lt;b&gt;Base operacional&lt;/b&gt;&lt;br&gt;Esquemas lógicos por módulo&lt;br&gt;Orden e intentos persistidos&lt;br&gt;Cifrado/retención por decidir" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="410" width="235" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_audit" value="&lt;b&gt;Auditoría&lt;/b&gt;&lt;br&gt;Quién · cuándo · qué cambió&lt;br&gt;consulta &lt; 1 s [EaC-02, 07]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="410" width="235" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_outbox" value="&lt;b&gt;Outbox transaccional&lt;/b&gt;&lt;br&gt;Cambio + mensaje&lt;br&gt;[ADR-002 / EaC-07]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="590" width="235" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_broker" value="&lt;b&gt;Broker&lt;/b&gt;&lt;br&gt;Colas y entrega eventual&lt;br&gt;[EaC-04, 05, 06, 08]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="590" width="235" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_dlq" value="&lt;b&gt;Mensajes fallidos / DLQ&lt;/b&gt;&lt;br&gt;Inspección y reproceso" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=folder;fontStyle=0;tabWidth=42;tabHeight=14;tabPosition=left;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="770" width="235" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_files" value="&lt;b&gt;Intercambio ERP&lt;/b&gt;&lt;br&gt;CSV/XML cada 30 min" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=folder;fontStyle=0;tabWidth=42;tabHeight=14;tabPosition=left;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="770" width="235" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_ops_b" value="«node» OPERACIÓN Y OBSERVABILIDAD" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="485" y="850" width="540" height="310" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_observe" value="&lt;b&gt;Métricas · logs · trazas · alertas&lt;/b&gt;&lt;br&gt;Correlación por orden/transacción&lt;br&gt;API · adaptadores · Outbox · colas · DLQ&lt;br&gt;[ADR-006 / EaC-03, 04, 09]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="545" y="920" width="420" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_ops" value="&lt;b&gt;TI / Equipo interno&lt;/b&gt;&lt;br&gt;Operación · diagnóstico · recuperación" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="545" y="1060" width="420" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e01" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_web" target="dep_entry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e02" value="contrato por confirmar" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_store" target="dep_entry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e03" value="HTTPS / red corporativa" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_service" target="dep_entry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e04" value="HTTPS [EaC-01]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_entry" target="dep_sgo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e05" value="persistencia" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="dep_sgo" target="dep_db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e06" value="evidencia / consulta" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="dep_sgo" target="dep_audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e07" value="misma transacción local" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_sgo" target="dep_outbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e08" value="publicación confiable · ADR-002" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_outbox" target="dep_broker">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e09" value="mensajes / confirmación / reintento" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="dep_broker" target="dep_workers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e10" value="reintentos agotados" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_broker" target="dep_dlq">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e11" value="genera CSV/XML" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_workers" target="dep_files">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e12" value="puertos de salida" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_sgo" target="dep_adapters">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e13" value="telemetría" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="dep_sgo" target="dep_observe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e14" value="telemetría" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="dep_workers" target="dep_observe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e15" value="telemetría" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="dep_broker" target="dep_observe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e16" value="telemetría" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="dep_dlq" target="dep_observe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e17" value="consulta y alertas" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="dep_ops" target="dep_observe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_ext_b" value="SISTEMAS EXISTENTES Y PROVEEDORES" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1760" y="120" width="400" height="900" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_pay" value="&lt;b&gt;PayKlik&lt;/b&gt;&lt;br&gt;REST · 800 ms típico, hasta 5 s" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="205" width="300" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_sat" value="&lt;b&gt;SAT&lt;/b&gt;&lt;br&gt;Factura XML · respuesta variable" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="335" width="300" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_logi" value="&lt;b&gt;LogiExpress&lt;/b&gt;&lt;br&gt;REST · ~2% timeout" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="465" width="300" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_erp" value="&lt;b&gt;ERP-Core AS/400&lt;/b&gt;&lt;br&gt;CSV/XML cada 30 min" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="595" width="300" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_pos" value="&lt;b&gt;POS × 32&lt;/b&gt;&lt;br&gt;Receptores de eventos" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="725" width="300" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_notif" value="&lt;b&gt;SMS / correo / push&lt;/b&gt;&lt;br&gt;Proveedor no controlado" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="855" width="300" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e18" value="REST · Circuit Breaker [EaC-04]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="dep_adapters" target="dep_pay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e19" value="XML · pendiente fiscal [ADR-007]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="dep_adapters" target="dep_sat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e20" value="REST · retry/backoff [EaC-05]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="dep_adapters" target="dep_logi">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e21" value="CSV/XML cada 30 min [R1]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_files" target="dep_erp">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e22" value="eventos + reintentos [EaC-06]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;" edge="1" parent="1" source="dep_workers" target="dep_pos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e23" value="no bloqueante [ADR-008 / EaC-08]" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="dep_workers" target="dep_notif">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_future_b" value="RUTA FUTURA — NO ES EL DESPLIEGUE INICIAL" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=8 5;" vertex="1" parent="1">
+          <mxGeometry x="1760" y="1060" width="400" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_cloud" value="&lt;b&gt;«cloud» Plataforma por seleccionar&lt;/b&gt;&lt;br&gt;Artefactos portables · equivalentes de datos/mensajería&lt;br&gt;Extracción gradual solo si se justifica&lt;br&gt;[EaC-11 / R6]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=cube;size=10;direction=south;" vertex="1" parent="1">
+          <mxGeometry x="1810" y="1110" width="300" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e24" value="migración planificada" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="dep_sgo" target="dep_cloud">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_e25" value="portabilidad de mensajería" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=7 5;" edge="1" parent="1" source="dep_broker" target="dep_cloud">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_limits" value="&lt;b&gt;Restricciones abiertas.&lt;/b&gt; Inicio on-premises · ERP/POS sin cambios · stack mantenible · costo operativo ≤ USD 1,200/mes o aprobación documentada [EaC-10].&lt;br&gt;No se fijan productos, réplicas, capacidad, RTO, RPO, cifrado en reposo ni retención sin evidencia adicional." style="shape=note;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fontSize=12;fillColor=#ffffff;strokeColor=#666666;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="430" y="1305" width="1730" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="dep_trace" value="&lt;b&gt;Trazabilidad completa:&lt;/b&gt; EaC-01 entrada · EaC-02 auditoría · EaC-03 carga 8× · EaC-04 PayKlik · EaC-05 LogiExpress · EaC-06 POS&lt;br&gt;EaC-07 evidencia · EaC-08 notificaciones · EaC-09 mantenibilidad · EaC-10 costo · EaC-11 nube · EaC-12 datos de pago." style="shape=note;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fontSize=12;fillColor=#ffffff;strokeColor=#666666;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="430" y="1425" width="1730" height="68" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="04 - Bloques" id="sgo-bloques-v2">
+    <mxGraphModel dx="1600" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="blk_title" value="SGO-Logic — Vista Ejecutiva de Bloques" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="300" y="18" width="1000" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_subtitle" value="Monolito modular con integración por adaptadores y eventos" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="300" y="62" width="1000" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_channels" value="&lt;b&gt;EXPERIENCIA OMNICANAL&lt;/b&gt;&lt;br&gt;Web · App móvil · Tienda · Centro de atención&lt;br&gt;&lt;i&gt;El cliente inicia en un canal y continúa en otro&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="390" y="120" width="820" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_entry" value="&lt;b&gt;ENTRADA Y CONTINUIDAD&lt;/b&gt;&lt;br&gt;Identidad de cliente · API omnicanal · Carrito unificado" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="390" y="300" width="820" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_core" value="&lt;b&gt;NÚCLEO SGO-LOGIC — MONOLITO MODULAR&lt;/b&gt;&lt;br&gt;Órdenes · Inventario · Pagos · Facturación · Despacho&lt;br&gt;Postventa · Notificaciones&lt;br&gt;&lt;i&gt;Límites internos claros y datos con propietario&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fontStyle=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="390" y="480" width="820" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_integration" value="&lt;b&gt;INTEGRACIÓN CONFIABLE&lt;/b&gt;&lt;br&gt;Puertos y adaptadores · Mensajería · Outbox&lt;br&gt;Circuit Breaker · Timeouts · Reintentos · Idempotencia" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="390" y="680" width="820" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_external" value="&lt;b&gt;LEGADOS Y PROVEEDORES&lt;/b&gt;&lt;br&gt;ERP-Core · POS · PayKlik · SAT · LogiExpress · SMS/correo/push&lt;br&gt;&lt;i&gt;Se integran; no se reemplazan ni modifican&lt;/i&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="390" y="880" width="820" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e01" value="compra y consulta" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;strokeWidth=2.5;" edge="1" parent="1" source="blk_channels" target="blk_entry">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e02" value="comandos y estado" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="blk_entry" target="blk_core">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e03" value="contratos sin acoplar el dominio" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="blk_core" target="blk_integration">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e04" value="síncrono si condiciona · asíncrono si admite espera" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;startArrow=open;startFill=0;" edge="1" parent="1" source="blk_integration" target="blk_external">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_trust" value="&lt;b&gt;CONFIANZA TRANSVERSAL&lt;/b&gt;&lt;br&gt;&lt;br&gt;Auditoría: quién, cuándo y qué cambió&lt;br&gt;&lt;br&gt;Seguridad: sin PAN completo ni CVV&lt;br&gt;&lt;br&gt;Observabilidad: métricas, logs y alertas" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="40" y="450" width="300" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_ops" value="&lt;b&gt;OPERACIÓN EVOLUTIVA&lt;/b&gt;&lt;br&gt;&lt;br&gt;Inicio on-premises · stack mantenible&lt;br&gt;&lt;br&gt;Escala para 8× · ruta planificada a nube&lt;br&gt;&lt;br&gt;Costo sujeto a USD 1,200/mes" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;shape=component;align=left;spacingLeft=18;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="450" width="300" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e05" value="trazabilidad y controles" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="blk_trust" target="blk_core">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e06" value="evidencia por intento" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="blk_trust" target="blk_integration">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e07" value="despliegue y escalado" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="blk_core" target="blk_ops">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_value_b" value="VALOR PARA MEGASTORE" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;spacingTop=12;spacingLeft=14;fontSize=17;fontStyle=1;fillColor=none;strokeColor=#222222;strokeWidth=2;fontFamily=Arial;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="210" y="1030" width="1180" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_v1" value="Continuidad de ingresos" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="245" y="1085" width="190" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_v2" value="Cumplimiento fiscal&lt;br&gt;y evidencia" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="475" y="1085" width="190" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_v3" value="Menos errores&lt;br&gt;de despacho" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="705" y="1085" width="190" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_v4" value="Experiencia consistente&lt;br&gt;entre canales" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="935" y="1085" width="190" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_v5" value="Evolución sin romper&lt;br&gt;legados" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=14;fillColor=#ffffff;strokeColor=#333333;strokeWidth=1.5;spacing=8;fontFamily=Arial;fontColor=#111111;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="1165" y="1085" width="190" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e08" value="habilita" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;strokeWidth=2.5;" edge="1" parent="1" source="blk_core" target="blk_value_b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e09" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="blk_trust" target="blk_value_b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="blk_e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;fontSize=11;labelBackgroundColor=#ffffff;endArrow=open;endFill=0;fontFamily=Arial;fontColor=#111111;dashed=1;dashPattern=2 4;endArrow=none;" edge="1" parent="1" source="blk_ops" target="blk_value_b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
