@@ -80,7 +80,7 @@ digraph SGO_Despliegue {
         shape=component,
         color="#F59E0B",
         fillcolor="#FEF3C7",
-        label="Adaptadores de salida\nTimeout + Circuit Breaker PayKlik\nRetry/backoff LogiExpress\nIdempotencia por integracion\nSin persistir PAN completo ni CVV\n[EaC-04, EaC-05, EaC-12]"
+        label="Adaptadores de salida\nTimeout + Circuit Breaker PayKlik\nRetry/backoff LogiExpress\nLibro idempotente por integracion\nTLS + tokenizacion; sin PAN/CVV\n[EaC-04, EaC-05, EaC-12]"
       ];
     }
 
@@ -102,6 +102,12 @@ digraph SGO_Despliegue {
         color="#10B981",
         fillcolor="#D1FAE5",
         label="Registro y lectura de auditoria\nquien / cuando / que cambio\nconsulta objetivo < 1 s\n[EaC-02, EaC-07]"
+      ];
+      outbox [
+        shape=cylinder,
+        color="#F59E0B",
+        fillcolor="#FEF3C7",
+        label="Outbox transaccional\ncambio de negocio + mensaje\n[ADR-002 / EaC-07]"
       ];
       broker [
         color="#F59E0B",
@@ -132,7 +138,7 @@ digraph SGO_Despliegue {
       observabilidad [
         color="#8B5CF6",
         fillcolor="#EDE9FE",
-        label="Metricas, logs, trazas y alertas\nAPI, dependencias, colas y DLQ\n[EaC-03, EaC-04, EaC-09]"
+        label="Metricas, logs, trazas y alertas\ncorrelacion por orden/transaccion\nAPI, adaptadores, Outbox, colas y DLQ\n[ADR-006 / EaC-03, EaC-04, EaC-09]"
       ];
       operacion [
         shape=box,
@@ -146,7 +152,8 @@ digraph SGO_Despliegue {
     entrada -> sgo [label="HTTPS\n[EaC-01]"];
     sgo -> db [dir=both, label="contrato de persistencia"];
     sgo -> auditoria [dir=both, label="evidencia y consulta"];
-    sgo -> broker [label="publicacion confiable\nADR-002 pendiente"];
+    sgo -> outbox [label="misma transaccion local"];
+    outbox -> broker [label="publicacion confiable\nADR-002"];
     broker -> workers [label="mensajes"];
     workers -> broker [label="confirmacion / reintento"];
     broker -> dlq [label="maximos agotados"];
@@ -180,11 +187,11 @@ digraph SGO_Despliegue {
   }
 
   resiliencia -> payklik [dir=both, label="REST\nCircuit Breaker [EaC-04]"];
-  resiliencia -> sat [dir=both, label="XML / respuesta\ntransicion condicionada"];
+  resiliencia -> sat [dir=both, label="XML / respuesta\nestado fiscal pendiente [ADR-007]"];
   resiliencia -> logiexpress [dir=both, label="REST\nretry/backoff [EaC-05]"];
   archivos -> erp [label="CSV/XML cada 30 min\n[R1]"];
   workers -> pos [label="eventos + reintentos\n[EaC-06]"];
-  workers -> notif [label="asincrono no bloqueante\n[EaC-08]"];
+  workers -> notif [label="asincrono no bloqueante\n[ADR-008 / EaC-08]"];
 
   subgraph cluster_futuro {
     label="Ruta futura planificada - no representa el despliegue inicial";

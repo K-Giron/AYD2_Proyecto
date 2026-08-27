@@ -55,7 +55,7 @@ digraph SGO_Componentes {
     fontcolor="#1E3A8A";
 
     carrito [label=<<B>Carrito</B><BR/><FONT POINT-SIZE="7">Propietario: carrito e intencion</FONT>>];
-    orden [label=<<B>Ordenes y Coordinacion</B><BR/><FONT POINT-SIZE="7">Propietario: orden, estado y proceso</FONT>>];
+    orden [label=<<B>Ordenes y Coordinacion</B><BR/><FONT POINT-SIZE="7">Saga orquestada ADR-005<BR/>Propietario: orden, estado y proceso</FONT>>];
     inventario [label=<<B>Inventario y Reservas</B><BR/><FONT POINT-SIZE="7">Propietario: reserva y disponibilidad</FONT>>];
     pagos [label=<<B>Pagos</B><BR/><FONT POINT-SIZE="7">Propietario: intento y resultado</FONT>>];
     facturacion [label=<<B>Facturacion</B><BR/><FONT POINT-SIZE="7">Propietario: documento, CUI y serie</FONT>>];
@@ -95,7 +95,7 @@ digraph SGO_Componentes {
     publicacion [
       color="#F59E0B",
       fillcolor="#FEF3C7",
-      label=<<B>Publicacion confiable</B><BR/><FONT POINT-SIZE="7">Coordina cambio de negocio + mensaje<BR/>mecanismo final: ADR-002 pendiente</FONT>>
+      label=<<B>Outbox transaccional</B><BR/><FONT POINT-SIZE="7">Cambio de negocio + mensaje<BR/>ADR-002 aceptado</FONT>>
     ];
     broker [
       shape=box3d,
@@ -106,15 +106,15 @@ digraph SGO_Componentes {
     idempotencia [
       color="#F59E0B",
       fillcolor="#FEF3C7",
-      label=<<B>Control de idempotencia</B><BR/><FONT POINT-SIZE="7">clave, intento, deduplicacion y conciliacion</FONT>>
+      label=<<B>Libro idempotente en adaptadores</B><BR/><FONT POINT-SIZE="7">clave, intento, acuse y conciliacion<BR/>sin modificar POS ni ERP</FONT>>
     ];
 
     ad_pay [label="Adaptador PayKlik\nREST + timeout + Circuit Breaker"];
-    ad_sat [label="Adaptador SAT\nXML + respuesta condicionante"];
+    ad_sat [label="Adaptador SAT\nXML + estado fiscal pendiente\nADR-007"];
     ad_logi [label="Adaptador LogiExpress\nREST + retry con backoff"];
     ad_erp [label="Adaptador ERP\nCSV/XML cada 30 min"];
     ad_pos [label="Adaptador POS\neventos + entrega eventual"];
-    ad_notif [label="Adaptador Notificaciones\nconsumo asincrono no bloqueante"];
+    ad_notif [label="Adaptador Notificaciones\ncola no bloqueante\nADR-008"];
 
     publicacion -> broker [label="eventos despues de confirmar"];
     broker -> ad_erp [style=dashed, label="VentaConfirmada"];
