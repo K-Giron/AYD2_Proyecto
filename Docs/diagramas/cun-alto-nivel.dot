@@ -1,0 +1,103 @@
+digraph SGO_CUN_Core {
+  graph [
+    label=<<B>SGO-Logic - Core del Negocio (CUN de mas alto nivel)</B><BR/><FONT POINT-SIZE="11">Un unico Caso de Uso de Negocio y sus actores de alto nivel</FONT>>,
+    labelloc=t,
+    rankdir=LR,
+    bgcolor="#F8FAFC",
+    color="#CBD5E1",
+    fontname="Arial",
+    fontsize=15,
+    pad=0.30,
+    nodesep=0.40,
+    ranksep=0.85,
+    splines=true,
+    compound=true
+  ];
+
+  node [
+    fontname="Arial",
+    fontsize=10,
+    fontcolor="#0F172A"
+  ];
+  edge [
+    color="#64748B",
+    fontcolor="#334155",
+    fontname="Arial",
+    fontsize=8.5,
+    arrowsize=0.7,
+    dir=none
+  ];
+
+  /* Notacion declarada: los ovalos de doble borde representan Casos de Uso
+     de Negocio (CUN); los actores marcados con "(negocio)" representan
+     actores de negocio. Ambos llevarian la diagonal de UML de negocio en
+     una herramienta grafica; aqui se declara explicitamente por notacion
+     complementaria, igual que en contexto.dot y bloques.dot. */
+
+  core [
+    shape=ellipse,
+    style="filled",
+    peripheries=2,
+    fillcolor="#DBEAFE",
+    color="#2563EB",
+    penwidth=2.0,
+    fontsize=11,
+    width=3.2,
+    height=1.3,
+    label=<<B>Operar venta y logistica<BR/>omnicanal de MegaStore</B><BR/><FONT POINT-SIZE="8">(core del negocio - SGO-Logic)</FONT>>
+  ];
+
+  subgraph cluster_actores_negocio {
+    label="Actores de negocio (internos)";
+    color="#93C5FD";
+    fillcolor="#EFF6FF";
+    style="rounded,filled";
+    fontname="Arial";
+    fontcolor="#1E3A8A";
+
+    cliente [shape=ellipse, fillcolor="#DBEAFE", color="#60A5FA", style=filled, label="Cliente\n(negocio)"];
+    personal_tienda [shape=ellipse, fillcolor="#DBEAFE", color="#60A5FA", style=filled, label="Personal de tienda\n(negocio)"];
+    personal_atencion [shape=ellipse, fillcolor="#DBEAFE", color="#60A5FA", style=filled, label="Personal de atencion\n(negocio)"];
+    logistica [shape=ellipse, fillcolor="#DBEAFE", color="#60A5FA", style=filled, label="Logistica\n(negocio)"];
+    finanzas [shape=ellipse, fillcolor="#DBEAFE", color="#60A5FA", style=filled, label="Finanzas\n(negocio)"];
+  }
+
+  subgraph cluster_actores_externos {
+    label="Actores externos (sistemas y proveedores existentes)";
+    color="#FCA5A5";
+    fillcolor="#FEF2F2";
+    style="rounded,filled";
+    fontname="Arial";
+    fontcolor="#991B1B";
+
+    erp [shape=ellipse, fillcolor="#FEE2E2", color="#F87171", style=filled, label="ERP-Core\n(negocio)"];
+    pos [shape=ellipse, fillcolor="#FEE2E2", color="#F87171", style=filled, label="POS de tiendas\n(negocio)"];
+    payklik [shape=ellipse, fillcolor="#FEE2E2", color="#F87171", style=filled, label="PayKlik\n(negocio)"];
+    logiexpress [shape=ellipse, fillcolor="#FEE2E2", color="#F87171", style=filled, label="LogiExpress\n(negocio)"];
+    sat [shape=ellipse, fillcolor="#FEE2E2", color="#F87171", style=filled, label="SAT\n(negocio)"];
+    proveedor_notif [shape=ellipse, fillcolor="#FEE2E2", color="#F87171", style=filled, label="Proveedor de\nnotificaciones\n(negocio)"];
+  }
+
+  cliente -> core;
+  personal_tienda -> core;
+  personal_atencion -> core;
+  logistica -> core;
+  finanzas -> core;
+  core -> erp;
+  core -> pos;
+  core -> payklik;
+  core -> logiexpress;
+  core -> sat;
+  core -> proveedor_notif;
+
+  leyenda [
+    shape=note,
+    fillcolor="#FFF7ED",
+    color="#FDBA74",
+    style=filled,
+    fontsize=8,
+    fontname="Arial",
+    label="Notacion: ovalo de doble borde = Caso de Uso de Negocio (CUN).\nSolo se muestran actores de alto nivel; los operativos aparecen en los CDU expandidos (Sec. 5).\nDelimita, en una sola frase, el alcance de SGO-Logic (Sec. 2.2)."
+  ];
+  core -> leyenda [style=invis];
+}

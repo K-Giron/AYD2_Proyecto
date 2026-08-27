@@ -1,0 +1,305 @@
+<title>SGO-Logic Flujo Omnicanal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --bg:#F1F4F6;
+    --surface:#FFFFFF;
+    --surface-2:#E4EAED;
+    --border:#CBD5DA;
+    --text:#1B2327;
+    --text-muted:#5C6B72;
+    --accent:#2B6777;
+    --accent-strong:#184652;
+    --accent-soft:#DCEBEE;
+    --frame:#232B2E;
+    --frame-screen:#F6F8F9;
+    --ok:#3E8563;
+    --ok-soft:#DEEEE6;
+    --warn:#C98A2C;
+    --warn-soft:#F7EAD3;
+    --shadow: 0 1px 2px rgba(20,30,35,.06), 0 1px 1px rgba(20,30,35,.04);
+    --shadow-lg: 0 8px 24px rgba(20,30,35,.12), 0 2px 6px rgba(20,30,35,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#10161A; --surface:#1A2226; --surface-2:#212B30; --border:#2E3A40;
+      --text:#E7EDEF; --text-muted:#93A3AA; --accent:#5FA9BC; --accent-strong:#7FC1D2;
+      --accent-soft:#1E3238; --frame:#0C1113; --frame-screen:#161D20;
+      --ok:#5FB585; --ok-soft:#1E2B26; --warn:#E0A94C; --warn-soft:#2C2620;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 1px 1px rgba(0,0,0,.3);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#10161A; --surface:#1A2226; --surface-2:#212B30; --border:#2E3A40;
+    --text:#E7EDEF; --text-muted:#93A3AA; --accent:#5FA9BC; --accent-strong:#7FC1D2;
+    --accent-soft:#1E3238; --frame:#0C1113; --frame-screen:#161D20;
+    --ok:#5FB585; --ok-soft:#1E2B26; --warn:#E0A94C; --warn-soft:#2C2620;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 1px 1px rgba(0,0,0,.3);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:1180px; margin:0 auto; padding:32px 22px 70px; }
+
+  header{ margin-bottom:8px; }
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace; font-size:.72rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--accent-strong); background:var(--accent-soft);
+    display:inline-block; padding:3px 9px; border-radius:5px; border:1px solid var(--accent);
+    margin-bottom:10px;
+  }
+  h1{ font-size:1.7rem; margin:0 0 6px; font-weight:700; letter-spacing:-.01em; text-wrap:balance; }
+  .sub{ color:var(--text-muted); font-size:.92rem; margin:0 0 22px; max-width:65ch; line-height:1.5; }
+
+  .no-func{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:"IBM Plex Mono", monospace; font-size:.68rem; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--warn); background:var(--warn-soft);
+    border:1px solid var(--warn); border-radius:20px; padding:4px 10px 4px 8px;
+    margin-bottom:26px;
+  }
+  .no-func::before{ content:"●"; font-size:.6rem; }
+
+  .stepper{
+    display:flex; gap:6px; margin-bottom:36px; border-bottom:1px solid var(--border); padding-bottom:20px;
+    flex-wrap:wrap;
+  }
+  .stepper a{
+    flex:1; min-width:140px; text-decoration:none; color:var(--text-muted);
+    font-size:.76rem; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface); transition:border-color .15s;
+  }
+  .stepper a b{ display:block; color:var(--text); font-size:.82rem; font-weight:600; margin-bottom:1px; }
+  .stepper a:hover{ border-color:var(--accent); }
+
+  .stage{
+    display:grid; grid-template-columns:minmax(260px,340px) 1fr; gap:36px;
+    padding:36px 0; border-bottom:1px solid var(--border); align-items:start;
+  }
+  .stage:last-of-type{ border-bottom:none; }
+  .stage-num{
+    font-family:"IBM Plex Mono", monospace; color:var(--accent); font-size:.78rem;
+    font-weight:600; letter-spacing:.05em; margin-bottom:6px;
+  }
+  .stage-info h2{ font-size:1.15rem; margin:0 0 8px; font-weight:600; text-wrap:balance; }
+  .stage-info p{ font-size:.86rem; color:var(--text-muted); line-height:1.55; margin:0 0 16px; max-width:52ch; }
+  .tags{ display:flex; gap:6px; flex-wrap:wrap; }
+  .tag{
+    font-family:"IBM Plex Mono", monospace; font-size:.66rem; letter-spacing:.03em;
+    color:var(--accent-strong); background:var(--accent-soft); border-radius:4px; padding:3px 7px;
+  }
+
+  /* device frames */
+  .device{ display:flex; justify-content:center; }
+  .phone{
+    width:250px; background:var(--frame); border-radius:30px; padding:12px 9px;
+    box-shadow:var(--shadow-lg);
+  }
+  .phone .notch{ width:70px; height:14px; background:var(--frame); border-radius:0 0 10px 10px; margin:0 auto 6px; }
+  .phone .screen{ background:var(--frame-screen); border-radius:16px; overflow:hidden; min-height:420px; }
+
+  .browser{
+    width:100%; max-width:420px; background:var(--frame); border-radius:10px; padding:0 0 10px;
+    box-shadow:var(--shadow-lg);
+  }
+  .browser .chrome{
+    display:flex; align-items:center; gap:6px; padding:9px 12px;
+  }
+  .browser .chrome .dot{ width:8px; height:8px; border-radius:50%; background:#5C6B72; opacity:.5; }
+  .browser .bar{
+    flex:1; background:rgba(255,255,255,.08); border-radius:5px; padding:4px 10px;
+    font-family:"IBM Plex Mono", monospace; font-size:.66rem; color:#9AA7AC;
+  }
+  .browser .screen{ background:var(--frame-screen); margin:0 8px; border-radius:6px; min-height:300px; overflow:hidden; }
+
+  .scr-pad{ padding:16px; }
+  .scr-title{ font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); margin:0 0 10px; font-family:"IBM Plex Mono",monospace; }
+
+  .row-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    padding:9px 10px; background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    margin-bottom:8px; font-size:.8rem;
+  }
+  .row-item .name{ font-weight:500; }
+  .row-item .price{ font-family:"IBM Plex Mono", monospace; color:var(--text-muted); font-size:.78rem; }
+  .swatch{ width:34px; height:34px; border-radius:6px; flex:0 0 auto; }
+
+  .btn{
+    display:block; width:100%; text-align:center; padding:10px; border-radius:8px;
+    font-size:.82rem; font-weight:600; border:none; margin-top:12px; font-family:inherit;
+  }
+  .btn-primary{ background:var(--accent); color:#fff; }
+  .btn-ghost{ background:transparent; color:var(--accent); border:1px solid var(--accent); }
+
+  .banner{
+    display:flex; gap:8px; align-items:flex-start; padding:10px; border-radius:8px; font-size:.76rem;
+    line-height:1.4; margin-top:12px;
+  }
+  .banner.ok{ background:var(--ok-soft); color:var(--ok); }
+  .banner.warn{ background:var(--warn-soft); color:var(--warn); }
+  .banner b{ display:block; margin-bottom:2px; }
+
+  .timeline{ display:flex; flex-direction:column; gap:0; margin-top:6px; }
+  .tl-item{ display:flex; gap:10px; position:relative; padding-bottom:18px; }
+  .tl-item:last-child{ padding-bottom:0; }
+  .tl-dot{ width:11px; height:11px; border-radius:50%; background:var(--ok); margin-top:3px; flex:0 0 auto; z-index:1; }
+  .tl-item.pending .tl-dot{ background:var(--border); }
+  .tl-line{
+    position:absolute; left:5px; top:14px; bottom:0; width:1px; background:var(--border);
+  }
+  .tl-item:last-child .tl-line{ display:none; }
+  .tl-text b{ display:block; font-size:.8rem; }
+  .tl-item.pending .tl-text b{ color:var(--text-muted); }
+  .tl-text span{ font-size:.7rem; color:var(--text-muted); font-family:"IBM Plex Mono", monospace; }
+
+  .kpi{
+    display:inline-flex; align-items:baseline; gap:5px; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; padding:8px 12px; margin-top:14px;
+  }
+  .kpi .val{ font-family:"IBM Plex Mono", monospace; font-size:1.1rem; font-weight:600; color:var(--ok); }
+  .kpi .lbl{ font-size:.72rem; color:var(--text-muted); }
+
+  select, input[type=text], textarea{
+    width:100%; font:inherit; font-size:.8rem; padding:8px 9px; border:1px solid var(--border);
+    border-radius:7px; background:var(--surface); color:var(--text); margin-bottom:9px;
+  }
+  label{ font-size:.72rem; color:var(--text-muted); display:block; margin-bottom:4px; font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:.03em; }
+
+  footer{ margin-top:10px; font-size:.74rem; color:var(--text-muted); text-align:center; }
+
+  @media (max-width: 720px){
+    .stage{ grid-template-columns:1fr; }
+    .device{ order:-1; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">SGO-Logic · Entregable 4</span>
+    <h1>Flujo principal omnicanal</h1>
+    <p class="sub">Recorrido de una misma compra iniciada en la app móvil, continuada en la web, consultada desde cualquier dispositivo y cerrada con una devolución — el escenario que describe la Directora de Comercialización: "el cliente compra desde el celular a las 10pm, la tienda a las 3pm, o llama a las 8am. No podemos tener silos."</p>
+    <div class="no-func">Mockup de alto nivel — no funcional</div>
+  </header>
+
+  <nav class="stepper">
+    <a href="#paso1"><b>1. Carrito</b>App móvil, 10pm</a>
+    <a href="#paso2"><b>2. Pago</b>Web, continúa el mismo carrito</a>
+    <a href="#paso3"><b>3. Estado</b>Consulta desde cualquier canal</a>
+    <a href="#paso4"><b>4. Devolución</b>Centro de atención / cliente</a>
+  </nav>
+
+  <section class="stage" id="paso1">
+    <div class="device">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="scr-pad">
+            <p class="scr-title">App · Carrito</p>
+            <div class="row-item">
+              <div class="swatch" style="background:#B7C7CC"></div>
+              <div class="name">Refrigeradora 14p³</div>
+              <div class="price">Q4,299</div>
+            </div>
+            <div class="row-item">
+              <div class="swatch" style="background:#D8CBB0"></div>
+              <div class="name">Plan 6 meses</div>
+              <div class="price">Q716/mes</div>
+            </div>
+            <button class="btn btn-primary">Continuar más tarde</button>
+            <div class="banner ok"><span>🛒</span><div><b>Carrito guardado</b>Disponible en web, tienda y centro de atención con el mismo cliente reconocido.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stage-info">
+      <div class="stage-num">Paso 1 · 22:04</div>
+      <h2>Inicia el carrito en el canal móvil</h2>
+      <p>El cliente arma su compra desde la app. La intención de compra (ítems, cantidades, financiamiento) queda asociada al cliente reconocido, no al dispositivo — puede abandonar aquí y continuar en cualquier otro canal sin perder el progreso.</p>
+      <div class="tags"><span class="tag">CUN-01 Carrito omnicanal</span><span class="tag">EaC-01 Consulta ≤5s</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="paso2">
+    <div class="device">
+      <div class="browser">
+        <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="bar">megastore.com/carrito</span></div>
+        <div class="screen">
+          <div class="scr-pad">
+            <p class="scr-title">Web · Confirmar y pagar</p>
+            <div class="row-item"><div class="name">Refrigeradora 14p³ + plan 6 meses</div><div class="price">Q4,299</div></div>
+            <label>Método de pago</label>
+            <select><option>Tarjeta de crédito/débito — PayKlik</option><option>Transferencia bancaria</option><option>Billetera digital</option></select>
+            <button class="btn btn-primary">Confirmar compra</button>
+            <div class="banner warn"><span>⏳</span><div><b>Pago en verificación</b>Si PayKlik tarda o no responde, tu orden no se pierde: queda "pendiente de confirmación" y se reintenta sin cobro duplicado.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stage-info">
+      <div class="stage-num">Paso 2 · día siguiente, 15:40</div>
+      <h2>Continúa y paga desde la web</h2>
+      <p>El mismo carrito reaparece en otro canal. Antes de cobrar, el sistema reserva el inventario para evitar comprometer la misma unidad dos veces; al pagar, cada intento queda registrado con orden, canal, fecha y resultado — incluso si el proveedor de pago falla.</p>
+      <div class="tags"><span class="tag">CUN-02 Reservar inventario</span><span class="tag">CUN-03 Procesar pago</span><span class="tag">EaC-04 Resiliencia PayKlik</span><span class="tag">EaC-12 Sin PAN/CVV</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="paso3">
+    <div class="device">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="scr-pad">
+            <p class="scr-title">Estado de tu orden</p>
+            <div class="timeline">
+              <div class="tl-item"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-text"><b>Pendiente</b><span>15:41</span></div></div>
+              <div class="tl-item"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-text"><b>Pago aprobado</b><span>15:43</span></div></div>
+              <div class="tl-item"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-text"><b>En preparación — CD Zona 4</b><span>16:10</span></div></div>
+              <div class="tl-item pending"><div class="tl-dot"></div><div class="tl-line"></div><div class="tl-text"><b>Despachada</b><span>estimado mañana</span></div></div>
+              <div class="tl-item pending"><div class="tl-dot"></div><div class="tl-text"><b>Entregada</b><span>—</span></div></div>
+            </div>
+            <div class="kpi"><span class="val">≤ 5s</span><span class="lbl">objetivo arquitectónico de consulta; no es una medición</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stage-info">
+      <div class="stage-num">Paso 3 · cualquier momento</div>
+      <h2>Consulta el estado desde cualquier dispositivo</h2>
+      <p>Tanto el cliente como el personal de atención ven la misma vista consolidada de compra, pago, despacho y entrega — sin llamar a la tienda ni cruzar hojas de cálculo. La medida exigida es respuesta menor o igual a 5 segundos.</p>
+      <div class="tags"><span class="tag">CUN-09 Consultar estado</span><span class="tag">EaC-01 ≤5s</span><span class="tag">EaC-07 Trazabilidad</span></div>
+    </div>
+  </section>
+
+  <section class="stage" id="paso4">
+    <div class="device">
+      <div class="browser">
+        <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="bar">atencion.megastore.com/devoluciones</span></div>
+        <div class="screen">
+          <div class="scr-pad">
+            <p class="scr-title">Centro de atención · Nueva devolución</p>
+            <label>Orden de origen</label>
+            <input type="text" value="Orden #48213 — Refrigeradora 14p³" readonly>
+            <label>Motivo</label>
+            <select><option>Producto con defecto</option><option>No corresponde al pedido</option><option>Cliente cambió de opinión</option></select>
+            <button class="btn btn-primary">Registrar devolución</button>
+            <div class="banner ok"><span>✓</span><div><b>Devolución vinculada a la orden #48213</b>Queda registrada con quién la generó, cuándo y sobre qué venta — trazable para la auditoría anual de la SAT.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stage-info">
+      <div class="stage-num">Paso 4 · días después</div>
+      <h2>Genera una devolución sin perder el historial</h2>
+      <p>El personal de atención abre la orden original desde la misma vista consolidada y registra la devolución sin reconstruir la compra manualmente, cerrando el ciclo que hoy toma hasta siete días hábiles.</p>
+      <div class="tags"><span class="tag">CUN-10 Devoluciones</span><span class="tag">EaC-07 Auditabilidad</span></div>
+    </div>
+  </section>
+
+  <footer>Wireframes ilustrativos — sin lógica ni datos reales. Referencian los drivers del DDA (sección 2.4–2.6, 6 y 9) para mantener trazabilidad entre el prototipo y las decisiones arquitectónicas.</footer>
+</div>
