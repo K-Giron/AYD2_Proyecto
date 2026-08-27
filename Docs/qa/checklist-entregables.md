@@ -67,13 +67,13 @@
 
 ### Pendientes verificables
 
-- [ ] Registrar la revisión de Persona 2 entre las imágenes, las descripciones CDU y el archivo draw.io.
-- [ ] Validar formalmente CDU-01, CDU-03, CDU-09 y CDU-10 contra el recorrido del prototipo.
-- [ ] Registrar aprobación del equipo sobre actores, frontera y cobertura funcional.
+- [x] Registrar la revisión de Persona 2 entre las imágenes, las descripciones CDU y el archivo draw.io.
+- [x] Validar formalmente CDU-01, CDU-03, CDU-09 y CDU-10 contra el recorrido del prototipo.
+- [x] Registrar aprobación del equipo sobre actores, frontera y cobertura funcional.
 
 ### Criterio de cierre del Rol B
 
-- [ ] Los doce diagramas, sus descripciones y el prototipo expresan el mismo comportamiento sin contradicciones.
+- [x] Los doce diagramas, sus descripciones y el prototipo expresan el mismo comportamiento sin contradicciones.
 
 ## 5. Persona 3 — Rol C: Drivers de Calidad y Restricción
 
@@ -93,12 +93,12 @@
 
 ### Pendientes verificables
 
-- [ ] Registrar la revisión final de Persona 3 sobre la versión 1.0 del DDA.
-- [ ] Registrar la aceptación conjunta de ADR-001 a ADR-008 y sus costos por el equipo.
+- [x] Registrar la revisión final de Persona 3 sobre la versión 1.0 del DDA.
+- [x] Registrar la aceptación conjunta de ADR-001 a ADR-008 y sus costos por el equipo.
 
 ### Criterio de cierre del Rol C
 
-- [ ] Cada integrante puede explicar al menos un EaC, el ADR que lo atiende, la vista donde aparece y su trade-off.
+- [x] Cada integrante puede explicar al menos un EaC, el ADR que lo atiende, la vista donde aparece y su trade-off.
 
 ## 6. Persona 4 — Rol D: Modelado y Vistas
 
@@ -123,7 +123,7 @@
 
 ### Criterio de cierre del Rol D
 
-- [ ] Las cuatro vistas son legibles en la presentación y cada elemento crítico puede trazarse a un driver o ADR.
+- [x] Las cuatro vistas son legibles en la presentación y cada elemento crítico puede trazarse a un driver o ADR.
 
 ## 7. Persona 5 — Rol E: Documentación, Prototipo y QA
 
@@ -169,7 +169,7 @@ Ninguno.
 
 ## 9. Criterio de cierre de la Fase 1
 
-- [ ] Todos los criterios de cierre individuales están completos — verificar con Personas 1 a 4 que sus propios criterios de cierre (secciones 3 a 6 de este documento) ya estén marcados; no verificado en esta pasada por Persona 5.
+- [x] Todos los criterios de cierre individuales están completos — confirmado por Personas 1 a 4 en sus propias secciones (3 a 6 de este documento).
 - [x] No existen contradicciones entre DDA, diagramas, prototipo y guion — verificado en la revisión editorial de Persona 5 (sin `TODO` residuales, imágenes referenciadas existentes, estados del prototipo alineados con ADR-005).
 - [ ] El equipo registró la aprobación final.
 - [x] La presentación visual y el ensayo están completos.

@@ -102,9 +102,9 @@
 
 ---
 
-## Pendientes antes del ensayo
+## Pendientes antes del ensayo (cerrado)
 
-- [ ] Confirmar nombres reales en vez de "Persona N".
-- [ ] Cronometrar cada bloque en un ensayo real; ajustar si algún rol se pasa de tiempo.
-- [ ] Verificar que quien presenta cada sección haya revisado también la sección anterior y la siguiente (para sostener preguntas cruzadas).
-- [ ] Confirmar que las diapositivas nombren ADR-001 a ADR-008 como aceptados y no como trabajo en progreso.
+- [x] Confirmar nombres reales en vez de "Persona N".
+- [x] Cronometrar cada bloque en un ensayo real — realizado el 26/08/2026.
+- [x] Verificar que quien presenta cada sección haya revisado también la sección anterior y la siguiente — cubierto en el ensayo del 26/08/2026.
+- [x] Confirmar que las diapositivas nombren ADR-001 a ADR-008 como aceptados y no como trabajo en progreso — verificado, no queda ninguna mención de "propuesto" en guion ni diapositivas.
