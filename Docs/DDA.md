@@ -45,31 +45,32 @@
 
 ---
 
+---
+
 ## Índice
 1. [Resumen Ejecutivo](#1-resumen-ejecutivo)
-2. [Identificación del Caso de Negocio](#2-identificación-del-caso-de-negocio)
-3. [Stakeholders y Preocupaciones Arquitectónicas](#3-stakeholders-y-preocupaciones-arquitectónicas)
-4. [Características del Sistema Priorizadas](#4-características-del-sistema-priorizadas)
-5. [Drivers - Requisitos Funcionales](#5-drivers--requisitos-funcionales)
-6. [Drivers de Calidad (EaC)](#6-drivers-de-calidad-eac)
-7. [Drivers de Restricción](#7-drivers-de-restricción)
-8. [Priorización de Drivers](#8-priorización-de-drivers)
-9. [Matriz de Trazabilidad](#9-matriz-de-trazabilidad)
-10. [Decisiones Arquitectónicas (ADRs)](#10-decisiones-arquitectónicas-adrs)
-11. [Vistas Arquitectónicas](#11-vistas-arquitectónicas)
-12. [Prototipo / Mockups](#12-prototipo--mockups)
-13. [Anexos](#13-anexos)
+2. [Contexto y Alcance del Sistema](#2-contexto-y-alcance-del-sistema)
+3. [Descomposición Funcional](#3-descomposición-funcional)
+4. [Drivers Arquitectónicos](#4-drivers-arquitectónicos)
+5. [Estrategia y Decisiones Arquitectónicas](#5-estrategia-y-decisiones-arquitectónicas)
+6. [Vistas Arquitectónicas](#6-vistas-arquitectónicas)
+7. [Validación y Trazabilidad](#7-validación-y-trazabilidad)
+8. [Prototipo / Mockups](#8-prototipo--mockups)
+9. [Conclusiones Arquitectónicas](#9-conclusiones-arquitectónicas)
+10. [Anexos](#10-anexos)
 
 ---
 
 ## 1. Resumen Ejecutivo
+
 MegaStore es una cadena regional de retail con 32 tiendas en Guatemala, El Salvador y Costa Rica y una facturación anual de USD 450 millones, cuyo comercio electrónico crece un 15 % cada año. Su operación actual está fragmentada: cada tienda administra inventario local, el canal en línea opera por separado, la disponibilidad se confirma por teléfono y Finanzas concilia ventas manualmente desde hojas de cálculo, generando devoluciones de hasta siete días hábiles y exposición a errores de despacho y a pérdidas ya cuantificadas, como los USD 150,000 de un solo evento de indisponibilidad de la pasarela de pago.
 
 SGO-Logic se propone como una capa de orquestación e integración omnicanal que permite iniciar, continuar y completar una compra desde cualquier canal sin modificar ERP-Core ni los POS existentes, cuya sustitución la Junta Directiva descartó. La arquitectura aceptada en ADR-001 es un **monolito modular** organizado por capacidades de negocio, rodeado de una **capa de integración por puertos, adaptadores y mensajería** que aísla a SGO-Logic de PayKlik, LogiExpress, la SAT, los POS y el ERP. Este estilo protege los drivers críticos priorizados: continuidad de la orden ante fallas de PayKlik, escalabilidad de hasta 8x en Black Friday, trazabilidad completa para las auditorías de la SAT y mantenibilidad con las capacidades de Java, .NET y Docker del equipo interno, dentro del presupuesto aprobado y con una ruta planificada de evolución hacia la nube.
 
 ---
 
-## 2. Identificación del Caso de Negocio
+## 2. Contexto y Alcance del Sistema
+
 ### 2.1 Situación actual y objetivo de negocio
 
 MegaStore opera 32 tiendas físicas en Guatemala, El Salvador y Costa Rica y un canal de comercio electrónico que representa el 25 % de sus ventas. Sus aplicaciones y procedimientos evolucionaron de forma separada: las tiendas conservan ventas e inventario localmente, el comercio electrónico maneja información independiente, Logística confirma existencias por teléfono y Finanzas concilia archivos de hojas de cálculo. Esta fragmentación retrasa cambios y devoluciones hasta siete días hábiles, dificulta conocer el inventario disponible y expone a la organización a pérdidas, errores de despacho e inconsistencias fiscales.
@@ -113,64 +114,22 @@ El objetivo de SGO-Logic es habilitar una operación omnicanal en la que el clie
 | SAT | Envío de factura electrónica en XML | La factura debe emitirse antes de finalizar la orden y conservar CUI y serie autorizada |
 | Proveedor de notificaciones | Envío de SMS, correo y push | Su indisponibilidad no debe bloquear venta, pago, facturación o despacho |
 
-### 2.3 Supuestos y preguntas arquitectónicas abiertas
+### 2.3 Diagrama de Contexto
 
-Los siguientes puntos no están definidos por el enunciado y deben confirmarse antes de dimensionar o implementar. Las decisiones que podían cerrarse en esta fase se registraron en ADR-003 a ADR-008.
+![Diagrama de Contexto de SGO-Logic](./diagramas/img/Core_Alto_Nivel.jpg)
 
-| Tema abierto | Por qué afecta la arquitectura | Tratamiento durante Fase 1 |
-|---|---|---|
-| Fuente autoritativa y mecanismo de actualización del inventario | Determina consistencia de reservas, prevención de doble compromiso y diseño de integración con tiendas y centros de distribución | Se exige una fuente lógica única y reserva atómica; el producto o sistema de registro se decide con Negocio y Logística |
-| Formato, protocolo y garantías disponibles en cada POS | Define el contrato físico de los adaptadores | ADR-004 ubica idempotencia y reintento en el adaptador para no modificar POS; el formato queda parametrizable |
-| Volumen normal, concurrencia y distribución del tráfico por canal | “8x” es una proporción, pero falta línea base | EaC-03 define una prueba relativa a la línea base `T`; TI debe medir `T` antes de dimensionar `N` instancias |
-| Objetivos de disponibilidad, recuperación y pérdida de datos | Sin RTO, RPO y disponibilidad objetivo no se justifica una topología final de redundancia | La vista conserva `N` y no inventa réplicas; TI y Gerencia deben acordar SLO, RTO y RPO antes de producción |
-| Jurisdicciones y controles concretos de protección de datos | MegaStore opera en tres países | Se aplican minimización, TLS, tokenización y control de acceso; Legal debe confirmar retención, residencia y normativa específica |
+*Figura 1. Contexto de SGO-Logic, sus canales, áreas y sistemas externos.*
 
-### 2.4 Diagrama de Casos de Uso de Negocio (CUN) - alto nivel
+La frontera central identifica SGO-Logic como capa de orquestación e integración. A la izquierda se separan usuarios, canales y áreas organizacionales; a la derecha aparecen las seis entidades externas existentes. ERP-Core, POS y proveedores se integran sin presentarlos como componentes internos ni como sistemas que deban modificarse.
 
-![CUN de Negocio de alto nivel de SGO-Logic](./diagramas/img/Core_Alto_Nivel.jpg)
+**Criterios de aceptación:**
 
-*Figura 1. Caso de Uso de Negocio de alto nivel de SGO-Logic.*
+- Delimita claramente SGO-Logic como sistema de interés y mantiene fuera de la frontera a ERP-Core, POS, PayKlik, LogiExpress, SAT y el proveedor de notificaciones.
+- Muestra los cuatro canales, sus usuarios principales y las áreas de TI, Finanzas, Logística, Dirección, Gerencia y Comercialización.
+- Rotula propósito y dirección; solo afirma REST para PayKlik y LogiExpress, CSV/XML para ERP-Core, XML para SAT y eventos hacia POS donde existe evidencia en el caso.
+- Marca como pendiente de definición el contrato del canal tienda, en vez de inventarlo.
 
-El nivel 0 modela "Operar venta y logística omnicanal de MegaStore" como síntesis de la frontera descrita en 2.2. Se distinguen actores humanos internos (Cliente, Personal de tienda, Personal de atención, Personal de logística y Finanzas) de los sistemas u organizaciones externas que intercambian información con SGO-Logic (ERP-Core, POS, PayKlik, LogiExpress, SAT y proveedor de notificaciones). El único caso de uso de este nivel se descompone inmediatamente en los doce CUN del nivel 1 (§2.5); por ello no oculta el alcance funcional ni representa una secuencia.
-
-**Notación:** se emplean actores UML nativos, casos de uso elípticos, frontera explícita y asociaciones continuas sin dirección. Las asociaciones indican participación, no orden temporal. El archivo draw.io contiene formas editables y no imágenes incrustadas.
-
-### 2.5 Primera descomposición
-
-![Primera descomposición del core de SGO-Logic](<./diagramas/img/Core - Primera Descomposición del Core.jpg>)
-
-*Figura 2. Primera descomposición del negocio en CUN.*
-
-El core se descompone en los 12 CUN de 2.6, agrupados en seis macro-procesos de negocio. Cada CUN queda asociado a los actores de negocio que efectivamente lo originan o lo reciben, y cada macro-proceso corresponde a una línea de acción distinguible del negocio (venta, cumplimiento fiscal, logística, atención, postventa y gobernanza), no a una agrupación técnica de sistema:
-
-| Macro-proceso | CUN incluidos | Actores de negocio asociados |
-|---|---|---|
-| Venta omnicanal | Gestionar carrito omnicanal, Verificar y reservar inventario, Procesar pago | Cliente, Personal de tienda, Personal de atención, Logística, PayKlik |
-| Postventa | Gestionar devoluciones y reembolsos | Cliente, Personal de atención, Personal de tienda |
-| Cumplimiento fiscal | Emitir documentación fiscal, Sincronizar venta con ERP | Finanzas, SAT, ERP-Core |
-| Logística | Gestionar despacho, Integrar con LogiExpress, Notificar eventos a POS | Logística, LogiExpress, POS |
-| Atención al cliente | Consultar estado de orden, Notificar al cliente | Cliente, Personal de atención, Proveedor de notificaciones |
-| Gobernanza | Auditar operaciones | Finanzas, SAT |
-
-Ningún CUN queda sin macro-proceso ni sin al menos un actor asociado. Para evitar el entramado de líneas del modelo anterior, un mismo actor puede aparecer más de una vez en distintas bandas; cada repetición representa exactamente el mismo rol y no un actor nuevo. Los contenedores de macroproceso son agrupaciones visuales: no expresan secuencia, inclusión ni extensión. Esta cobertura se reutiliza en la matriz de trazabilidad (Sección 9) y en el diagrama de Componentes (11.2), donde CUN-01 a CUN-03 orientan el módulo de Carrito/Órdenes, CUN-04/CUN-05 el módulo de Facturación, CUN-06 a CUN-08 el módulo de Despacho, CUN-09/CUN-11 el módulo de Notificaciones/Consulta, CUN-10 el módulo de Postventa y CUN-12 el módulo de Auditoría.
-
-### 2.6 Lista de CUN identificados (insumo para 2.4)
-1. **CUN-01:** Gestionar carrito omnicanal
-2. **CUN-02:** Verificar y reservar inventario
-3. **CUN-03:** Procesar pago
-4. **CUN-04:** Emitir documentación fiscal
-5. **CUN-05:** Sincronizar venta con ERP
-6. **CUN-06:** Notificar eventos a POS
-7. **CUN-07:** Gestionar despacho
-8. **CUN-08:** Integrar con LogiExpress
-9. **CUN-09:** Consultar estado de orden
-10. **CUN-10:** Gestionar devoluciones y reembolsos
-11. **CUN-11:** Notificar al cliente
-12. **CUN-12:** Auditar operaciones
-
----
-
-## 3. Stakeholders y Preocupaciones Arquitectónicas
+### 2.4 Stakeholders y Preocupaciones Arquitectónicas
 
 Para este DDA, un stakeholder es una persona, grupo u organización con intereses sobre SGO-Logic o capacidad de afectar sus decisiones. ERP-Core, POS y los servicios de terceros se documentan como **entidades externas del contexto**, no como stakeholders humanos; sus condiciones técnicas se conservan en la frontera del sistema y en las matrices de trazabilidad. La agrupación no pretende imponer una cifra cerrada: debe refinarse si el equipo identifica propietarios, operadores o responsables contractuales adicionales.
 
@@ -189,7 +148,7 @@ Para este DDA, un stakeholder es una persona, grupo u organización con interese
 | 11 | Equipo interno de desarrollo y operación | Construcción y operación | Tecnología conocida, facilidad de adopción, despliegue, diagnóstico, mantenimiento y evolución | Media; condiciona la viabilidad de la solución |
 | 12 | SAT | Regulador | Facturación electrónica, conservación de CUI y serie, auditabilidad y cumplimiento normativo | Alta; obligaciones no negociables |
 
-### 3.1 Entidades externas relevantes
+### 2.5 Entidades externas relevantes
 
 | Entidad | Rol en el contexto | Riesgo o restricción asociada |
 |---|---|---|
@@ -200,36 +159,79 @@ Para este DDA, un stakeholder es una persona, grupo u organización con interese
 | Servicio de facturación electrónica de SAT | Receptor de XML fiscal | Respuesta variable y condición previa al cierre de la orden |
 | Proveedor de SMS, correo y push | Distribución de notificaciones | Disponibilidad fuera del control de MegaStore; no debe bloquear el flujo principal |
 
----
+### 2.6 Supuestos y preguntas arquitectónicas abiertas
 
-## 4. Características del Sistema Priorizadas
+Los siguientes puntos no están definidos por el enunciado y deben confirmarse antes de dimensionar o implementar. Las decisiones que podían cerrarse en esta fase se registraron en ADR-003 a ADR-008.
 
-| Característica | Por qué importa al negocio |
-|---|---|
-| Continuidad de la orden ante fallas de la pasarela de pago | Protege los ingresos y evita repetir pérdidas como los USD 150,000 ocasionados por 45 minutos de indisponibilidad en el último Black Friday |
-| Capacidad para soportar hasta ocho veces el tráfico normal | Permite atender el pico comercial de noviembre sin degradar las consultas ni la recuperación de evidencia |
-| Experiencia y carrito unificados entre tienda, web, aplicación y centro de atención | Cumple el objetivo estratégico de operar sin silos y conservar la intención de compra al cambiar de canal |
-| Trazabilidad completa y evidencia recuperable en menos de un segundo | Permite reconstruir quién hizo qué y cuándo, reduce conciliaciones manuales y protege el cumplimiento ante auditorías de la SAT |
-| Integración sin modificar ERP-Core ni POS | Preserva la inversión y respeta una decisión no negociable de la Junta Directiva |
-| Despacho e inventario visibles y confiables | Ayuda a reducir en 70 % los envíos incorrectos, cuyo costo actual ronda USD 25 por caso |
-| Operación mantenible por el equipo interno y dentro del presupuesto | Reduce riesgo de adopción y evita depender de competencias o costos operativos no aprobados |
-| Evolución planificada desde infraestructura local hacia nube | Aprovecha la infraestructura existente y mantiene una ruta futura para elasticidad, recuperación y crecimiento regional |
+| Tema abierto | Por qué afecta la arquitectura | Tratamiento durante Fase 1 |
+|---|---|---|
+| Fuente autoritativa y mecanismo de actualización del inventario | Determina consistencia de reservas, prevención de doble compromiso y diseño de integración con tiendas y centros de distribución | Se exige una fuente lógica única y reserva atómica; el producto o sistema de registro se decide con Negocio y Logística |
+| Formato, protocolo y garantías disponibles en cada POS | Define el contrato físico de los adaptadores | ADR-004 ubica idempotencia y reintento en el adaptador para no modificar POS; el formato queda parametrizable |
+| Volumen normal, concurrencia y distribución del tráfico por canal | “8x” es una proporción, pero falta línea base | EaC-03 define una prueba relativa a la línea base `T`; TI debe medir `T` antes de dimensionar `N` instancias |
+| Objetivos de disponibilidad, recuperación y pérdida de datos | Sin RTO, RPO y disponibilidad objetivo no se justifica una topología final de redundancia | La vista conserva `N` y no inventa réplicas; TI y Gerencia deben acordar SLO, RTO y RPO antes de producción |
+| Jurisdicciones y controles concretos de protección de datos | MegaStore opera en tres países | Se aplican minimización, TLS, tokenización y control de acceso; Legal debe confirmar retención, residencia y normativa específica |
 
 ---
 
-## 5. Drivers - Requisitos Funcionales
+## 3. Descomposición Funcional
+
+### 3.1 Diagrama de Casos de Uso de Negocio (CUN) - alto nivel
+
+![CUN de Negocio de alto nivel de SGO-Logic](./diagramas/img/Core_Alto_Nivel.jpg)
+
+*Figura 2. Caso de Uso de Negocio de alto nivel de SGO-Logic.*
+
+El nivel 0 modela "Operar venta y logística omnicanal de MegaStore" como síntesis de la frontera descrita en 2.2. Se distinguen actores humanos internos (Cliente, Personal de tienda, Personal de atención, Personal de logística y Finanzas) de los sistemas u organizaciones externas que intercambian información con SGO-Logic (ERP-Core, POS, PayKlik, LogiExpress, SAT y proveedor de notificaciones). El único caso de uso de este nivel se descompone inmediatamente en los doce CUN del nivel 1 (§3.2); por ello no oculta el alcance funcional ni representa una secuencia.
+
+**Notación:** se emplean actores UML nativos, casos de uso elípticos, frontera explícita y asociaciones continuas sin dirección. Las asociaciones indican participación, no orden temporal. El archivo draw.io contiene formas editables y no imágenes incrustadas.
+
+### 3.2 Primera descomposición
+
+![Primera descomposición del core de SGO-Logic](<./diagramas/img/Core - Primera Descomposición del Core.jpg>)
+
+*Figura 3. Primera descomposición del negocio en CUN.*
+
+El core se descompone en los 12 CUN de 2.6, agrupados en seis macro-procesos de negocio. Cada CUN queda asociado a los actores de negocio que efectivamente lo originan o lo reciben, y cada macro-proceso corresponde a una línea de acción distinguible del negocio (venta, cumplimiento fiscal, logística, atención, postventa y gobernanza), no a una agrupación técnica de sistema:
+
+| Macro-proceso | CUN incluidos | Actores de negocio asociados |
+|---|---|---|
+| Venta omnicanal | Gestionar carrito omnicanal, Verificar y reservar inventario, Procesar pago | Cliente, Personal de tienda, Personal de atención, Logística, PayKlik |
+| Postventa | Gestionar devoluciones y reembolsos | Cliente, Personal de atención, Personal de tienda |
+| Cumplimiento fiscal | Emitir documentación fiscal, Sincronizar venta con ERP | Finanzas, SAT, ERP-Core |
+| Logística | Gestionar despacho, Integrar con LogiExpress, Notificar eventos a POS | Logística, LogiExpress, POS |
+| Atención al cliente | Consultar estado de orden, Notificar al cliente | Cliente, Personal de atención, Proveedor de notificaciones |
+| Gobernanza | Auditar operaciones | Finanzas, SAT |
+
+Ningún CUN queda sin macro-proceso ni sin al menos un actor asociado. Para evitar el entramado de líneas del modelo anterior, un mismo actor puede aparecer más de una vez en distintas bandas; cada repetición representa exactamente el mismo rol y no un actor nuevo. Los contenedores de macroproceso son agrupaciones visuales: no expresan secuencia, inclusión ni extensión. Esta cobertura se reutiliza en la matriz de trazabilidad (Sección 7) y en el diagrama de Componentes (6.1), donde CUN-01 a CUN-03 orientan el módulo de Carrito/Órdenes, CUN-04/CUN-05 el módulo de Facturación, CUN-06 a CUN-08 el módulo de Despacho, CUN-09/CUN-11 el módulo de Notificaciones/Consulta, CUN-10 el módulo de Postventa y CUN-12 el módulo de Auditoría.
+
+### 3.3 Catálogo de CUN identificados
+
+1. **CUN-01:** Gestionar carrito omnicanal
+2. **CUN-02:** Verificar y reservar inventario
+3. **CUN-03:** Procesar pago
+4. **CUN-04:** Emitir documentación fiscal
+5. **CUN-05:** Sincronizar venta con ERP
+6. **CUN-06:** Notificar eventos a POS
+7. **CUN-07:** Gestionar despacho
+8. **CUN-08:** Integrar con LogiExpress
+9. **CUN-09:** Consultar estado de orden
+10. **CUN-10:** Gestionar devoluciones y reembolsos
+11. **CUN-11:** Notificar al cliente
+12. **CUN-12:** Auditar operaciones
+
+### 3.4 CDU Core
 
 Los doce CUN se detallan mediante su diagrama y descripción textual. El CDU inicial presenta el core completo y las doce figuras restantes expanden cada caso sin representar orden temporal entre ellos.
 
 ![CDU del Negocio - Core de SGO-Logic](<./diagramas/img/CDU del Negocio - Core.jpg>)
 
-*Figura 3. CDU del Negocio - Core de SGO-Logic.*
+*Figura 4. CDU del Negocio - Core de SGO-Logic.*
 
-### 5.1 CDU-01: Gestionar carrito omnicanal
+### 3.5 CDU-01: Gestionar carrito omnicanal
 
 ![CUN-01 - Gestionar carrito omnicanal](<./diagramas/img/CUN-01-Gestionar carrito omnicanal.jpg>)
 
-*Figura 4. CUN-01 - Gestionar carrito omnicanal.*
+*Figura 5. CUN-01 - Gestionar carrito omnicanal.*
 
 ```
 ID: CDU-01
@@ -276,11 +278,11 @@ Relacionado con EaC: EaC-01 (consulta ≤ 5 s), EaC-03 (escalabilidad 8x),
   EaC-08 (no bloqueado por falla de notificaciones)
 ```
 
-### 5.2 CDU-02: Verificar y reservar inventario
+### 3.6 CDU-02: Verificar y reservar inventario
 
 ![CUN-02 - Verificar y reservar inventario](<./diagramas/img/CUN-02-Verificar y reservar inventario.jpg>)
 
-*Figura 5. CUN-02 - Verificar y reservar inventario.*
+*Figura 6. CUN-02 - Verificar y reservar inventario.*
 
 ```
 ID: CDU-02
@@ -321,11 +323,11 @@ Postcondiciones:
 Relacionado con EaC: EaC-01 (consulta ≤ 5 s), EaC-03 (escalabilidad 8x)
 ```
 
-### 5.3 CDU-03: Procesar pago
+### 3.7 CDU-03: Procesar pago
 
 ![CUN-03 - Procesar pago](<./diagramas/img/CUN-03-Procesar pago.jpg>)
 
-*Figura 6. CUN-03 - Procesar pago.*
+*Figura 7. CUN-03 - Procesar pago.*
 
 ```
 ID: CDU-03
@@ -364,11 +366,11 @@ Postcondiciones:
 Relacionado con EaC: EaC-04 (resiliencia de pago), EaC-07 (trazabilidad)
 ```
 
-### 5.4 CDU-04: Emitir documentación fiscal
+### 3.8 CDU-04: Emitir documentación fiscal
 
 ![CUN-04 - Emitir documentación fiscal](<./diagramas/img/CUN-04-Emitir documentación fiscal.jpg>)
 
-*Figura 7. CUN-04 - Emitir documentación fiscal.*
+*Figura 8. CUN-04 - Emitir documentación fiscal.*
 
 ```
 ID: CDU-04
@@ -398,11 +400,11 @@ Postcondiciones:
 Relacionado con EaC: EaC-02 (evidencia < 1 s), EaC-07 (auditabilidad)
 ```
 
-### 5.5 CDU-05: Sincronizar venta con ERP
+### 3.9 CDU-05: Sincronizar venta con ERP
 
 ![CUN-05 - Sincronizar venta con ERP](<./diagramas/img/CUN-05-Sincronizar venta con ERP.jpg>)
 
-*Figura 8. CUN-05 - Sincronizar venta con ERP.*
+*Figura 9. CUN-05 - Sincronizar venta con ERP.*
 
 ```
 ID: CDU-05
@@ -430,11 +432,11 @@ Postcondiciones:
 Relacionado con EaC: EaC-07 (auditabilidad); condicionado por R1 (ERP no modificable)
 ```
 
-### 5.6 CDU-06: Notificar eventos a POS
+### 3.10 CDU-06: Notificar eventos a POS
 
 ![CUN-06 - Notificar eventos a POS](<./diagramas/img/CUN-06-Notificar eventos a POS.jpg>)
 
-*Figura 9. CUN-06 - Notificar eventos a POS.*
+*Figura 10. CUN-06 - Notificar eventos a POS.*
 
 ```
 ID: CDU-06
@@ -463,11 +465,11 @@ Postcondiciones:
 Relacionado con EaC: EaC-06 (entrega eventual), EaC-07 (auditabilidad)
 ```
 
-### 5.7 CDU-07: Gestionar despacho
+### 3.11 CDU-07: Gestionar despacho
 
 ![CUN-07 - Gestionar despacho](<./diagramas/img/CUN-07-Gestionar despacho.jpg>)
 
-*Figura 10. CUN-07 - Gestionar despacho.*
+*Figura 11. CUN-07 - Gestionar despacho.*
 
 ```
 ID: CDU-07
@@ -479,8 +481,8 @@ Descripción breve: Determina el origen y el método de despacho de una
   orden (centro de distribución, tienda o recogida por el cliente),
   coordina su preparación y mantiene su estado visible hasta la entrega.
 Precondiciones:
-  - La orden tiene el inventario reservado (CDU-02) y su pago aprobado o en
-    proceso de aprobación según la política vigente
+  - La orden tiene el inventario reservado (CDU-02), el pago aprobado y la
+    confirmación fiscal requerida para considerar confirmada la venta
 Flujo principal:
   1. El sistema determina las opciones de despacho disponibles para la
      orden: centro de distribución, tienda o recogida por el cliente
@@ -509,11 +511,11 @@ Relacionado con EaC: EaC-05 (confiabilidad LogiExpress), EaC-06
   (confiabilidad hacia POS/tienda), EaC-07 (trazabilidad)
 ```
 
-### 5.8 CDU-08: Integrar con LogiExpress
+### 3.12 CDU-08: Integrar con LogiExpress
 
 ![CUN-08 - Integrar con LogiExpress](<./diagramas/img/CUN-08-Integrar con LogiExpress.jpg>)
 
-*Figura 11. CUN-08 - Integrar con LogiExpress.*
+*Figura 12. CUN-08 - Integrar con LogiExpress.*
 
 ```
 ID: CDU-08
@@ -540,11 +542,11 @@ Postcondiciones:
 Relacionado con EaC: EaC-05 (timeout LogiExpress), EaC-07 (trazabilidad)
 ```
 
-### 5.9 CDU-09: Consultar estado de orden
+### 3.13 CDU-09: Consultar estado de orden
 
 ![CUN-09 - Consultar estado de orden](<./diagramas/img/CUN-09-Consultar estado de orden.jpg>)
 
-*Figura 12. CUN-09 - Consultar estado de orden.*
+*Figura 13. CUN-09 - Consultar estado de orden.*
 
 ```
 ID: CDU-09
@@ -579,11 +581,11 @@ Postcondiciones:
 Relacionado con EaC: EaC-01 (consulta ≤ 5 s), EaC-07 (trazabilidad)
 ```
 
-### 5.10 CDU-10: Gestionar devoluciones y reembolsos
+### 3.14 CDU-10: Gestionar devoluciones y reembolsos
 
 ![CUN-10 - Gestionar devoluciones y reembolsos](<./diagramas/img/CUN-10-Gestionar devoluciones y reembolsos.jpg>)
 
-*Figura 13. CUN-10 - Gestionar devoluciones y reembolsos.*
+*Figura 14. CUN-10 - Gestionar devoluciones y reembolsos.*
 
 ```
 ID: CDU-10
@@ -625,11 +627,11 @@ Postcondiciones:
 Relacionado con EaC: EaC-02 (evidencia < 1 s), EaC-07 (trazabilidad)
 ```
 
-### 5.11 CDU-11: Notificar al cliente
+### 3.15 CDU-11: Notificar al cliente
 
 ![CUN-11 - Notificar al cliente](<./diagramas/img/CUN-11-Notificar al cliente.jpg>)
 
-*Figura 14. CUN-11 - Notificar al cliente.*
+*Figura 15. CUN-11 - Notificar al cliente.*
 
 ```
 ID: CDU-11
@@ -656,11 +658,11 @@ Postcondiciones:
 Relacionado con EaC: EaC-08 (notificación no bloqueante), EaC-07 (trazabilidad)
 ```
 
-### 5.12 CDU-12: Auditar operaciones
+### 3.16 CDU-12: Auditar operaciones
 
 ![CUN-12 - Auditar operaciones](<./diagramas/img/CUN-12-Auditar operaciones.jpg>)
 
-*Figura 15. CUN-12 - Auditar operaciones.*
+*Figura 16. CUN-12 - Auditar operaciones.*
 
 ```
 ID: CDU-12
@@ -692,9 +694,26 @@ Relacionado con EaC: EaC-02 (recuperación < 1 s), EaC-07 (auditabilidad)
 
 ---
 
-## 6. Drivers de Calidad (EaC)
+## 4. Drivers Arquitectónicos
 
-### 6.1 EaC-04 - Continuidad ante falla de PayKlik
+### 4.1 Características del Sistema Priorizadas
+
+| Característica | Por qué importa al negocio |
+|---|---|
+| Continuidad de la orden ante fallas de la pasarela de pago | Protege los ingresos y evita repetir pérdidas como los USD 150,000 ocasionados por 45 minutos de indisponibilidad en el último Black Friday |
+| Capacidad para soportar hasta ocho veces el tráfico normal | Permite atender el pico comercial de noviembre sin degradar las consultas ni la recuperación de evidencia |
+| Experiencia y carrito unificados entre tienda, web, aplicación y centro de atención | Cumple el objetivo estratégico de operar sin silos y conservar la intención de compra al cambiar de canal |
+| Trazabilidad completa y evidencia recuperable en menos de un segundo | Permite reconstruir quién hizo qué y cuándo, reduce conciliaciones manuales y protege el cumplimiento ante auditorías de la SAT |
+| Integración sin modificar ERP-Core ni POS | Preserva la inversión y respeta una decisión no negociable de la Junta Directiva |
+| Despacho e inventario visibles y confiables | Ayuda a reducir en 70 % los envíos incorrectos, cuyo costo actual ronda USD 25 por caso |
+| Operación mantenible por el equipo interno y dentro del presupuesto | Reduce riesgo de adopción y evita depender de competencias o costos operativos no aprobados |
+| Evolución planificada desde infraestructura local hacia nube | Aprovecha la infraestructura existente y mantiene una ruta futura para elasticidad, recuperación y crecimiento regional |
+
+### 4.2 Drivers de Calidad (EaC)
+
+
+
+#### 4.2.1 EaC-04 - Continuidad ante falla de PayKlik
 
 ```
 ID: EaC-04
@@ -712,7 +731,17 @@ Medida de respuesta: 0 órdenes perdidas por falla del proveedor de pago; primer
 Reflejado en diagrama de despliegue como: adaptador de PayKlik con Circuit Breaker,
   persistencia del intento, cola de conciliación/reintentos y monitoreo de mensajes fallidos
 ```
-### 6.2 Tabla resumen de EaC identificados
+
+#### 4.2.2 Tabla resumen de EaC identificados
+
+Las medidas de **consulta en cinco segundos**, **evidencia en menos de un
+segundo**, **demanda de hasta 8x**, **timeout aproximado de 1 en 50 solicitudes**
+y los **límites de inversión y operación** provienen directamente del caso. Los
+demás tiempos, cantidades de reintentos y metas operativas que aparecen en los
+EaC son objetivos de diseño propuestos por el equipo para hacer verificable la
+respuesta arquitectónica; no se presentan como mediciones históricas ni como
+condiciones contractuales de los proveedores. Deben validarse con los
+stakeholders y mediante pruebas antes de afirmarlos como niveles de servicio.
 
 | ID | Atributo | Resumen del escenario | Medida |
 |---|---|---|---|
@@ -729,7 +758,7 @@ Reflejado en diagrama de despliegue como: adaptador de PayKlik con Circuit Break
 | EaC-11 | Portabilidad | Crecimiento futuro | On-prem → migración planificada a nube |
 | EaC-12 | Seguridad | Datos de pago | Sin PAN completo ni CVV almacenado |
 
-### 6.3 EaC formalizados
+#### 4.2.3 EaC formalizados
 
 **EaC-01 - Consulta de estado de orden en menos de 5 segundos**
 ```
@@ -911,13 +940,11 @@ Reflejado en diagrama de despliegue como: adaptador de pago con restricción de 
   persistir PAN/CVV, tokenización y transporte cifrado
 ```
 
-> Nota de consistencia: EaC-04 está formalizado en §6.1. Los doce
+> Nota de consistencia: EaC-04 está formalizado en §4.2.1. Los doce
 > escenarios (EaC-01 a EaC-12) están ahora completos en formato de 6 partes y
-> coinciden con la tabla de correspondencia del diagrama de despliegue (§11.3).
+> coinciden con la tabla de correspondencia del diagrama de despliegue (§6.2).
 
----
-
-## 7. Drivers de Restricción
+### 4.3 Drivers de Restricción
 
 | # | Restricción | Origen |
 |---|---|---|
@@ -932,11 +959,11 @@ Reflejado en diagrama de despliegue como: adaptador de pago con restricción de 
 | R9 | Minimizar el consumo energético de la infraestructura | Objetivo organizacional de sostenibilidad y costo |
 | R10 | Repositorio privado de GitHub `AYD2_A_2S2025_PROYECTO_G5` | Cátedra |
 
----
+### 4.4 Priorización de Drivers
 
-## 8. Priorización de Drivers
 
-### 8.1 Criterio utilizado
+
+#### 4.4.1 Criterio utilizado
 
 La prioridad combina cuatro dimensiones solicitadas por el enunciado:
 
@@ -947,7 +974,7 @@ La prioridad combina cuatro dimensiones solicitadas por el enunciado:
 
 La tabla es una priorización relativa, no una exclusión: los drivers que no aparecen en el grupo crítico continúan siendo obligatorios cuando el enunciado los establece.
 
-### 8.2 Drivers críticos priorizados
+#### 4.4.2 Drivers críticos priorizados
 
 | Prioridad | Driver | Valor | Riesgo | Urgencia | Impacto arquitectónico | Justificación basada en evidencia |
 |---|---|---|---|---|---|---|
@@ -960,93 +987,46 @@ La tabla es una priorización relativa, no una exclusión: los drivers que no ap
 | 7 | R5 / EaC-09 - stack conocido y mantenibilidad interna | Medio | Alto | Media | Alto | Una alternativa fuera de Java, .NET y Docker básico añade capacitación, costo y riesgo de operación |
 | 8 | EaC-11 / R6 - evolución on-premises a nube | Medio | Medio | Baja | Alto | El despliegue local inicial es obligatorio, pero la arquitectura debe permitir elasticidad, recuperación y expansión regional futuras |
 
-### 8.3 Orden de atención del resto de drivers
+#### 4.4.3 Orden de atención del resto de drivers
 
 Una vez protegidos los ocho grupos críticos, el siguiente orden de trabajo es: **cumplimiento y seguridad** (EaC-02, EaC-12, R4), **operación logística y consulta** (CUN-02, CUN-07 a CUN-10, EaC-01), **integraciones y continuidad parcial** (CUN-04 a CUN-06, CUN-08, CUN-11, EaC-08, R3), y **costo, sostenibilidad y gobernanza del entregable** (EaC-10, R2, R7 a R10). CUN-12 y EaC-07 atraviesan todos los grupos mediante auditoría.
 
 ---
 
-## 9. Matriz de Trazabilidad
+## 5. Estrategia y Decisiones Arquitectónicas
 
-La matriz relaciona stakeholders y entidades externas con drivers, decisiones aceptadas, vistas y mecanismos de validación. Las referencias de vista corresponden a [Contexto (§11.1)](#111-diagrama-de-contexto), [Componentes (§11.2)](#112-diagrama-de-componentes), [Despliegue (§11.3)](#113-diagrama-de-despliegue), [Bloques (§11.4)](#114-diagrama-de-bloques) y [Prototipo (§12)](#12-prototipo--mockups). Una validación prevista es un criterio o diseño de prueba de Fase 1, no un resultado de implementación.
+### 5.1 Visión general de la solución
 
-| Fuente de la preocupación | Preocupación o condición | Driver relacionado | Decisión/ADR | Vista prevista | Validación prevista |
-|---|---|---|---|---|---|
-| Junta Directiva y Dirección | Omnicanalidad sin modificar ERP/POS | CUN-01, R1 | ADR-001 aceptado | Contexto, Componentes, Bloques | Revisión de frontera sin cambios requeridos en ERP-Core o POS; recorrido del flujo entre canales |
-| Carlos Méndez, TI | Continuidad, monitoreo, escalabilidad y mantenibilidad interna | EaC-03, EaC-09, EaC-11, R1, R5, R6 | ADR-001 y ADR-006 aceptados | Componentes, Despliegue, Bloques | Diseño de prueba de carga a 8x; ejercicio de runbook; alertas de dependencias, colas y capacidad |
-| Ana Lucía Fuentes, Finanzas | Trazabilidad, evidencia rápida y cumplimiento fiscal | EaC-02, EaC-07, R4, CUN-04, CUN-12 | ADR-002 aceptado: publicación confiable y registro auditable | Componentes, Despliegue | Reconstrucción de quién, cuándo y qué cambió; recuperación de evidencia en menos de un segundo |
-| Roberto Quezada, Logística | Visibilidad de inventario y órdenes; reducir 70 % los errores | CUN-02, CUN-07, CUN-08, EaC-05 | ADR-004 aceptado: reintentos; ADR-005 aceptado: coordinación y estados | Contexto, Componentes, Despliegue | Escenario de despacho y cambio de entrega; indicador de errores comparado con la línea base |
-| Directora de Comercialización | Experiencia y carrito unificados, sin silos | CUN-01, EaC-01 | ADR-001 y ADR-005 aceptados | Contexto, Componentes, Bloques | Recorrido del CDU-01/prototipo entre canales; consulta en cinco segundos o menos |
-| Jefe de Operaciones | Evitar pérdida de ventas en caídas y picos | EaC-03, EaC-04, R7 | ADR-001 aceptado; ADR-003 aceptado: resiliencia de pago | Componentes, Despliegue | Carga a 8x y falla sostenida de PayKlik; verificar que la orden persiste y puede continuar o recuperarse |
-| Gerencia | Inversión y operación dentro del presupuesto | R2, EaC-10, R9 | ADR-001 aceptado con estimación ROM | Despliegue, Bloques | Inversión objetivo USD 105,000–140,000 e infraestructura USD 700–1,100/mes, sujetas a cotización y medición |
-| Clientes | Continuidad del carrito, pago confiable, consulta y notificación | CUN-01, CUN-03, CUN-09 a CUN-11, EaC-01, EaC-04, EaC-08, EaC-12 | ADR-003, ADR-005 y ADR-008 aceptados | Contexto, Componentes, Prototipo | Flujo omnicanal; consulta ≤ 5 s; falla de notificación no bloqueante; escaneo sin PAN completo ni CVV |
-| Personal de atención al cliente | Vista consolidada de orden, pago, entrega y postventa | CUN-09, CUN-10, EaC-01, EaC-07 | ADR-002 y ADR-005 aceptados | Contexto, Componentes, Prototipo | Consulta integral en cinco segundos o menos y trazabilidad de devolución hasta la venta original |
-| Equipo interno de desarrollo y operación | Tecnología conocida, mantenibilidad y adopción viable | EaC-09, R5, R6 | ADR-001 aceptado | Componentes, Despliegue | Revisión de arquitectura por el equipo; ejercicio de despliegue y mantenimiento con las capacidades declaradas |
-| ERP-Core (entidad externa) | Recibir CSV/XML cada 30 minutos sin cambios internos | CUN-05, R1 | ADR-002 y ADR-004 aceptados | Contexto, Componentes, Despliegue | Generación, reintento y procesamiento de archivo dentro de una ventana de 30 minutos |
-| POS (entidades externas) | Recepción confiable de eventos sin modificar las instalaciones | CUN-06, EaC-06, R1 | ADR-002 y ADR-004 aceptados | Contexto, Componentes, Despliegue | Error y reintento; comprobar acuse ≤ 5 min e idempotencia en el adaptador sin modificar POS |
-| PayKlik (entidad externa) | Integración REST bajo latencia o indisponibilidad | CUN-03, EaC-04, EaC-12, R3 | ADR-003 aceptado: aislamiento de fallas de pago | Contexto, Componentes, Despliegue | Latencia de cinco segundos y falla sostenida; comprobar orden recuperable y ausencia de PAN completo y CVV almacenados |
-| LogiExpress (entidad externa) | Generación de guías y estados pese a timeouts | CUN-08, EaC-05, R3 | ADR-004 aceptado: reintento con backoff | Contexto, Componentes, Despliegue | Al menos 2 % de timeouts simulados; comprobar reintento sin bloquear la preparación del despacho |
-| SAT | Factura XML, CUI/serie y evidencia auditable | CUN-04, CUN-12, EaC-02, EaC-07, R4 | ADR-002 y ADR-007 aceptados | Contexto, Componentes, Despliegue | XML y CUI/serie; estado fiscal pendiente ante timeout; evidencia < 1 s y reconstrucción de operación |
-| Proveedor de SMS, correo y push | Su indisponibilidad no debe bloquear la operación principal | CUN-11, EaC-08 | ADR-008 aceptado | Contexto, Componentes, Despliegue | Inyección de falla mientras venta, pago, facturación y despacho continúan; reintento y mensaje fallido |
+![Diagrama de Bloques de SGO-Logic](./diagramas/bloques.svg)
 
-### 9.1 Matriz de cobertura de drivers críticos
+*Figura 17. Vista ejecutiva de capacidades, controles transversales y valor.*
 
-Esta segunda lectura verifica que la priorización de la sección 8 no deje un driver crítico sin decisión, vista o validación prevista.
+Esta vista resume para el comité cómo la experiencia omnicanal atraviesa la entrada unificada, el núcleo modular y la integración confiable con legados y proveedores. Auditoría, seguridad y observabilidad aparecen como confianza transversal; el despliegue local y la ruta a nube se muestran como operación evolutiva. El resultado se expresa en términos de continuidad de ingresos, cumplimiento fiscal, reducción de errores logísticos y experiencia consistente.
 
-| Driver crítico | Stakeholders principales | Decisión/ADR | Vista prevista | Validación prevista |
-|---|---|---|---|---|
-| EaC-04 - resiliencia de pagos | Jefe de Operaciones, Clientes, TI, PayKlik | ADR-003 aceptado, apoyado por ADR-001 aceptado | Componentes, Despliegue | Falla sostenida y latencia alta de PayKlik; orden persistida y recuperable |
-| EaC-03 - escalabilidad 8x | TI, Jefe de Operaciones | ADR-001 aceptado | Despliegue, Bloques | Carga equivalente a ocho veces el tráfico normal sin degradar EaC-01/EaC-02 |
-| R1 - no modificar ERP/POS | Junta Directiva, TI, ERP-Core, POS | ADR-001 aceptado | Contexto, Componentes | Revisión de interfaces y alcance sin cambios en los sistemas legados |
-| EaC-07 - auditabilidad | Finanzas, SAT, Atención al cliente | ADR-002 aceptado | Componentes, Despliegue | Reconstrucción de actor, instante y cambio de una operación; evidencia en menos de un segundo |
-| CUN-01 - carrito omnicanal | Comercialización, Cliente | ADR-001 y ADR-005 aceptados | Contexto, Componentes, Prototipo | Iniciar una compra en un canal y continuarla o completarla en otro |
-| EaC-05 / EaC-06 - entrega confiable | Logística, LogiExpress, POS | ADR-004 aceptado | Componentes, Despliegue | Timeouts y errores simulados con reintento, idempotencia y entrega eventual |
-| R5 / EaC-09 - mantenibilidad interna | TI, Equipo interno | ADR-001 aceptado | Componentes, Despliegue | Revisión y ejercicio operativo por el equipo interno |
-| EaC-11 / R6 - evolución a nube | Dirección, TI | ADR-001 aceptado | Despliegue, Bloques | Revisión de portabilidad y ruta de migración sin obligar migración inmediata |
+**Criterios de aceptación:**
 
-### 9.2 Cobertura de drivers funcionales
+- Mantiene el estilo aceptado visible sin presentar productos tecnológicos ni topología física detallada.
+- Relaciona capacidades con continuidad de ingresos, trazabilidad fiscal, reducción de errores de despacho, experiencia consistente y evolución sin romper legados.
+- Conserva la misma frontera: los sistemas legados y proveedores se integran y no se reemplazan.
+- Usa el mismo núcleo modular, la misma capa de integración y los mismos controles transversales de las otras tres vistas.
 
-| CUN | CDU expandido | Decisiones relacionadas | Vistas/evidencia | Validación de diseño |
-|---|---|---|---|---|
-| CUN-01 - Carrito omnicanal | CDU-01 / página 1 | ADR-001, ADR-005 | Componentes, Bloques, Prototipo | Iniciar en un canal y recuperar el mismo carrito en otro |
-| CUN-02 - Reservar inventario | CDU-02 / página 2 | ADR-001, ADR-005 | Componentes, Despliegue | Dos solicitudes concurrentes no comprometen la misma unidad |
-| CUN-03 - Procesar pago | CDU-03 / página 3 | ADR-003, ADR-005 | Componentes, Despliegue, Prototipo | Caída de PayKlik conserva orden e intento sin cobro duplicado |
-| CUN-04 - Documentación fiscal | CDU-04 / página 4 | ADR-002, ADR-007 | Componentes, Despliegue | Timeout de SAT deja estado fiscal pendiente; no finaliza la orden |
-| CUN-05 - Sincronizar ERP | CDU-05 / página 5 | ADR-002, ADR-004 | Contexto, Componentes, Despliegue | Archivo CSV/XML procesado o preservado para reintento en 30 min |
-| CUN-06 - Eventos a POS | CDU-06 / página 6 | ADR-002, ADR-004 | Componentes, Despliegue | Error de entrega mantiene evento y deduplica desde el adaptador |
-| CUN-07 - Despacho | CDU-07 / página 7 | ADR-004, ADR-005 | Componentes, Despliegue | Cambio de método reasigna origen y conserva trazabilidad |
-| CUN-08 - LogiExpress | CDU-08 / página 8 | ADR-004 | Contexto, Componentes, Despliegue | Simular 2 % de timeout y comprobar reintento sin bloquear preparación |
-| CUN-09 - Consultar orden | CDU-09 / página 9 | ADR-005, ADR-006 | Componentes, Prototipo | Estado consolidado en ≤ 5 s y última información ante dependencia caída |
-| CUN-10 - Devoluciones | CDU-10 / página 10 | ADR-002, ADR-005, ADR-007 | Componentes, Prototipo | Devolución vinculada a venta y documento fiscal original |
-| CUN-11 - Notificar cliente | CDU-11 / página 11 | ADR-002, ADR-008 | Componentes, Despliegue | Falla del proveedor no bloquea orden y conserva solicitud |
-| CUN-12 - Auditar operaciones | CDU-12 / página 12 | ADR-002, ADR-006, ADR-007 | Componentes, Despliegue | Reconstruir quién/cuándo/qué y recuperar evidencia en < 1 s |
+### 5.2 Decisiones Arquitectónicas (ADRs)
 
-### 9.3 Cobertura y evidencia de cierre
+#### 5.2.1 ADR-001 - Estilo arquitectónico general de SGO-Logic
 
-- Los doce CUN tienen descripción textual y página UML editable en [`cdu-negocio-y-expandidos.drawio`](./diagramas/cdu-negocio-y-expandidos.drawio).
-- EaC-01 a EaC-12 se relacionan explícitamente con elementos de Despliegue en §11.3.
-- ADR-001 a ADR-008 están aceptados y cubren estilo, publicación confiable, pagos, entrega externa, coordinación, observabilidad, SAT y notificaciones.
-- Las cuatro vistas poseen fuente versionable `.dot`, SVG y PNG; los mecanismos de validación se expresan como diseños de prueba de Fase 1 y no como resultados de una implementación inexistente.
+> **Responsable:** Equipo de Arquitectura de SGO-Logic (Grupo 5)
 
----
+##### Estado
 
-## 10. Decisiones Arquitectónicas (ADRs)
+**Aceptado por el equipo de arquitectura.** La alternativa de monolito modular con capa de integración por puertos, adaptadores y mensajería responde de forma proporcionada al conjunto de drivers críticos (EaC-03, EaC-04, EaC-05, EaC-06, EaC-07, EaC-09, EaC-11, R1, R5, R6) y mantiene la frontera de no modificar ERP-Core ni POS. Las consecuencias negativas aceptadas se mitigan mediante ADR-002 a ADR-008 y la disciplina de modularidad verificable.
 
-### 10.1 ADR-001 - Estilo arquitectónico general de SGO-Logic
-
-> **Responsable del registro inicial:** Persona 1 (Rol A) · **Responsable de revisión y aprobación:** Persona 3 (Rol C)
-
-#### Estado
-
-**Aceptado.** Revisado por Persona 3 (Rol C) con base en la priorización de la Sección 8. La alternativa de monolito modular con capa de integración por puertos, adaptadores y mensajería responde de forma proporcionada al conjunto de drivers críticos (EaC-03, EaC-04, EaC-05, EaC-06, EaC-07, EaC-09, EaC-11, R1, R5, R6) y mantiene la frontera de no modificar ERP-Core ni POS. Las consecuencias negativas aceptadas se mitigan mediante ADR-002 a ADR-008 y la disciplina de modularidad verificable.
-
-#### Contexto
+##### Contexto
 
 SGO-Logic debe integrar una operación omnicanal sin modificar ERP-Core ni las 32 instancias POS (R1). La solución inicia en infraestructura local y debe conservar una ruta de evolución a nube (R6, EaC-11). El equipo que la operará posee experiencia principalmente en Java, .NET y Docker básico (R5, EaC-09), mientras que la organización impone límites de inversión y operación (R2, EaC-10).
 
 El diseño también debe soportar hasta ocho veces el tráfico normal en Black Friday (EaC-03), conservar la orden y permitir su recuperación cuando PayKlik falle (EaC-04), tolerar timeouts de LogiExpress (EaC-05), entregar eventos confiablemente a POS (EaC-06) y conservar trazabilidad completa (EaC-07). Estas condiciones favorecen límites internos claros y desacoplamiento de las integraciones, pero la capacidad actual del equipo y el despliegue inicial no justifican asumir desde el comienzo toda la complejidad operativa de una arquitectura de microservicios.
 
-#### Decisión
+##### Decisión
 
 Adoptar un **monolito modular** para el núcleo de SGO-Logic, organizado por capacidades de negocio: Carrito y Órdenes, Inventario y Reservas, Pagos, Facturación, Despacho, Postventa, Notificaciones y Auditoría. Los límites deberán validarse durante el modelado del dominio; esta lista no presupone que cada módulo sea automáticamente un *bounded context*. Cada módulo será propietario de su modelo y de las operaciones sobre sus datos, y la comunicación entre módulos se realizará mediante contratos explícitos, sin acceso directo a estructuras internas de otro módulo.
 
@@ -1062,7 +1042,7 @@ El primer despliegue mantendrá un solo artefacto para el núcleo y una frontera
 
 El ADR define el estilo y las fronteras, no una tecnología concreta. La selección de lenguaje, broker, base de datos y herramientas de despliegue deberá evaluarse por separado contra costo, capacidades del equipo y medidas de los EaC.
 
-#### Alternativas consideradas
+##### Alternativas consideradas
 
 | Alternativa | Ventajas | Desventajas y riesgos | Evaluación |
 |---|---|---|---|
@@ -1070,7 +1050,7 @@ El ADR define el estilo y las fronteras, no una tecnología concreta. La selecci
 | Microservicios completos | Escalado y despliegue independientes por dominio; mayor aislamiento potencial | Aumenta operación distribuida, observabilidad, consistencia eventual, infraestructura y capacitación | Descartada para la primera etapa por R2, R5, R6 y EaC-09; puede reconsiderarse durante la evolución |
 | Monolito modular con integración orientada a eventos y adaptadores | Equilibra mantenibilidad, resiliencia, trazabilidad y evolución; aísla legados y proveedores | Introduce mensajería, consistencia eventual en ciertos flujos y disciplina de modularidad | **Aceptada**, por responder mejor al conjunto de drivers críticos con complejidad proporcional |
 
-#### Evaluación de inversión y costo operativo
+##### Evaluación de inversión y costo operativo
 
 La estimación es de orden de magnitud (ROM, precisión esperada ±30 %) para comparar alternativas, no una cotización. Supone que MegaStore reutiliza servidores, red y personal existentes; usa componentes de código abierto para broker, telemetría y contenedores; conserva los contratos vigentes de PayKlik y LogiExpress; y no incluye el costo transaccional de esos contratos porque el caso no proporciona tarifas. Antes de construir se debe sustituir por cotizaciones y capacidad medida.
 
@@ -1082,7 +1062,7 @@ La estimación es de orden de magnitud (ROM, precisión esperada ±30 %) para co
 
 Para la alternativa aceptada, la inversión contempla análisis/diseño y construcción (USD 70,000–90,000), integración y pruebas (USD 20,000–28,000), capacitación y runbooks (USD 5,000–8,000) y contingencia (USD 10,000–14,000). La infraestructura mensual contempla energía y capacidad incremental (USD 200–350), almacenamiento y respaldos (USD 120–220), broker y procesamiento (USD 100–180), y observabilidad/retención (USD 180–350). Los rangos no deben sumarse por sus máximos aislados: el tope de USD 1,100 representa la configuración objetivo ajustada dentro de R2.
 
-#### Consecuencias
+##### Consecuencias
 
 **Positivas:**
 
@@ -1100,7 +1080,7 @@ Para la alternativa aceptada, la inversión contempla análisis/diseño y constr
 - La modularidad depende de reglas verificables de dependencia; sin ellas, el núcleo puede degradarse a un monolito fuertemente acoplado.
 - El broker, la persistencia y los adaptadores se convierten en elementos operativos que requieren métricas, alertas, manejo de mensajes fallidos y procedimientos de recuperación.
 
-#### Criterios de validación de la decisión
+##### Criterios de validación de la decisión
 
 - Las vistas de Componentes y Despliegue muestran límites modulares, adaptadores, mensajería y mecanismos de resiliencia coherentes.
 - La vista de Componentes identifica contratos provistos y requeridos, propietario de datos y dirección de cada dependencia; no muestra accesos cruzados a datos internos.
@@ -1109,17 +1089,15 @@ Para la alternativa aceptada, la inversión contempla análisis/diseño y constr
 - La estimación de inversión y operación respeta R2 o documenta la aprobación necesaria.
 - El equipo interno confirma que puede desplegar, observar y mantener la alternativa con capacitación razonable.
 
-#### Drivers relacionados
+##### Drivers relacionados
 
 CUN-01, CUN-03 a CUN-06, CUN-08, CUN-11 y CUN-12; EaC-03 a EaC-12; R1 a R7 y R9.
 
-### 10.2 ADRs complementarios
-
-#### ADR-002 - Publicación confiable y registro auditable
+#### 5.2.2 ADR-002 - Publicación confiable y registro auditable
 
 ##### Estado
 
-**Aceptado.** Revisado y aprobado por Persona 3 (Rol C) para garantizar trazabilidad (EaC-07) y evidencia recuperable en menos de 1 segundo (EaC-02) sin depender de la disponibilidad de los sistemas externos.
+**Aceptado por el equipo de arquitectura.** La decisión atiende la trazabilidad (EaC-07) y permite construir evidencia recuperable en menos de un segundo (EaC-02) sin depender de la disponibilidad inmediata de los sistemas externos.
 
 ##### Contexto
 
@@ -1131,7 +1109,7 @@ Adoptar el patrón **Outbox** como mecanismo base de publicación confiable: el 
 
 ##### Alternativas consideradas
 
-1. **Outbox (elegida):** acopla el registro del hecho y el mensaje en una transacción local; entrega eventual vía broker; soporta idempotencia y reintento. Pros: garantiza que no hay cambio confirmado sin mensaje ni mensaje sin cambio. Contras: requiere proceso de lectura/borrado de la tabla outbox y disciplina de idempotencia en consumidores.
+1. **Outbox (elegida):** acopla el registro del hecho y el mensaje saliente en una transacción local; permite entrega eventual vía broker y soporta reintento. Pros: evita que el cambio de negocio quede confirmado sin su registro de publicación correspondiente. Contras: el broker puede recibir duplicados, por lo que requiere proceso de despacho monitoreado e idempotencia en los consumidores; por sí solo no garantiza que un destino externo indisponible procese finalmente el mensaje.
 2. **Event Store como fuente de estado:** conserva la secuencia de eventos como estado. Pros: trazabilidad nativa y reconstrucción de estado. Contras: complejidad operativa mayor, curva de aprendizaje y riesgo de duplicar responsabilidad con la base operacional del núcleo; no resuelve por sí solo la entrega hacia sistemas externos.
 3. **Doble escritura (negocio + broker en la misma operación sin outbox):** Pros: simplicidad aparente. Contras: puede confirmar el cambio y no publicar el mensaje (o viceversa) ante falla, rompiendo EaC-07 y la conciliación con ERP/SAT. Descartada.
 
@@ -1150,13 +1128,11 @@ Adoptar el patrón **Outbox** como mecanismo base de publicación confiable: el 
 
 EaC-02, EaC-07, R1, R3, R4.
 
----
-
-#### ADR-003 - Aislamiento de fallas y continuidad de órdenes ante PayKlik
+#### 5.2.3 ADR-003 - Aislamiento de fallas y continuidad de órdenes ante PayKlik
 
 ##### Estado
 
-**Aceptado.** Revisado y aprobado por Persona 3 (Rol C) para atender el driver crítico de resiliencia de pagos (EaC-04) y la protección de datos de pago (EaC-12).
+**Aceptado por el equipo de arquitectura.** Atiende el driver crítico de resiliencia de pagos (EaC-04) y la protección de datos de pago (EaC-12).
 
 ##### Contexto
 
@@ -1172,12 +1148,12 @@ El módulo de Pagos se mantiene independiente del proveedor mediante un puerto c
 
 1. **Circuit Breaker + reintento idempotente con conciliación (elegida):** Pros: no pierde la orden, aísla cascadas, auditable. Contras: requiere lógica de conciliación y estado intermedio de la orden.
 2. **Bloquear la orden hasta respuesta de PayKlik:** Pros: simple. Contras: ante indisponibilidad de 45 min, la venta se pierde; contradice EaC-04 y el objetivo de negocio.
-3. **Segundo adquirente en paralelo:** Pros: reduce dependencia. Contras: el enunciado no describe un segundo proveedor contratado; introduciría nuevo contrato y riesgo fuera de R3. Queda como supuesto abierto (§2.3), no se decide aquí.
+3. **Segundo adquirente en paralelo:** Pros: reduce dependencia. Contras: el enunciado no describe un segundo proveedor contratado; introduciría nuevo contrato y riesgo fuera de R3. Queda como supuesto abierto (§2.6), no se decide aquí.
 
 ##### Consecuencias
 
 **Positivas:**
-- 0 órdenes perdidas por falla de PayKlik.
+- Proporciona el mecanismo para validar el objetivo de 0 órdenes perdidas por falla de PayKlik; el cumplimiento deberá demostrarse mediante pruebas.
 - Intentos de cobro auditables y vinculados a orden/canal/fecha/resultado.
 - PAN/CVV nunca persistidos en SGO-Logic.
 
@@ -1189,13 +1165,11 @@ El módulo de Pagos se mantiene independiente del proveedor mediante un puerto c
 
 EaC-04, EaC-12, R3, R4.
 
----
-
-#### ADR-004 - Entrega confiable y reintentos hacia LogiExpress, POS y ERP-Core
+#### 5.2.4 ADR-004 - Entrega confiable y reintentos hacia LogiExpress, POS y ERP-Core
 
 ##### Estado
 
-**Aceptado.** Revisado y aprobado por Persona 3 (Rol C) para atender EaC-05, EaC-06 y la restricción R1 de no modificar los sistemas externos.
+**Aceptado por el equipo de arquitectura.** Atiende EaC-05, EaC-06 y la restricción R1 de no modificar los sistemas externos.
 
 ##### Contexto
 
@@ -1221,7 +1195,7 @@ El mecanismo se apoya en el Outbox de ADR-002 para no perder el hecho de negocio
 
 **Positivas:**
 - Despacho y sincronización no se bloquean por fallas externas.
-- Entrega eventual garantizada con evidencia de reintentos.
+- El mensaje permanece preservado con evidencia de reintentos; la entrega eventual depende de que el destino vuelva a estar disponible y acepte el contrato. Si no ocurre, el caso queda en mensajes fallidos para recuperación controlada.
 
 **Negativas / riesgos aceptados:**
 - Necesidad de monitoreo de mensajes fallidos y procedimiento de recuperación manual si se agota la política.
@@ -1231,13 +1205,11 @@ El mecanismo se apoya en el Outbox de ADR-002 para no perder el hecho de negocio
 
 EaC-05, EaC-06, R1, R3.
 
----
-
-#### ADR-005 - Coordinación y estados del ciclo de vida de la orden
+#### 5.2.5 ADR-005 - Coordinación y estados del ciclo de vida de la orden
 
 ##### Estado
 
-**Aceptado.** Revisado y aprobado por Persona 3 (Rol C) para coordinar el flujo de la orden (CUN-01, CUN-03, CUN-07) y soportar las compensaciones requeridas por EaC-04 y EaC-07.
+**Aceptado por el equipo de arquitectura.** Coordina el flujo de la orden (CUN-01, CUN-03, CUN-07) y soporta las compensaciones requeridas por EaC-04 y EaC-07.
 
 ##### Contexto
 
@@ -1245,7 +1217,7 @@ La orden omnicanal atraviesa múltiples pasos: reservar inventario → cobrar �
 
 ##### Decisión
 
-Adoptar **Saga orquestada** como coordinador del ciclo de vida de la orden, con un módulo de Coordinación/Órdenes que dirige los pasos y sus compensaciones. Estados definidos: `Pendiente → Pago aprobado → En preparación → Despachada → Entregada`, con estados de excepción `Pago pendiente de confirmación`, `Cancelada` y `Devuelta`. Compensaciones: liberar reserva de inventario si el pago no se confirma tras la política de reintento (ADR-003/ADR-004), revertir o anular factura si aplica, y registrar cada transición para EaC-07. La Saga orquestada se prefiere sobre la coreografiada porque centraliza la lógica de compensación y facilita la auditoría desde un único coordinador.
+Adoptar **Saga orquestada** como coordinador del ciclo de vida de la orden, con un módulo de Coordinación/Órdenes que dirige los pasos y sus compensaciones. El flujo nominal queda definido como `Pendiente → Inventario reservado → Pago aprobado → Fiscal pendiente → Confirmada → En preparación → Despachada → Entregada`. `Fiscal pendiente` es un estado interno y solo transita a `Confirmada` cuando se conserva la confirmación fiscal exigida por ADR-007. Los estados alternativos o de excepción son `Pago pendiente de confirmación`, `Pago rechazado`, `Cancelada` y `Devuelta`. Las compensaciones incluyen liberar la reserva de inventario si el pago no se confirma tras la política aplicable, revertir o anular la factura únicamente cuando el contrato fiscal lo permita y registrar cada transición para EaC-07. La Saga orquestada se prefiere sobre la coreografiada porque centraliza la lógica de compensación y facilita la auditoría desde un único coordinador.
 
 ##### Alternativas consideradas
 
@@ -1268,13 +1240,11 @@ Adoptar **Saga orquestada** como coordinador del ciclo de vida de la orden, con 
 
 CUN-01, CUN-03, CUN-07, EaC-01, EaC-04, EaC-05, EaC-07.
 
----
-
-#### ADR-006 - Observabilidad centralizada de SGO-Logic e integraciones
+#### 5.2.6 ADR-006 - Observabilidad centralizada de SGO-Logic e integraciones
 
 ##### Estado
 
-**Aceptado.** Revisado por Persona 3 (Rol C) para atender continuidad, escalabilidad y mantenibilidad operativa.
+**Aceptado por el equipo de arquitectura.** Atiende continuidad, escalabilidad y mantenibilidad operativa.
 
 ##### Contexto
 
@@ -1300,17 +1270,15 @@ Adoptar telemetría centralizada con **métricas, logs estructurados, trazas dis
 
 EaC-01 a EaC-06, EaC-09, EaC-10, R2, R5.
 
----
-
-#### ADR-007 - Confirmación fiscal síncrona con recuperación controlada
+#### 5.2.7 ADR-007 - Confirmación fiscal síncrona con recuperación controlada
 
 ##### Estado
 
-**Aceptado.** Revisado por Persona 3 (Rol C) para preservar la condición fiscal previa al cierre y la trazabilidad exigida por Finanzas.
+**Aceptado por el equipo de arquitectura.** Preserva la condición fiscal previa al cierre y la trazabilidad exigida por Finanzas.
 
 ##### Contexto
 
-La factura XML debe enviarse a la SAT antes de finalizar la orden, pero el servicio tiene respuesta variable. La arquitectura no puede declarar una orden finalizada sin confirmación fiscal ni perder el pago o la evidencia si SAT está temporalmente indisponible.
+El enunciado exige emitir la factura y enviar el XML a la SAT antes de finalizar la orden, y advierte que el servicio tiene tiempos de respuesta variables. No especifica la semántica técnica del acuse ni si el envío y la autorización ocurren en una o varias operaciones. Ante esa incertidumbre, la arquitectura adopta de forma conservadora la confirmación fiscal como condición de avance: no debe declarar una orden finalizada ni perder el pago o la evidencia si SAT está temporalmente indisponible. Esta interpretación deberá revisarse cuando exista un contrato técnico confirmado.
 
 ##### Decisión
 
@@ -1332,13 +1300,11 @@ El adaptador SAT realiza la solicitud de forma síncrona respecto de la transici
 
 CUN-04, CUN-10, CUN-12, EaC-02, EaC-07, R4, R7.
 
----
-
-#### ADR-008 - Notificaciones asíncronas no bloqueantes
+#### 5.2.8 ADR-008 - Notificaciones asíncronas no bloqueantes
 
 ##### Estado
 
-**Aceptado.** Revisado por Persona 3 (Rol C) para atender EaC-08 y evitar que un proveedor externo detenga el ciclo de la orden.
+**Aceptado por el equipo de arquitectura.** Atiende EaC-08 y evita que un proveedor externo detenga el ciclo de la orden.
 
 ##### Contexto
 
@@ -1366,30 +1332,15 @@ CUN-11, EaC-08, EaC-07, R3.
 
 ---
 
-## 11. Vistas Arquitectónicas
+## 6. Vistas Arquitectónicas
 
-Las cuatro vistas se conservan como fuentes Graphviz versionables y se publican en SVG para mantener legibilidad al ampliar. Además, existe una [versión consolidada y completamente editable en draw.io](./diagramas/vistas-arquitectonicas-sgo-logic.drawio), con una página por vista. Se declara **UML 2.5.1 simplificado** para Componentes y Despliegue: los estereotipos, fronteras, interfaces y tipos de relación se indican explícitamente. Contexto y Bloques emplean notación complementaria declarada, apropiada para comunicar la frontera del sistema y la visión ejecutiva. La guía de notación, los comandos de regeneración y las decisiones abiertas se conservan en [`Docs/diagramas/README.md`](./diagramas/README.md).
+Las cuatro vistas se conservan como fuentes Graphviz versionables (`.dot`) y se publican en SVG y PNG para mantener legibilidad al ampliar. El diagrama de Contexto se presenta en §2.3 y la vista de Bloques en §5.1; esta sección contiene las vistas de Componentes y Despliegue derivadas de ambas. Además, existe una [versión consolidada y completamente editable en draw.io](./diagramas/vistas-arquitectonicas-sgo-logic.drawio), con una página por vista. Se declara **UML 2.5.1 simplificado** para Componentes y Despliegue: los estereotipos, fronteras, interfaces y tipos de relación se indican explícitamente. Contexto y Bloques emplean notación complementaria declarada, apropiada para comunicar la frontera del sistema y la visión ejecutiva.
 
-### 11.1 Diagrama de Contexto
-
-![Diagrama de Contexto de SGO-Logic](./diagramas/contexto.svg)
-
-*Figura 16. Contexto de SGO-Logic, sus canales, áreas y sistemas externos.*
-
-La frontera central identifica SGO-Logic como capa de orquestación e integración. A la izquierda se separan usuarios, canales y áreas organizacionales; a la derecha aparecen las seis entidades externas existentes. ERP-Core, POS y proveedores se integran sin presentarlos como componentes internos ni como sistemas que deban modificarse.
-
-**Criterios de aceptación:**
-
-- Delimita claramente SGO-Logic como sistema de interés y mantiene fuera de la frontera a ERP-Core, POS, PayKlik, LogiExpress, SAT y el proveedor de notificaciones.
-- Muestra los cuatro canales, sus usuarios principales y las áreas de TI, Finanzas, Logística, Dirección, Gerencia y Comercialización.
-- Rotula propósito y dirección; solo afirma REST para PayKlik y LogiExpress, CSV/XML para ERP-Core, XML para SAT y eventos hacia POS donde existe evidencia en el caso.
-- Marca como pendiente de definición el contrato del canal tienda, en vez de inventarlo.
-
-### 11.2 Diagrama de Componentes
+### 6.1 Diagrama de Componentes
 
 ![Diagrama de Componentes de SGO-Logic](./diagramas/componentes.svg)
 
-*Figura 17. Componentes del núcleo modular y de la capa de integración.*
+*Figura 18. Componentes del núcleo modular y de la capa de integración.*
 
 La vista materializa ADR-001 a ADR-008: un núcleo modular desplegable, una API omnicanal, Saga orquestada y una capa de puertos, adaptadores y mensajería. Cada módulo declara el propietario lógico de sus datos. La publicación confiable usa Outbox conforme a ADR-002; la vista lo distingue de un Event Store y ubica la idempotencia en los adaptadores para no modificar los legados.
 
@@ -1400,11 +1351,11 @@ La vista materializa ADR-001 a ADR-008: un núcleo modular desplegable, una API 
 - Señala propiedad lógica de carrito, orden, reserva, intento de pago, factura, despacho, devolución, notificación y evidencia; prohíbe acceso directo a datos internos de otro módulo.
 - Ubica explícitamente Outbox, broker, idempotencia en adaptadores y los seis adaptadores externos requeridos.
 
-### 11.3 Diagrama de Despliegue
+### 6.2 Diagrama de Despliegue
 
 ![Diagrama de Despliegue de SGO-Logic](./diagramas/despliegue.svg)
 
-*Figura 18. Despliegue inicial on-premises y ruta planificada de evolución.*
+*Figura 19. Despliegue inicial on-premises y ruta planificada de evolución.*
 
 El contorno azul representa el despliegue inicial **on-premises**. El número de instancias, los productos y la redundancia permanecen abiertos hasta contar con ADR y evidencia de pruebas. El contorno verde discontinuo muestra únicamente una ruta futura a nube; no afirma que esa infraestructura exista en la primera etapa.
 
@@ -1430,26 +1381,166 @@ El contorno azul representa el despliegue inicial **on-premises**. El número de
 - Mantiene protocolos conocidos y marca como pendientes la selección de productos, redundancia, cifrado en reposo, retención y contrato del canal tienda.
 - No fija réplicas, capacidad, RTO, RPO ni disponibilidad; `N` debe resultar de la validación de carga a ocho veces el tráfico normal.
 
-### 11.4 Diagrama de Bloques
+---
 
-![Diagrama de Bloques de SGO-Logic](./diagramas/bloques.svg)
+## 7. Validación y Trazabilidad
 
-*Figura 19. Vista ejecutiva de capacidades, controles transversales y valor.*
+La matriz principal relaciona stakeholders y entidades externas con drivers, decisiones aceptadas, vistas y mecanismos de validación. Las referencias de vista corresponden a [Contexto (§2.3)](#23-diagrama-de-contexto), [Componentes (§6.1)](#61-diagrama-de-componentes), [Despliegue (§6.2)](#62-diagrama-de-despliegue), [Bloques (§5.1)](#51-visión-general-de-la-solución) y [Prototipo (§8)](#8-prototipo--mockups). Una validación prevista es un criterio o diseño de prueba de Fase 1, no un resultado de implementación. Las secciones 7.4 a 7.6 añaden matrices de control entre requisitos funcionales, atributos de calidad y decisiones arquitectónicas.
 
-Esta vista resume para el comité cómo la experiencia omnicanal atraviesa la entrada unificada, el núcleo modular y la integración confiable con legados y proveedores. Auditoría, seguridad y observabilidad aparecen como confianza transversal; el despliegue local y la ruta a nube se muestran como operación evolutiva. El resultado se expresa en términos de continuidad de ingresos, cumplimiento fiscal, reducción de errores logísticos y experiencia consistente.
+| Fuente de la preocupación | Preocupación o condición | Driver relacionado | Decisión/ADR | Vista prevista | Validación prevista |
+|---|---|---|---|---|---|
+| Junta Directiva y Dirección | Omnicanalidad sin modificar ERP/POS | CUN-01, R1 | ADR-001 aceptado | Contexto, Componentes, Bloques | Revisión de frontera sin cambios requeridos en ERP-Core o POS; recorrido del flujo entre canales |
+| Carlos Méndez, TI | Continuidad, monitoreo, escalabilidad y mantenibilidad interna | EaC-03, EaC-09, EaC-11, R1, R5, R6 | ADR-001 y ADR-006 aceptados | Componentes, Despliegue, Bloques | Diseño de prueba de carga a 8x; ejercicio de runbook; alertas de dependencias, colas y capacidad |
+| Ana Lucía Fuentes, Finanzas | Trazabilidad, evidencia rápida y cumplimiento fiscal | EaC-02, EaC-07, R4, CUN-04, CUN-12 | ADR-002 aceptado: publicación confiable y registro auditable | Componentes, Despliegue | Reconstrucción de quién, cuándo y qué cambió; recuperación de evidencia en menos de un segundo |
+| Roberto Quezada, Logística | Visibilidad de inventario y órdenes; reducir 70 % los errores | CUN-02, CUN-07, CUN-08, EaC-05 | ADR-004 aceptado: reintentos; ADR-005 aceptado: coordinación y estados | Contexto, Componentes, Despliegue | Escenario de despacho y cambio de entrega; indicador de errores comparado con la línea base |
+| Directora de Comercialización | Experiencia y carrito unificados, sin silos | CUN-01, EaC-01 | ADR-001 y ADR-005 aceptados | Contexto, Componentes, Bloques | Recorrido del CDU-01/prototipo entre canales; consulta en cinco segundos o menos |
+| Jefe de Operaciones | Evitar pérdida de ventas en caídas y picos | EaC-03, EaC-04, R7 | ADR-001 aceptado; ADR-003 aceptado: resiliencia de pago | Componentes, Despliegue | Carga a 8x y falla sostenida de PayKlik; verificar que la orden persiste y puede continuar o recuperarse |
+| Gerencia | Inversión y operación dentro del presupuesto | R2, EaC-10, R9 | ADR-001 aceptado con estimación ROM | Despliegue, Bloques | Inversión objetivo USD 105,000–140,000 e infraestructura USD 700–1,100/mes, sujetas a cotización y medición |
+| Clientes | Continuidad del carrito, pago confiable, consulta y notificación | CUN-01, CUN-03, CUN-09 a CUN-11, EaC-01, EaC-04, EaC-08, EaC-12 | ADR-003, ADR-005 y ADR-008 aceptados | Contexto, Componentes, Prototipo | Flujo omnicanal; consulta ≤ 5 s; falla de notificación no bloqueante; escaneo sin PAN completo ni CVV |
+| Personal de atención al cliente | Vista consolidada de orden, pago, entrega y postventa | CUN-09, CUN-10, EaC-01, EaC-07 | ADR-002 y ADR-005 aceptados | Contexto, Componentes, Prototipo | Consulta integral en cinco segundos o menos y trazabilidad de devolución hasta la venta original |
+| Equipo interno de desarrollo y operación | Tecnología conocida, mantenibilidad y adopción viable | EaC-09, R5, R6 | ADR-001 aceptado | Componentes, Despliegue | Revisión de arquitectura por el equipo; ejercicio de despliegue y mantenimiento con las capacidades declaradas |
+| ERP-Core (entidad externa) | Recibir CSV/XML cada 30 minutos sin cambios internos | CUN-05, R1 | ADR-002 y ADR-004 aceptados | Contexto, Componentes, Despliegue | Generación, reintento y procesamiento de archivo dentro de una ventana de 30 minutos |
+| POS (entidades externas) | Recepción confiable de eventos sin modificar las instalaciones | CUN-06, EaC-06, R1 | ADR-002 y ADR-004 aceptados | Contexto, Componentes, Despliegue | Error y reintento; comprobar acuse ≤ 5 min e idempotencia en el adaptador sin modificar POS |
+| PayKlik (entidad externa) | Integración REST bajo latencia o indisponibilidad | CUN-03, EaC-04, EaC-12, R3 | ADR-003 aceptado: aislamiento de fallas de pago | Contexto, Componentes, Despliegue | Latencia de cinco segundos y falla sostenida; comprobar orden recuperable y ausencia de PAN completo y CVV almacenados |
+| LogiExpress (entidad externa) | Generación de guías y estados pese a timeouts | CUN-08, EaC-05, R3 | ADR-004 aceptado: reintento con backoff | Contexto, Componentes, Despliegue | Al menos 2 % de timeouts simulados; comprobar reintento sin bloquear la preparación del despacho |
+| SAT | Factura XML, CUI/serie y evidencia auditable | CUN-04, CUN-12, EaC-02, EaC-07, R4 | ADR-002 y ADR-007 aceptados | Contexto, Componentes, Despliegue | XML y CUI/serie; estado fiscal pendiente ante timeout; evidencia < 1 s y reconstrucción de operación |
+| Proveedor de SMS, correo y push | Su indisponibilidad no debe bloquear la operación principal | CUN-11, EaC-08 | ADR-008 aceptado | Contexto, Componentes, Despliegue | Inyección de falla mientras venta, pago, facturación y despacho continúan; reintento y mensaje fallido |
 
-**Criterios de aceptación:**
+### 7.1 Matriz de cobertura de drivers críticos
 
-- Mantiene el estilo aceptado visible sin presentar productos tecnológicos ni topología física detallada.
-- Relaciona capacidades con continuidad de ingresos, trazabilidad fiscal, reducción de errores de despacho, experiencia consistente y evolución sin romper legados.
-- Conserva la misma frontera: los sistemas legados y proveedores se integran y no se reemplazan.
-- Usa el mismo núcleo modular, la misma capa de integración y los mismos controles transversales de las otras tres vistas.
+Esta segunda lectura verifica que la priorización de la sección 4.4 no deje un driver crítico sin decisión, vista o validación prevista.
+
+| Driver crítico | Stakeholders principales | Decisión/ADR | Vista prevista | Validación prevista |
+|---|---|---|---|---|
+| EaC-04 - resiliencia de pagos | Jefe de Operaciones, Clientes, TI, PayKlik | ADR-003 aceptado, apoyado por ADR-001 aceptado | Componentes, Despliegue | Falla sostenida y latencia alta de PayKlik; orden persistida y recuperable |
+| EaC-03 - escalabilidad 8x | TI, Jefe de Operaciones | ADR-001 aceptado | Despliegue, Bloques | Carga equivalente a ocho veces el tráfico normal sin degradar EaC-01/EaC-02 |
+| R1 - no modificar ERP/POS | Junta Directiva, TI, ERP-Core, POS | ADR-001 aceptado | Contexto, Componentes | Revisión de interfaces y alcance sin cambios en los sistemas legados |
+| EaC-07 - auditabilidad | Finanzas, SAT, Atención al cliente | ADR-002 aceptado | Componentes, Despliegue | Reconstrucción de actor, instante y cambio de una operación; evidencia en menos de un segundo |
+| CUN-01 - carrito omnicanal | Comercialización, Cliente | ADR-001 y ADR-005 aceptados | Contexto, Componentes, Prototipo | Iniciar una compra en un canal y continuarla o completarla en otro |
+| EaC-05 / EaC-06 - entrega confiable | Logística, LogiExpress, POS | ADR-004 aceptado | Componentes, Despliegue | Timeouts y errores simulados con reintento, idempotencia y entrega eventual |
+| R5 / EaC-09 - mantenibilidad interna | TI, Equipo interno | ADR-001 aceptado | Componentes, Despliegue | Revisión y ejercicio operativo por el equipo interno |
+| EaC-11 / R6 - evolución a nube | Dirección, TI | ADR-001 aceptado | Despliegue, Bloques | Revisión de portabilidad y ruta de migración sin obligar migración inmediata |
+
+### 7.2 Cobertura de drivers funcionales
+
+| CUN | CDU expandido | Decisiones relacionadas | Vistas/evidencia | Validación de diseño |
+|---|---|---|---|---|
+| CUN-01 - Carrito omnicanal | CDU-01 / página 1 | ADR-001, ADR-005 | Componentes, Bloques, Prototipo | Iniciar en un canal y recuperar el mismo carrito en otro |
+| CUN-02 - Reservar inventario | CDU-02 / página 2 | ADR-001, ADR-005 | Componentes, Despliegue | Dos solicitudes concurrentes no comprometen la misma unidad |
+| CUN-03 - Procesar pago | CDU-03 / página 3 | ADR-003, ADR-005 | Componentes, Despliegue, Prototipo | Caída de PayKlik conserva orden e intento sin cobro duplicado |
+| CUN-04 - Documentación fiscal | CDU-04 / página 4 | ADR-002, ADR-007 | Componentes, Despliegue | Timeout de SAT deja estado fiscal pendiente; no finaliza la orden |
+| CUN-05 - Sincronizar ERP | CDU-05 / página 5 | ADR-002, ADR-004 | Contexto, Componentes, Despliegue | Archivo CSV/XML procesado o preservado para reintento en 30 min |
+| CUN-06 - Eventos a POS | CDU-06 / página 6 | ADR-002, ADR-004 | Componentes, Despliegue | Error de entrega mantiene evento y deduplica desde el adaptador |
+| CUN-07 - Despacho | CDU-07 / página 7 | ADR-004, ADR-005 | Componentes, Despliegue | Cambio de método reasigna origen y conserva trazabilidad |
+| CUN-08 - LogiExpress | CDU-08 / página 8 | ADR-004 | Contexto, Componentes, Despliegue | Simular 2 % de timeout y comprobar reintento sin bloquear preparación |
+| CUN-09 - Consultar orden | CDU-09 / página 9 | ADR-005, ADR-006 | Componentes, Prototipo | Estado consolidado en ≤ 5 s y última información ante dependencia caída |
+| CUN-10 - Devoluciones | CDU-10 / página 10 | ADR-002, ADR-005, ADR-007 | Componentes, Prototipo | Devolución vinculada a venta y documento fiscal original |
+| CUN-11 - Notificar cliente | CDU-11 / página 11 | ADR-002, ADR-008 | Componentes, Despliegue | Falla del proveedor no bloquea orden y conserva solicitud |
+| CUN-12 - Auditar operaciones | CDU-12 / página 12 | ADR-002, ADR-006, ADR-007 | Componentes, Despliegue | Reconstruir quién/cuándo/qué y recuperar evidencia en < 1 s |
+
+### 7.3 Cobertura y evidencia de cierre
+
+- Los doce CUN tienen descripción textual y página UML editable en [`cdu-negocio-y-expandidos.drawio`](./diagramas/cdu-negocio-y-expandidos.drawio).
+- EaC-01 a EaC-12 se relacionan explícitamente con elementos de Despliegue en §6.2.
+- ADR-001 a ADR-008 están aceptados y cubren estilo, publicación confiable, pagos, entrega externa, coordinación, observabilidad, SAT y notificaciones.
+- Las cuatro vistas poseen fuente versionable `.dot`, SVG y PNG; los mecanismos de validación se expresan como diseños de prueba de Fase 1 y no como resultados de una implementación inexistente.
+
+### 7.4 Matriz de trazabilidad RF vs. RF
+
+Para estas matrices, `RF-01` a `RF-12` son alias compactos de `CUN-01/CDU-01`
+a `CUN-12/CDU-12`; no representan requisitos adicionales. La matriz muestra
+las relaciones funcionales que atraviesan los límites de cada caso de uso. Se
+lee por fila: **una `X` indica que el RF de la fila mantiene una dependencia o
+relación directa con el RF de la columna**. Una celda vacía indica que no se
+identificó una relación directa. La diagonal se deja vacía porque un requisito
+no se traza contra sí mismo.
+
+| RF origen  / RF destino  | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **RF-01 Carrito omnicanal** |  | X | X |  |  |  |  |  |  |  |  | X |
+| **RF-02 Reservar inventario** |  |  |  |  |  |  |  |  |  |  |  | X |
+| **RF-03 Procesar pago** |  | X |  | X |  |  |  |  |  |  |  | X |
+| **RF-04 Documentación fiscal** |  |  | X |  | X | X | X |  |  |  | X | X |
+| **RF-05 Sincronizar ERP** |  |  |  |  |  |  |  |  |  |  |  | X |
+| **RF-06 Eventos a POS** |  |  |  |  |  |  |  |  |  |  |  | X |
+| **RF-07 Gestionar despacho** |  | X |  | X |  |  |  | X |  |  | X | X |
+| **RF-08 Integrar LogiExpress** |  |  |  |  |  |  | X |  |  |  | X | X |
+| **RF-09 Consultar orden** | X |  | X | X |  |  | X | X |  | X | X | X |
+| **RF-10 Devoluciones/reembolsos** | X | X | X | X |  |  | X |  |  |  | X | X |
+| **RF-11 Notificar cliente** |  |  |  |  |  |  |  |  |  |  |  | X |
+| **RF-12 Auditar operaciones** |  |  |  |  |  |  |  |  |  |  |  |  |
+
+**Lectura de control:** RF-12 aparece como destino de los demás requisitos
+porque toda operación relevante debe producir evidencia auditable. RF-09 no
+consulta directamente sistemas externos: consolida la última información
+conocida de los módulos internos, preservando el aislamiento definido en
+ADR-001. Las relaciones indican dependencia lógica, no acceso directo a tablas.
+
+### 7.5 Matriz de trazabilidad RF vs. EaC
+
+Esta matriz permite verificar qué atributos de calidad condicionan cada
+requisito funcional. Una `X` indica que el EaC de la columna condiciona, valida
+o establece una medida para el RF de la fila. Una celda vacía indica que no se
+identificó una relación directa o transversal.
+
+| RF  / EaC  | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **RF-01 Carrito omnicanal** | X |  | X |  |  |  | X | X | X | X | X |  |
+| **RF-02 Reservar inventario** | X |  | X |  |  |  | X |  | X | X | X |  |
+| **RF-03 Procesar pago** |  | X | X | X |  |  | X |  | X | X | X | X |
+| **RF-04 Documentación fiscal** |  | X |  |  |  |  | X |  | X | X | X |  |
+| **RF-05 Sincronizar ERP** |  |  |  |  |  |  | X |  | X | X | X |  |
+| **RF-06 Eventos a POS** |  |  |  |  |  | X | X |  | X | X | X |  |
+| **RF-07 Gestionar despacho** | X |  |  |  | X | X | X |  | X | X | X |  |
+| **RF-08 Integrar LogiExpress** |  |  |  |  | X |  | X |  | X | X | X |  |
+| **RF-09 Consultar orden** | X |  | X |  |  |  | X |  | X | X | X |  |
+| **RF-10 Devoluciones/reembolsos** |  | X |  |  |  |  | X |  | X | X | X |  |
+| **RF-11 Notificar cliente** |  |  |  |  |  |  | X | X | X | X | X |  |
+| **RF-12 Auditar operaciones** |  | X |  |  |  |  | X |  | X | X | X |  |
+
+**Lectura de control:** EaC-09 (mantenibilidad), EaC-10 (costo) y EaC-11
+(portabilidad/evolución) son transversales porque condicionan la construcción y
+el despliegue de todos los RF, no un flujo aislado. EaC-12 se concentra en
+RF-03, aunque sus controles de no registrar PAN/CVV también deben respetarse en
+auditoría, mensajería y observabilidad. EaC-02 aplica a RF-03 porque los intentos
+de pago forman parte de la evidencia financiera, además de RF-04, RF-10 y
+RF-12.
+
+### 7.6 Matriz de trazabilidad RF vs. ADR
+
+La tercera matriz muestra qué decisiones materializan o condicionan cada RF.
+Una `X` indica que el RF de la fila depende de la decisión arquitectónica de la
+columna para su diseño, integración o validación. Una celda vacía indica que no
+se identificó dependencia directa. ADR-001 aparece en todos los RF porque define
+los límites modulares y la forma de integración de todo el sistema.
+
+| RF  / ADR  | 001 | 002 | 003 | 004 | 005 | 006 | 007 | 008 |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **RF-01 Carrito omnicanal** | X |  |  |  | X |  |  |  |
+| **RF-02 Reservar inventario** | X |  |  |  | X |  |  |  |
+| **RF-03 Procesar pago** | X | X | X |  | X |  |  |  |
+| **RF-04 Documentación fiscal** | X | X |  |  | X |  | X |  |
+| **RF-05 Sincronizar ERP** | X | X |  | X |  |  |  |  |
+| **RF-06 Eventos a POS** | X | X |  | X |  |  |  |  |
+| **RF-07 Gestionar despacho** | X |  |  | X | X |  | X |  |
+| **RF-08 Integrar LogiExpress** | X | X |  | X |  |  |  |  |
+| **RF-09 Consultar orden** | X |  |  |  | X | X |  |  |
+| **RF-10 Devoluciones/reembolsos** | X | X |  |  | X |  | X |  |
+| **RF-11 Notificar cliente** | X | X |  |  |  |  |  | X |
+| **RF-12 Auditar operaciones** | X | X |  |  |  | X | X |  |
+
+**Lectura de control:** ningún RF queda sin una decisión arquitectónica. ADR-002
+aparece cuando el hecho de negocio debe preservarse para publicación o
+auditoría; ADR-004 solo gobierna entregas reintentables a LogiExpress, POS y
+ERP-Core; ADR-005 coordina estados y compensaciones; ADR-007 condiciona los
+flujos que requieren una venta fiscalmente confirmada. La matriz no implica que
+un ADR sea un componente ni que sustituya la descripción funcional del CDU.
 
 ---
 
-## 12. Prototipo / Mockups
+## 8. Prototipo / Mockups
 
-Wireframes no funcionales del flujo principal: iniciar compra en la app móvil → continuar y pagar en la web → consultar estado desde cualquier canal → generar una devolución desde el centro de atención. Cada pantalla anota el CUN y el EaC que ilustra, para mantener trazabilidad con las secciones 2, 6 y 9.
+Wireframes no funcionales del flujo principal: iniciar compra en la app móvil → continuar y pagar en la web → consultar estado desde cualquier canal → generar una devolución desde el centro de atención. Cada pantalla anota el CUN y el EaC que ilustra, para mantener trazabilidad con las secciones 3, 4 y 7.
 
 [`Docs/prototipo/mockups.html`](./prototipo/mockups.html) - abrir directamente en el navegador. Captura estática de cada pantalla, para usar en diapositivas o impresión sin depender del HTML: [carrito móvil](./prototipo/screenshots/01-carrito-movil.png) · [pago web](./prototipo/screenshots/02-pago-web.png) · [consulta de estado](./prototipo/screenshots/03-consulta-estado.png) · [devolución](./prototipo/screenshots/04-devolucion.png).
 
@@ -1462,11 +1553,20 @@ Wireframes no funcionales del flujo principal: iniciar compra en la app móvil �
 
 ---
 
-## 13. Anexos
+## 9. Conclusiones Arquitectónicas
 
-### 13.1 Glosario
+El diseño establece a SGO-Logic como una capa de orquestación e integración omnicanal que conserva ERP-Core y los POS existentes. Los drivers funcionales, de calidad y de restricción quedan atendidos mediante el monolito modular, los puertos y adaptadores, la mensajería confiable, la Saga orquestada y los controles transversales documentados en ADR-001 a ADR-008.
+
+Las vistas de contexto, bloques, componentes y despliegue mantienen una misma frontera y una derivación trazable desde las necesidades del negocio. Los supuestos de la sección 2.6 deben confirmarse antes de dimensionar o implementar, sin que representen entregables faltantes de la Fase 1. Este DDA constituye la línea base arquitectónica aprobada para la evolución posterior de SGO-Logic.
+
+---
+
+## 10. Anexos
+
+### 10.1 Glosario
 | Término | Definición |
 |---|---|
+| RF | Requisito funcional. En las matrices complementarias, `RF-XX` es el alias del par `CUN-XX/CDU-XX` correspondiente y no crea un requisito adicional. |
 | CUN | Caso de Uso de Negocio |
 | CDU | Diagrama de Casos de Uso; en este DDA identifica la expansión funcional derivada de un CUN |
 | EaC | Escenario de Atributo de Calidad |
@@ -1479,15 +1579,3 @@ Wireframes no funcionales del flujo principal: iniciar compra en la app móvil �
 | Event Store | Almacén de eventos que conserva la secuencia de cambios como fuente de estado; no es sinónimo de Outbox |
 | Circuit Breaker | Mecanismo que interrumpe temporalmente llamadas a una dependencia que está fallando para evitar fallas en cascada |
 | Saga | Coordinación de una transacción de negocio distribuida mediante pasos y acciones de compensación |
-
-### 13.2 Referencias
-
-- [Guion de presentación (45 min + preguntas)](../presentacion/guion-45min.md)
-- [Diapositivas de la presentación (HTML, con zoom en diagramas)](../presentacion/slides.html)
-- [Diapositivas de la presentación (PowerPoint)](../presentacion/slides.pptx)
-- [Checklist unificado de entregables por persona](../qa/checklist-entregables.md)
-- [Prototipo / mockups no funcionales](../prototipo/mockups.html)
-- [Notación y regeneración de las cuatro vistas arquitectónicas](./diagramas/README.md)
-- [Vistas arquitectónicas editables (draw.io)](./diagramas/vistas-arquitectonicas-sgo-logic.drawio)
-- [CDU de negocio y expansiones editables (draw.io)](./diagramas/cdu-negocio-y-expandidos.drawio)
-- [Tablero Kanban del equipo (Trello)](https://trello.com/b/ySQoRziE/megastore-fase-1)
