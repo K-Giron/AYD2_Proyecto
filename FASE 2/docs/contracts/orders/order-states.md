@@ -1,6 +1,7 @@
 # Estados de orden v1
 
-**Estado del contrato:** `PROPOSED`  
+**Estado del contrato:** `PROPOSED`
+
 **Decisión relacionada:** ADR-005 de la Fase 1
 
 ## Propósito

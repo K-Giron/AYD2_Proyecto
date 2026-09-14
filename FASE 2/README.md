@@ -16,11 +16,14 @@ Docker Compose conecta los tres servicios mediante una red bridge dedicada al pr
 FASE 2/
 ├── backend/          Spring Boot, módulos y pruebas
 ├── simulator-data/   Salidas reproducibles futuras de simuladores
-├── tests/            E2E, k6, seguridad y datos
-├── docs/             ADR, contratos, evidencia y diagramas
+├── tests/            Arquitectura, smoke, E2E, k6, seguridad y datos
+├── docs/             ADR, contratos, integración, evidencia y diagramas
 ├── .env.example
 ├── .gitignore
 └── docker-compose.yml
+
+.github/workflows/
+└── qa-integracion-base.yml
 ```
 
 El frontend no se crea en este incremento. Se agregará cuando Kevin Girón entregue la base de UI.
@@ -82,6 +85,22 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
+La suite actual ejecuta 13 pruebas: conectividad real con PostgreSQL/RabbitMQ, tres controles modulares, cuatro escenarios de correlación, cuatro escenarios del manejador común de errores y el endpoint técnico.
+
+## Verificación completa con un comando
+
+Desde `FASE 2`:
+
+```bash
+./tests/smoke/verify-platform.sh
+```
+
+El script ejecuta Maven, valida Compose sin imprimir credenciales, construye los servicios, espera los tres health checks, comprueba Actuator y correlation ID, y finalmente ejecuta `docker compose down` sin `-v`. Si Maven ya se ejecutó previamente:
+
+```bash
+./tests/smoke/verify-platform.sh --skip-maven
+```
+
 ## Ejecución con Docker Compose
 
 Desde `FASE 2`:
@@ -119,7 +138,7 @@ cd "FASE 2/backend"
 Desde `FASE 2`:
 
 ```bash
-docker build -t sgo-logic:phase2-backbone backend
+docker build -t sgo-logic-backend:0.0.1-phase2 backend
 ```
 
 El Dockerfile compila mediante el wrapper, usa etapas separadas, ejecuta con usuario no root y comprueba readiness mediante Actuator.
@@ -134,11 +153,39 @@ El Dockerfile compila mediante el wrapper, usa etapas separadas, ejecuta con usu
 
 Actuator expone únicamente `health` e `info`.
 
+## Integración continua — QA-01
+
+El workflow `.github/workflows/qa-integracion-base.yml` usa dos jobs: primero compila y prueba el backend; después construye Compose y ejecuta el smoke test. Se activa en pull requests, push a `develop`/`main` y manualmente. Puede utilizar estos secretos de GitHub Actions:
+
+- `SGO_POSTGRES_DB`
+- `SGO_POSTGRES_USER`
+- `SGO_POSTGRES_PASSWORD`
+- `SGO_RABBITMQ_USER`
+- `SGO_RABBITMQ_PASSWORD`
+
+Use valores exclusivos y no productivos para CI. Como no existe despliegue y los contenedores son efímeros, cada secreto tiene un valor ficticio de respaldo; un secreto ausente no detiene el pipeline. El workflow no imprime la configuración Compose interpolada. QA-01 permanece en validación hasta observar una ejecución verde en GitHub.
+
+## Guías y propuestas para integración
+
+- `docs/contracts/contract-status.md`: estado y aprobaciones de contratos.
+- `docs/contracts/compatibility-policy.md`: reglas para cambios compatibles.
+- `docs/contracts/orders/ord-01-cart-proposal.md`: casos preparatorios del carrito.
+- `docs/contracts/orders/ord-02-state-machine-proposal.md`: matriz candidata de estados.
+- `docs/contracts/orders/saga-required-ports.md`: capacidades requeridas de otros módulos.
+- `docs/diagrams/saga-happy-path-proposed.md`: secuencia nominal sin implementación.
+- `docs/integration/module-delivery-checklist.md`: control de entregas por integrante.
+- `docs/integration/integration-order.md`: orden basado en dependencias.
+- `docs/integration/release-readiness.md`: criterios previos a REL-01.
+- `docs/integration/qa-01-ci-contract.md`: comportamiento y secretos del workflow.
+- `docs/evidence/functional/VALIDACION_CRUZADA_BB01_BB05.md`: procedimiento y evidencia pendiente para una persona no autora.
+
+Todos los diseños de Orders y Saga permanecen `PROPOSED`; no existen entidades, repositorios, transiciones ejecutables, compensaciones ni simuladores funcionales.
+
 ## Alcance de este incremento
 
 Se prepararon la estructura oficial, backend Spring Boot, módulos, configuración local/test, correlación HTTP, errores comunes, endpoint técnico, Dockerfile, Compose, documentación, contratos preliminares y pruebas iniciales.
 
-Continúan pendientes: esquema y migraciones de negocio, carrito, estados ejecutables, Saga, compensaciones, E2E funcional, inventario, pagos, auditoría funcional, seguridad/JWT, Outbox/Inbox/retries/DLQ, fiscal, integraciones legacy, logística, notificaciones, consulta, incidencias, frontend, simuladores y GitHub Actions.
+Continúan pendientes: esquema y migraciones de negocio, carrito, estados ejecutables, Saga, compensaciones, E2E funcional, inventario, pagos, auditoría funcional, seguridad/JWT, Outbox/Inbox/retries/DLQ, fiscal, integraciones legacy, logística, notificaciones, consulta, incidencias, frontend y simuladores. El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
 
 BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanece parcial hasta integrar frontend y componentes compartidos pendientes. Los contratos de estados, eventos y API son propuestas sujetas a aprobación del equipo.
 
