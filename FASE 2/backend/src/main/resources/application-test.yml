@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: ${TEST_DATABASE_URL:}
+    username: ${TEST_DATABASE_USERNAME:}
+    password: ${TEST_DATABASE_PASSWORD:}
+  rabbitmq:
+    host: ${TEST_RABBITMQ_HOST:localhost}
+    port: ${TEST_RABBITMQ_PORT:5672}
+    username: ${TEST_RABBITMQ_USERNAME:test}
+    password: ${TEST_RABBITMQ_PASSWORD:test}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+management:
+  health:
+    rabbit:
+      enabled: true
