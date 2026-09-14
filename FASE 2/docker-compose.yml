@@ -41,7 +41,7 @@ services:
       - sgo-internal
 
   backend:
-    image: sgo-logic-backend
+    image: sgo-logic-backend:0.0.1-phase2
     build:
       context: ./backend
       dockerfile: Dockerfile

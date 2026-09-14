@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CorrelationIdFilterTest {
 
@@ -49,6 +50,35 @@ class CorrelationIdFilterTest {
         String generated = response.getHeader(CorrelationIdFilter.HEADER_NAME);
         assertThat(generated).isNotBlank();
         assertThatCode(() -> UUID.fromString(generated)).doesNotThrowAnyException();
+        assertThat(MDC.get(CorrelationIdFilter.MDC_KEY)).isNull();
+    }
+
+    @Test
+    void replacesAnInvalidIncomingCorrelationIdWithoutEchoingIt() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/test");
+        request.addHeader(CorrelationIdFilter.HEADER_NAME, "not-a-uuid");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, (currentRequest, currentResponse) -> {
+        });
+
+        String generated = response.getHeader(CorrelationIdFilter.HEADER_NAME);
+        assertThat(generated).isNotEqualTo("not-a-uuid");
+        assertThatCode(() -> UUID.fromString(generated)).doesNotThrowAnyException();
+        assertThat(MDC.get(CorrelationIdFilter.MDC_KEY)).isNull();
+    }
+
+    @Test
+    void clearsMdcEvenWhenTheRequestFails() {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/test");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertThatThrownBy(() -> filter.doFilter(request, response,
+                (currentRequest, currentResponse) -> {
+                    throw new IllegalStateException("controlled test failure");
+                }))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("controlled test failure");
         assertThat(MDC.get(CorrelationIdFilter.MDC_KEY)).isNull();
     }
 }
