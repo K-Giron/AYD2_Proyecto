@@ -155,7 +155,7 @@ Actuator expone únicamente `health` e `info`.
 
 ## Integración continua — QA-01
 
-El workflow `.github/workflows/qa-integracion-base.yml` ejecuta Maven y el smoke test en pull requests, push a `develop`/`main` y bajo ejecución manual. Antes de ejecutarlo deben configurarse estos secretos de GitHub Actions:
+El workflow `.github/workflows/qa-integracion-base.yml` usa dos jobs: primero compila y prueba el backend; después construye Compose y ejecuta el smoke test. Se activa en pull requests, push a `develop`/`main` y manualmente. Puede utilizar estos secretos de GitHub Actions:
 
 - `SGO_POSTGRES_DB`
 - `SGO_POSTGRES_USER`
@@ -163,7 +163,7 @@ El workflow `.github/workflows/qa-integracion-base.yml` ejecuta Maven y el smoke
 - `SGO_RABBITMQ_USER`
 - `SGO_RABBITMQ_PASSWORD`
 
-Use valores exclusivos y no productivos para CI. El workflow no contiene valores reales y no imprime la configuración Compose interpolada. QA-01 permanece en validación hasta observar una ejecución verde en GitHub.
+Use valores exclusivos y no productivos para CI. Como no existe despliegue y los contenedores son efímeros, cada secreto tiene un valor ficticio de respaldo; un secreto ausente no detiene el pipeline. El workflow no imprime la configuración Compose interpolada. QA-01 permanece en validación hasta observar una ejecución verde en GitHub.
 
 ## Guías y propuestas para integración
 
