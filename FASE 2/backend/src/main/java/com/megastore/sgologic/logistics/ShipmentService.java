@@ -1,0 +1,170 @@
+package com.megastore.sgologic.logistics;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Service;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Orquesta LOG-01 (crear despacho desde el origen asignado), LOG-02
+ * (guía y tracking mediante LogiExpress simulado) y LOG-03 (reintentos
+ * 2/8/32 segundos y DLQ), conforme a CDU-07 y CDU-08.
+ *
+ * <p>El puerto de Saga ({@code saga-required-ports.md}) que Kevin es dueño
+ * de proveer recibe {@code orderId, origen, destino, correlationId,
+ * idempotencyKey} y responde {@code shipmentId, guía, estado}; este
+ * servicio implementa exactamente esa forma.</p>
+ */
+@Service
+public class ShipmentService {
+
+    private static final Logger log = LoggerFactory.getLogger(ShipmentService.class);
+
+    /** Reintentos de guía LogiExpress en 2, 8 y 32 segundos (LOG-03). */
+    static final long[] RETRY_DELAYS_SECONDS = {2L, 8L, 32L};
+
+    private final ShipmentRepository shipmentRepository;
+    private final ShipmentTrackingEventRepository trackingEventRepository;
+    private final ShipmentDeadLetterRepository deadLetterRepository;
+    private final LogiExpressGatewayPort logiExpressGateway;
+    private final TaskScheduler retryScheduler;
+    private final Clock clock;
+
+    public ShipmentService(ShipmentRepository shipmentRepository,
+                            ShipmentTrackingEventRepository trackingEventRepository,
+                            ShipmentDeadLetterRepository deadLetterRepository,
+                            LogiExpressGatewayPort logiExpressGateway,
+                            @Qualifier("logisticsRetryScheduler") TaskScheduler retryScheduler,
+                            Clock clock) {
+        this.shipmentRepository = shipmentRepository;
+        this.trackingEventRepository = trackingEventRepository;
+        this.deadLetterRepository = deadLetterRepository;
+        this.logiExpressGateway = logiExpressGateway;
+        this.retryScheduler = retryScheduler;
+        this.clock = clock;
+    }
+
+    /**
+     * LOG-01: crea el despacho para el origen ya asignado a la orden. Es
+     * idempotente por {@code idempotencyKey}: una solicitud repetida
+     * devuelve el despacho existente en vez de duplicarlo.
+     */
+    public Shipment createDispatch(UUID orderId, DispatchOrigin origin, String destination,
+                                    UUID correlationId, String idempotencyKey) {
+        Optional<Shipment> existing = shipmentRepository.findByIdempotencyKey(idempotencyKey);
+        if (existing.isPresent()) {
+            log.info("Solicitud de despacho repetida para orderId={} con idempotencyKey conocida; "
+                    + "se devuelve el despacho existente sin duplicar.", orderId);
+            return existing.get();
+        }
+
+        Shipment shipment = Shipment.assign(orderId, origin, destination, correlationId, idempotencyKey, clock.instant());
+        shipmentRepository.save(shipment);
+
+        if (shipment.requiresExternalLabel()) {
+            UUID shipmentId = shipment.getId();
+            retryScheduler.schedule(() -> requestLabelWithRetry(shipmentId), Instant.now());
+        }
+        return shipment;
+    }
+
+    /**
+     * LOG-02 / CDU-08: solicita la guía a LogiExpress. Si falla por timeout
+     * o indisponibilidad, reintenta con backoff 2/8/32 s (LOG-03) sin
+     * bloquear la preparación física del pedido (CDU-07, E1). Al agotar los
+     * reintentos, registra el mensaje en la cola de fallidos local.
+     */
+    void requestLabelWithRetry(UUID shipmentId) {
+        Optional<Shipment> maybeShipment = shipmentRepository.findById(shipmentId);
+        if (maybeShipment.isEmpty()) {
+            log.warn("Se intentó solicitar guía para un despacho inexistente: {}", shipmentId);
+            return;
+        }
+        Shipment shipment = maybeShipment.get();
+        shipment.markLabelRequested(clock.instant());
+        shipmentRepository.save(shipment);
+
+        try {
+            LogiExpressLabelResult result = logiExpressGateway.requestLabel(
+                    shipment.getId(), shipment.getOrderId(), shipment.getDestination(), shipment.getCorrelationId());
+            shipment.markLabelIssued(result.trackingNumber(), clock.instant());
+            shipmentRepository.save(shipment);
+            trackingEventRepository.save(ShipmentTrackingEvent.of(
+                    shipmentId, ShipmentStatus.LABEL_ISSUED, "LOGIEXPRESS", clock.instant()));
+        } catch (LogiExpressTimeoutException | LogiExpressUnavailableException failure) {
+            handleLabelFailure(shipment, failure.getMessage());
+        }
+    }
+
+    private void handleLabelFailure(Shipment shipment, String reason) {
+        int attemptsSoFar = shipment.getLabelAttempts();
+        int nextRetryIndex = attemptsSoFar - 1;
+        if (nextRetryIndex < RETRY_DELAYS_SECONDS.length) {
+            long delaySeconds = RETRY_DELAYS_SECONDS[nextRetryIndex];
+            UUID shipmentId = shipment.getId();
+            log.warn("Guía de LogiExpress falló (intento {}) para el despacho {}: {}. Reintentando en {} s.",
+                    attemptsSoFar, shipmentId, reason, delaySeconds);
+            retryScheduler.schedule(() -> requestLabelWithRetry(shipmentId),
+                    Instant.now().plusSeconds(delaySeconds));
+        } else {
+            log.error("Se agotaron los reintentos de LogiExpress para el despacho {}: {}", shipment.getId(), reason);
+            shipment.markLabelFailed(clock.instant());
+            shipmentRepository.save(shipment);
+            deadLetterRepository.save(ShipmentDeadLetter.of(shipment.getId(), reason, attemptsSoFar, clock.instant()));
+        }
+    }
+
+    /**
+     * LOG-02 / CDU-08, paso 4: registra un estado posterior comunicado por
+     * LogiExpress (o, en recogida, por el flujo interno de tienda).
+     */
+    public Shipment recordTrackingEvent(UUID shipmentId, ShipmentStatus newStatus, String source) {
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException(shipmentId));
+        shipment.applyTrackingStatus(newStatus, clock.instant());
+        shipmentRepository.save(shipment);
+        trackingEventRepository.save(ShipmentTrackingEvent.of(shipmentId, newStatus, source, clock.instant()));
+        return shipment;
+    }
+
+    /**
+     * CDU-07, A1: el cliente cambia el método de entrega después de
+     * confirmada la compra. Este incremento reevalúa únicamente el destino
+     * y el origen de despacho; la reevaluación de la reserva de inventario
+     * queda pendiente de INV-04 (Jorge Pumay).
+     */
+    public Shipment changeDeliveryMethod(UUID shipmentId, DispatchOrigin newOrigin, String newDestination) {
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException(shipmentId));
+        Shipment reassigned = Shipment.assign(shipment.getOrderId(), newOrigin, newDestination,
+                shipment.getCorrelationId(), shipment.getIdempotencyKey() + ":reassigned:" + UUID.randomUUID(),
+                clock.instant());
+        shipmentRepository.save(reassigned);
+        if (reassigned.requiresExternalLabel()) {
+            UUID reassignedId = reassigned.getId();
+            retryScheduler.schedule(() -> requestLabelWithRetry(reassignedId), Instant.now());
+        }
+        return reassigned;
+    }
+
+    public Shipment getShipment(UUID shipmentId) {
+        return shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ShipmentNotFoundException(shipmentId));
+    }
+
+    /** Vista por orden para consolidar despacho junto a las demás áreas (CDU-09). */
+    public List<Shipment> getShipmentsForOrder(UUID orderId) {
+        return shipmentRepository.findByOrderIdOrderByCreatedAtDesc(orderId);
+    }
+
+    public List<ShipmentTrackingEvent> getTrackingHistory(UUID shipmentId) {
+        return trackingEventRepository.findByShipmentIdOrderByOccurredAtAsc(shipmentId);
+    }
+}

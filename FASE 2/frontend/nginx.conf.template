@@ -1,0 +1,23 @@
+server {
+    listen 8080;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Sitio multi-página real (index/cliente/staff), no una SPA: cada ruta
+    # sirve su propio archivo; sin fallback a index.html.
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # Evita CORS: el navegador solo habla con nginx, que reenvía al backend
+    # dentro de la red interna de Compose.
+    location /api/ {
+        proxy_pass http://${BACKEND_HOST}:${BACKEND_INTERNAL_PORT}/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Correlation-Id $http_x_correlation_id;
+        proxy_set_header Idempotency-Key $http_idempotency_key;
+    }
+}

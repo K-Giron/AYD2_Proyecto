@@ -1,0 +1,641 @@
+/* Tema claro de tienda — sobreescribe las variables oscuras de styles.css
+   solo en cliente.html, reutilizando los mismos componentes base
+   (.btn, .badge, .card-body, .form-grid, .toast, etc.). */
+
+body.store {
+    --bg: #faf8f5;
+    --bg-elevated: #ffffff;
+    --panel: #ffffff;
+    --panel-border: #e9e3da;
+    --panel-border-soft: #f0ebe3;
+    --text: #211a14;
+    --muted: #75695c;
+    --muted-soft: #a89a8a;
+    --accent: #d9264a;
+    --accent-soft: rgba(217, 38, 74, 0.08);
+    --ok: #16a34a;
+    --warn: #b45309;
+    --error: #dc2626;
+    --field-bg: #ffffff;
+    background: var(--bg);
+}
+
+body.store .btn-primary {
+    color: #fff;
+}
+
+body.store code {
+    background: rgba(33, 26, 20, 0.06);
+}
+
+/* ---------- Nav ---------- */
+
+.store-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.75rem;
+    border-bottom: 1px solid var(--panel-border);
+    background: var(--bg-elevated);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.store-brand {
+    font-weight: 900;
+    font-size: 1.2rem;
+    color: var(--accent);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+}
+
+.store-tabs {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.store-tab {
+    position: relative;
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 0.55rem 0.9rem;
+    border-radius: 0.4rem;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.store-tab:hover {
+    background: var(--accent-soft);
+    color: var(--text);
+}
+
+.store-tab.active {
+    background: var(--accent);
+    color: #fff;
+}
+
+.cart-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 0.3rem;
+    margin-left: 0.4rem;
+    border-radius: 999px;
+    background: var(--text);
+    color: var(--bg-elevated);
+    font-size: 0.68rem;
+    font-weight: 800;
+}
+
+.store-tab.active .cart-count {
+    background: #fff;
+    color: var(--accent);
+}
+
+.store-staff-link {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.store-staff-link:hover {
+    color: var(--accent);
+}
+
+.store-session {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.store-session .store-staff-link {
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
+}
+
+.store-scope-note {
+    margin: 1rem 1.75rem 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--panel-border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0.5rem;
+    background: var(--bg-elevated);
+    color: var(--muted);
+    font-size: 0.8rem;
+    max-width: 60rem;
+}
+
+/* ---------- Layout / views ---------- */
+
+.store-main {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.75rem 4rem;
+}
+
+.store-view {
+    display: none;
+}
+
+.store-view.active {
+    display: block;
+}
+
+.view-title {
+    font-size: 1.4rem;
+    margin: 0 0 1.25rem;
+}
+
+.store-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 0.9rem;
+    padding: 1.25rem 1.4rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 2px rgba(33, 26, 20, 0.04), 0 6px 20px rgba(33, 26, 20, 0.06);
+}
+
+.store-card h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.75rem;
+}
+
+/* ---------- Hero + catálogo (mock) ---------- */
+
+.hero {
+    background: linear-gradient(135deg, #fff0f2, #fff7ed);
+    border: 1px solid var(--panel-border);
+    border-radius: 1rem;
+    padding: 2.25rem 2rem;
+    margin-bottom: 1.75rem;
+}
+
+.hero h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.6rem;
+    max-width: 30rem;
+}
+
+.hero p {
+    margin: 0;
+    color: var(--muted);
+    max-width: 34rem;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    gap: 1rem;
+}
+
+.product-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 0.85rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    box-shadow: 0 1px 2px rgba(33, 26, 20, 0.04), 0 6px 20px rgba(33, 26, 20, 0.06);
+    transition: transform 0.15s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+}
+
+.product-thumb {
+    height: 6rem;
+    border-radius: 0.6rem;
+    display: grid;
+    place-items: center;
+    font-size: 2rem;
+    background: var(--accent-soft);
+}
+
+.product-name {
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.product-price {
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+.product-note {
+    font-size: 0.72rem;
+    color: var(--muted-soft);
+}
+
+/* ---------- Carrito / checkout ---------- */
+
+.checkout-layout {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 55rem) {
+    .checkout-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.cart-list {
+    box-shadow: 0 1px 2px rgba(33, 26, 20, 0.04), 0 6px 20px rgba(33, 26, 20, 0.06);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 0.9rem;
+    padding: 0.4rem 1.1rem;
+    margin-bottom: 1.25rem;
+}
+
+.cart-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--panel-border-soft);
+}
+
+.cart-line:last-child {
+    border-bottom: none;
+}
+
+.cart-line-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.cart-line-price {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.qty-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qty-control button {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--panel-border);
+    background: var(--bg-elevated);
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.delivery-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+}
+
+.delivery-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    border: 1px solid var(--panel-border);
+    border-radius: 0.6rem;
+    padding: 0.75rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.delivery-option:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.delivery-option input {
+    margin-top: 0.2rem;
+}
+
+.delivery-option p {
+    margin: 0.15rem 0 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.checkout-summary {
+    box-shadow: 0 1px 2px rgba(33, 26, 20, 0.04), 0 6px 20px rgba(33, 26, 20, 0.06);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 0.9rem;
+    padding: 1.25rem 1.4rem;
+    position: sticky;
+    top: 5.5rem;
+}
+
+.checkout-summary h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+
+.totals-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding: 0.3rem 0;
+}
+
+.totals-row.total {
+    color: var(--text);
+    font-weight: 800;
+    font-size: 1rem;
+    border-top: 1px solid var(--panel-border-soft);
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+}
+
+.btn-block {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.75rem;
+}
+
+.checkout-result {
+    margin-top: 1rem;
+}
+
+.checkout-result .notice {
+    border: 1px solid var(--warn);
+    background: rgba(180, 83, 9, 0.08);
+    border-radius: 0.6rem;
+    padding: 0.9rem 1rem;
+    font-size: 0.82rem;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+.checkout-result .notice strong {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--warn);
+}
+
+/* ---------- Login (auth-shell) ---------- */
+
+.auth-shell {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    min-height: 100vh;
+}
+
+@media (max-width: 55rem) {
+    .auth-shell {
+        grid-template-columns: 1fr;
+    }
+    .auth-hero {
+        display: none;
+    }
+}
+
+.auth-hero {
+    background: linear-gradient(160deg, #fff0f2 0%, #fff7ed 55%, #fdf2f8 100%);
+    border-right: 1px solid var(--panel-border);
+    display: flex;
+    align-items: center;
+    padding: 3rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto -6rem -8rem auto;
+    width: 22rem;
+    height: 22rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, var(--accent-soft), transparent 70%);
+}
+
+.auth-hero-content {
+    max-width: 24rem;
+    position: relative;
+    z-index: 1;
+}
+
+.auth-brand {
+    display: inline-block;
+    margin-bottom: 2.5rem;
+    font-size: 1.4rem;
+}
+
+.auth-hero-content h1 {
+    font-size: 1.9rem;
+    line-height: 1.25;
+    margin: 0 0 0.9rem;
+}
+
+.auth-hero-content p {
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.auth-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 23rem;
+}
+
+.auth-card h2 {
+    margin: 0 0 1.25rem;
+    font-size: 1.35rem;
+    text-align: center;
+}
+
+.auth-role-toggle {
+    display: flex;
+    background: var(--accent-soft);
+    border-radius: 0.6rem;
+    padding: 0.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.auth-role-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.4rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.auth-role-btn.active {
+    background: var(--panel);
+    color: var(--accent);
+    box-shadow: 0 1px 2px rgba(33, 26, 20, 0.08);
+}
+
+.remember-row {
+    font-size: 0.82rem;
+}
+
+.login-error {
+    color: var(--error);
+    font-size: 0.82rem;
+    margin: 0;
+    text-align: center;
+}
+
+.demo-reveal-link {
+    display: block;
+    width: 100%;
+    margin-top: 1.25rem;
+    background: none;
+    border: none;
+    color: var(--muted-soft);
+    font-size: 0.78rem;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.demo-reveal-link:hover {
+    color: var(--accent);
+}
+
+.demo-credentials {
+    margin-top: 0.9rem;
+    padding: 0.9rem 1rem;
+    border: 1px dashed var(--panel-border);
+    border-radius: 0.6rem;
+    background: var(--bg);
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.demo-credentials-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.demo-credentials-row strong {
+    color: var(--text);
+}
+
+/* ---------- Seguimiento de pedido ---------- */
+
+.stepper {
+    display: flex;
+    justify-content: space-between;
+    margin: 1.25rem 0 0.5rem;
+}
+
+.step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    font-size: 0.72rem;
+    color: var(--muted-soft);
+}
+
+.step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 0.55rem;
+    left: 55%;
+    width: 90%;
+    height: 2px;
+    background: var(--panel-border);
+}
+
+.step.done:not(:last-child)::after {
+    background: var(--ok);
+}
+
+.step-dot {
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 999px;
+    background: var(--panel-border);
+    margin: 0 auto 0.4rem;
+    position: relative;
+    z-index: 1;
+}
+
+.step.done .step-dot {
+    background: var(--ok);
+}
+
+.step.current .step-dot {
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.step.done,
+.step.current {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.order-track-card {
+    box-shadow: 0 1px 2px rgba(33, 26, 20, 0.04), 0 6px 20px rgba(33, 26, 20, 0.06);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 0.9rem;
+    padding: 1.4rem;
+    margin-top: 1rem;
+}
+
+.track-events {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.track-event {
+    font-size: 0.82rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed var(--panel-border-soft);
+    padding-bottom: 0.4rem;
+}

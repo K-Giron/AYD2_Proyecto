@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iniciar sesión — MegaStore</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="store.css" />
+</head>
+<body class="store">
+    <div class="auth-shell">
+        <aside class="auth-hero">
+            <div class="auth-hero-content">
+                <a href="index.html" class="store-brand auth-brand">MegaStore</a>
+                <h1>Todo tu negocio omnicanal en un solo lugar</h1>
+                <p>Despacho, notificaciones, seguimiento de pedidos y devoluciones, sincronizados entre
+                    tienda, web y centro de atención.</p>
+            </div>
+        </aside>
+
+        <main class="auth-main">
+            <div class="auth-card">
+                <h2>Iniciar sesión</h2>
+
+                <div class="auth-role-toggle" role="tablist" aria-label="Tipo de cuenta">
+                    <button type="button" class="auth-role-btn active" data-role="CLIENTE" role="tab" aria-selected="true">Cliente</button>
+                    <button type="button" class="auth-role-btn" data-role="STAFF" role="tab" aria-selected="false">Personal interno</button>
+                </div>
+
+                <form id="login-form" class="login-form">
+                    <label class="field">
+                        Correo electrónico
+                        <input type="email" id="login-email" placeholder="tu@correo.com" autocomplete="username" required />
+                    </label>
+                    <label class="field">
+                        Contraseña
+                        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required />
+                    </label>
+                    <label class="checkbox remember-row">
+                        <input type="checkbox" id="login-remember" />
+                        Recordarme en este navegador
+                    </label>
+                    <button type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+                    <p id="login-error" class="login-error hidden"></p>
+                </form>
+
+                <button id="reveal-demo-btn" type="button" class="demo-reveal-link">¿Necesitas datos de acceso de prueba?</button>
+                <div id="demo-credentials" class="demo-credentials hidden">
+                    <p>
+                        Ambiente de demostración académica (UI-01, Kevin Girón). La autenticación real
+                        depende de <code>BB-07</code> / <code>ADR-013</code> (Edson Sosa), que todavía no
+                        existe en el backend — el módulo <code>security</code> solo está declarado.
+                    </p>
+                    <div class="demo-credentials-row"><strong>Cliente</strong><span><code>cliente@megastore.com</code> · <code>Cliente123</code></span></div>
+                    <div class="demo-credentials-row"><strong>Personal interno</strong><span><code>staff@megastore.com</code> · <code>Staff123</code></span></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="session.js"></script>
+    <script src="app-login.js"></script>
+</body>
+</html>

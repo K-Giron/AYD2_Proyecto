@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MegaStore — Mi cuenta</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="store.css" />
+</head>
+<body class="store">
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <header class="store-nav">
+        <a href="index.html" class="store-brand">MegaStore</a>
+        <nav class="store-tabs">
+            <button class="store-tab active" data-view="catalog">Catálogo</button>
+            <button class="store-tab" data-view="checkout">Carrito<span id="cart-count" class="cart-count hidden">0</span></button>
+            <button class="store-tab" data-view="tracking">Mis pedidos</button>
+            <button class="store-tab" data-view="returns">Devoluciones</button>
+        </nav>
+        <div class="store-session">
+            <span id="session-name">—</span>
+            <button id="logout-btn" class="store-staff-link">Cerrar sesión</button>
+        </div>
+    </header>
+
+    <div class="store-scope-note">
+        Vista de cliente construida por Kevin Girón (UI-01). El catálogo y el carrito son una vitrina de
+        referencia (no hay inventario real: depende de <code>INV-01</code>, Jorge Pumay). El seguimiento de
+        pedido y las devoluciones sí llaman al backend real (QRY-01, LOG-02, NOT-01, INC-01).
+    </div>
+
+    <main class="store-main">
+
+        <!-- ============ CATÁLOGO (mock, decorativo) ============ -->
+        <section id="view-catalog" class="store-view active">
+            <div class="hero">
+                <h1>Todo para tu hogar, entregado como tú decidas</h1>
+                <p>32 tiendas en Guatemala, El Salvador y Costa Rica — recoge en tienda, en centro de distribución o recíbelo en casa.</p>
+            </div>
+            <div class="product-grid" id="product-grid"></div>
+        </section>
+
+        <!-- ============ CARRITO / CHECKOUT ============ -->
+        <section id="view-checkout" class="store-view">
+            <h1 class="view-title">Tu carrito</h1>
+
+            <div class="checkout-layout">
+                <div class="checkout-main">
+                    <div id="cart-items" class="cart-list"></div>
+
+                    <div class="store-card">
+                        <h2>Método de entrega</h2>
+                        <p class="hint">Estos son los mismos orígenes que gestiona Logistics (LOG-01) en el backend.</p>
+                        <div class="delivery-options" id="delivery-options">
+                            <label class="delivery-option">
+                                <input type="radio" name="delivery" value="CUSTOMER_PICKUP" checked />
+                                <div>
+                                    <strong>Recoger en tienda</strong>
+                                    <p>Listo el mismo día en la tienda que elijas. Sin costo de envío.</p>
+                                </div>
+                            </label>
+                            <label class="delivery-option">
+                                <input type="radio" name="delivery" value="DISTRIBUTION_CENTER" />
+                                <div>
+                                    <strong>Envío a domicilio</strong>
+                                    <p>Despachado desde el centro de distribución, con guía de LogiExpress.</p>
+                                </div>
+                            </label>
+                            <label class="delivery-option">
+                                <input type="radio" name="delivery" value="STORE" />
+                                <div>
+                                    <strong>Envío desde tienda más cercana</strong>
+                                    <p>Se prepara en la tienda con mayor disponibilidad.</p>
+                                </div>
+                            </label>
+                        </div>
+                        <label class="field">
+                            Dirección o tienda de destino
+                            <input type="text" id="checkout-destination" placeholder="Ej. Zona 10, Ciudad de Guatemala" />
+                        </label>
+                    </div>
+
+                    <div class="store-card">
+                        <h2>Pago</h2>
+                        <p class="hint">
+                            Simulado — PayKlik (<code>PAY-01</code>, Edson Sosa) todavía no existe en el backend.
+                        </p>
+                        <div class="form-grid compact">
+                            <label>Número de tarjeta
+                                <input type="text" placeholder="•••• •••• •••• 4242" disabled />
+                            </label>
+                            <label>Vencimiento
+                                <input type="text" placeholder="MM/AA" disabled />
+                            </label>
+                            <label>CVV
+                                <input type="text" placeholder="•••" disabled />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="checkout-summary">
+                    <h2>Resumen</h2>
+                    <div id="checkout-totals"></div>
+                    <button id="confirm-purchase-btn" class="btn btn-primary btn-block">Confirmar compra</button>
+                    <div id="checkout-result" class="checkout-result"></div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- ============ MIS PEDIDOS (real: QRY-01 + LOG-02 + NOT-01) ============ -->
+        <section id="view-tracking" class="store-view">
+            <h1 class="view-title">Mis pedidos</h1>
+            <div class="store-card">
+                <label class="field">
+                    Número de orden
+                    <div class="form-inline compact">
+                        <input type="text" id="tracking-order-input" placeholder="Pega aquí tu Order ID" />
+                        <button id="tracking-load-btn" class="btn btn-primary btn-sm">Buscar</button>
+                    </div>
+                </label>
+                <p class="hint">
+                    ¿No tienes uno para probar? Pídele al personal interno que cree un despacho de prueba en
+                    <a href="staff.html">la consola operativa</a> y copia el Order ID que use.
+                </p>
+            </div>
+            <div id="tracking-result"></div>
+        </section>
+
+        <!-- ============ DEVOLUCIONES (real: INC-01) ============ -->
+        <section id="view-returns" class="store-view">
+            <h1 class="view-title">Devoluciones</h1>
+            <div class="store-card">
+                <h2>Solicitar una devolución</h2>
+                <form id="return-form" class="form-grid compact">
+                    <label>Número de orden
+                        <input type="text" name="orderId" placeholder="Order ID de tu compra" required />
+                    </label>
+                    <label>Motivo
+                        <select name="type" required>
+                            <option value="RETURN">Quiero devolver un artículo</option>
+                            <option value="INCIDENT">Tengo un problema con mi pedido</option>
+                        </select>
+                    </label>
+                    <label>Cuéntanos qué pasó
+                        <input type="text" name="reason" placeholder="Ej. llegó dañado" required />
+                    </label>
+                    <label>SKU del artículo
+                        <input type="text" name="sku" placeholder="Lo encuentras en tu factura" required />
+                    </label>
+                    <label>Cantidad
+                        <input type="number" name="quantity" min="1" value="1" required />
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox" name="partial" />
+                        Solo quiero devolver parte de mi pedido
+                    </label>
+                    <button type="submit" class="btn btn-primary btn-sm">Enviar solicitud</button>
+                </form>
+            </div>
+
+            <div class="store-card">
+                <h2>Ver mis solicitudes</h2>
+                <div class="form-inline compact">
+                    <input type="text" id="returns-order-input" placeholder="Order ID" />
+                    <button id="returns-load-btn" class="btn btn-ghost btn-sm">Buscar</button>
+                </div>
+                <div id="returns-list" class="card-body list-body"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Correlation ID de esta sesión: <code id="correlation-id"></code></p>
+    </footer>
+
+    <script src="session.js"></script>
+    <script src="app-cliente.js"></script>
+</body>
+</html>

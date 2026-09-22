@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SGO-Logic — Consola operativa</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <header class="app-bar">
+        <div class="app-bar-brand">
+            <a href="index.html" class="brand-mark" title="Volver al inicio">SGO</a>
+            <div>
+                <h1>Consola operativa</h1>
+                <p class="app-bar-subtitle">Personal de logística y atención al cliente</p>
+            </div>
+        </div>
+        <div class="app-bar-actions">
+            <a href="login.html" class="btn btn-ghost btn-sm">Ver como cliente</a>
+            <div class="app-bar-status">
+                <span id="backend-status-dot" class="status-dot unknown"></span>
+                <span id="backend-status-text">Verificando backend…</span>
+            </div>
+            <div class="session-chip">
+                <span id="session-name">—</span>
+                <button id="logout-btn" class="btn btn-ghost btn-sm">Cerrar sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="scope-note">
+        Cubre los módulos propiedad de Kevin Girón: <strong>Despacho</strong> (LOG-01/02/03),
+        <strong>Notificaciones</strong> (NOT-01), <strong>Consulta consolidada</strong> (QRY-01) y
+        <strong>Devoluciones</strong> (INC-01) — CDU-07 a CDU-11, con Personal de logística y Personal de
+        atención al cliente como actores. El checkout de cliente no se gestiona desde aquí: depende de
+        ORD-01 (Jairo Gómez), que todavía no existe.
+    </div>
+
+    <main class="workbench">
+        <section class="order-picker">
+            <label for="order-id-input">Orden de trabajo</label>
+            <div class="order-picker-row">
+                <input type="text" id="order-id-input" placeholder="UUID de la orden (pega uno existente o genera uno nuevo)" />
+                <button id="load-order-btn" class="btn btn-primary">Cargar</button>
+                <button id="new-order-btn" class="btn btn-ghost">Orden nueva (demo)</button>
+            </div>
+            <p class="hint">
+                Todas las áreas de abajo se filtran por este Order ID, igual que lo hace CDU-09
+                ("vista consolidada... sin que el solicitante deba consultar cada área por separado").
+            </p>
+        </section>
+
+        <section id="dashboard" class="dashboard hidden">
+            <!-- Resumen consolidado — QRY-01 -->
+            <article class="card card-wide card-summary" data-area="summary">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+                        </span>
+                        <div>
+                            <h2>Resumen consolidado</h2>
+                            <p class="card-subtitle">QRY-01 · CDU-09 — compra, pago, despacho, entrega e incidencia en un solo lugar</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" data-action="refresh-summary">Actualizar</button>
+                </header>
+                <div id="summary-body" class="card-body">
+                    <p class="empty-state">Carga una orden para ver su resumen.</p>
+                </div>
+                <details class="dev-tools">
+                    <summary>Alimentar resumen manualmente (temporal, mientras no exista el Outbox de BB-04)</summary>
+                    <form id="summary-ingest-form" class="form-inline compact">
+                        <select name="source" required>
+                            <option value="ORDER">Compra</option>
+                            <option value="PAYMENT">Pago</option>
+                            <option value="DISPATCH">Despacho</option>
+                            <option value="DELIVERY">Entrega</option>
+                            <option value="INCIDENT">Incidencia</option>
+                        </select>
+                        <input type="text" name="status" placeholder="Estado, ej. CONFIRMED" required />
+                        <button type="submit" class="btn btn-ghost btn-sm">Aplicar</button>
+                    </form>
+                </details>
+            </article>
+
+            <!-- Despacho — LOG-01/02/03 -->
+            <article class="card" data-area="dispatch">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon icon-dispatch">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"/><path d="M3 7.5 12 12l9-4.5"/><path d="M12 12v9"/></svg>
+                        </span>
+                        <div>
+                            <h2>Despacho</h2>
+                            <p class="card-subtitle">LOG-01 · LOG-02 · LOG-03 — CDU-07 / CDU-08</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" data-action="refresh-dispatch">Actualizar</button>
+                </header>
+                <div id="dispatch-list" class="card-body list-body">
+                    <p class="empty-state">Sin despachos todavía.</p>
+                </div>
+                <details class="new-item-form">
+                    <summary>+ Nuevo despacho</summary>
+                    <form id="dispatch-form" class="form-grid compact">
+                        <label>Origen
+                            <select name="origin" required>
+                                <option value="DISTRIBUTION_CENTER">Centro de distribución</option>
+                                <option value="STORE">Tienda</option>
+                                <option value="CUSTOMER_PICKUP">Recogida por el cliente</option>
+                            </select>
+                        </label>
+                        <label>Destino
+                            <input type="text" name="destination" placeholder="Dirección o tienda destino" required />
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm">Crear despacho</button>
+                    </form>
+                </details>
+            </article>
+
+            <!-- Notificaciones — NOT-01 -->
+            <article class="card" data-area="notifications">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon icon-notifications">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        </span>
+                        <div>
+                            <h2>Notificaciones</h2>
+                            <p class="card-subtitle">NOT-01 — CUN-11, no bloqueante</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" data-action="refresh-notifications">Actualizar</button>
+                </header>
+                <div id="notifications-list" class="card-body list-body">
+                    <p class="empty-state">Sin notificaciones todavía.</p>
+                </div>
+                <details class="new-item-form">
+                    <summary>+ Nueva notificación</summary>
+                    <form id="notification-form" class="form-grid compact">
+                        <label>Evento
+                            <select name="eventType" required>
+                                <option value="ORDER_CONFIRMED">Confirmación de compra</option>
+                                <option value="SHIPMENT_PREPARING">Preparación</option>
+                                <option value="SHIPMENT_IN_TRANSIT">Tránsito</option>
+                                <option value="SHIPMENT_DELIVERED">Entrega</option>
+                                <option value="INCIDENT_REGISTERED">Incidencia</option>
+                            </select>
+                        </label>
+                        <label>Canal
+                            <select name="channel" required>
+                                <option value="EMAIL">Correo</option>
+                                <option value="SMS">SMS</option>
+                                <option value="PUSH">Push</option>
+                            </select>
+                        </label>
+                        <label>Destinatario
+                            <input type="text" name="recipient" placeholder="correo@ejemplo.com o +502..." required />
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm">Enviar</button>
+                    </form>
+                </details>
+            </article>
+
+            <!-- Devoluciones — INC-01 -->
+            <article class="card" data-area="incidents">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon icon-incidents">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5A5.5 5.5 0 0 1 20 14.5v0A5.5 5.5 0 0 1 14.5 20H11"/></svg>
+                        </span>
+                        <div>
+                            <h2>Devoluciones e incidencias</h2>
+                            <p class="card-subtitle">INC-01 — CDU-10</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" data-action="refresh-incidents">Actualizar</button>
+                </header>
+                <div id="incidents-list" class="card-body list-body">
+                    <p class="empty-state">Sin devoluciones ni incidencias todavía.</p>
+                </div>
+                <details class="new-item-form">
+                    <summary>+ Registrar devolución/incidencia</summary>
+                    <form id="incident-form" class="form-grid compact">
+                        <label>Tipo
+                            <select name="type" required>
+                                <option value="RETURN">Devolución</option>
+                                <option value="INCIDENT">Incidencia</option>
+                            </select>
+                        </label>
+                        <label>Motivo
+                            <input type="text" name="reason" placeholder="Ej. talla incorrecta" required />
+                        </label>
+                        <label>SKU
+                            <input type="text" name="sku" placeholder="SKU del artículo" required />
+                        </label>
+                        <label>Cantidad
+                            <input type="number" name="quantity" min="1" value="1" required />
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="partial" />
+                            Devolución parcial
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm">Registrar</button>
+                    </form>
+                </details>
+            </article>
+
+            <!-- Checkout: no se gestiona desde la consola operativa -->
+            <article class="card card-wide card-blocked" data-area="checkout">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon icon-blocked">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                        </span>
+                        <div>
+                            <h2>Checkout</h2>
+                            <p class="card-subtitle">CUN-01/CUN-02/CUN-03 — es una pantalla de cliente, no de esta consola</p>
+                        </div>
+                    </div>
+                    <span class="badge badge-soon">Próximamente</span>
+                </header>
+                <div class="card-body">
+                    <p>
+                        El checkout lo inicia el cliente (ver <a href="cliente.html">vista de cliente</a>), no
+                        el personal interno. Además depende de <code>ORD-01</code> (carrito recuperable entre
+                        canales), propiedad de Jairo Gómez, que todavía no existe en el backend
+                        (<code>docs/contracts/orders/ord-01-cart-proposal.md</code>, estado
+                        <code>PROPOSED</code>).
+                    </p>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>Correlation ID de esta sesión: <code id="correlation-id"></code></p>
+    </footer>
+
+    <script src="session.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

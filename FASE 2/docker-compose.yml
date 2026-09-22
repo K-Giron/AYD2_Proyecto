@@ -74,6 +74,31 @@ services:
     networks:
       - sgo-internal
 
+  # UI-01 (Kevin Girón): base de frontend agregada a la topología según
+  # ADR-009 ("El frontend se agregará cuando Kevin entregue la base de UI").
+  frontend:
+    image: sgo-logic-frontend:0.0.1-phase2
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      BACKEND_HOST: backend
+      BACKEND_INTERNAL_PORT: 8080
+    ports:
+      - "${FRONTEND_PORT:-8081}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
+    networks:
+      - sgo-internal
+
 volumes:
   postgres-data:
   rabbitmq-data:

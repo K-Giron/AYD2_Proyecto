@@ -40,13 +40,33 @@ class ModularArchitectureTest {
         assertThat(identifiers).containsExactlyInAnyOrderElementsOf(EXPECTED_MODULES);
     }
 
+    /**
+     * {@code shared} concentra la infraestructura HTTP transversal que el
+     * checklist de entrega exige a todo módulo (formato común de error,
+     * propagación de {@code X-Correlation-Id}): ver
+     * {@code FASE 2/docs/integration/module-delivery-checklist.md}. Ningún
+     * módulo de negocio puede depender de otro módulo de negocio.
+     */
+    private static final String SHARED_MODULE = "shared";
+
     @Test
     void hasNoUnapprovedDependenciesBetweenModules() {
         ApplicationModules modules = ApplicationModules.of(SgoLogicApplication.class);
 
-        modules.forEach(module -> assertThat(module.getDirectDependencies(modules).isEmpty())
-                .as("El módulo %s no debe declarar dependencias antes de aprobar el contrato",
-                        module.getIdentifier())
-                .isTrue());
+        modules.forEach(module -> {
+            if (module.getIdentifier().toString().equals(SHARED_MODULE)) {
+                assertThat(module.getDirectDependencies(modules).isEmpty())
+                        .as("El módulo shared no debe depender de ningún módulo de negocio")
+                        .isTrue();
+                return;
+            }
+            Set<String> dependencyIds = module.getDirectDependencies(modules).stream()
+                    .map(dependency -> dependency.getTargetModule().getIdentifier().toString())
+                    .collect(Collectors.toSet());
+            assertThat(dependencyIds)
+                    .as("El módulo %s solo puede depender de shared hasta que el equipo apruebe otro contrato",
+                            module.getIdentifier())
+                    .isSubsetOf(Set.of(SHARED_MODULE));
+        });
     }
 }
