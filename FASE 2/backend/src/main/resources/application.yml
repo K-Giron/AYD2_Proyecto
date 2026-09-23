@@ -75,3 +75,22 @@ sgo:
     exchange: ${SGO_OUTBOX_EXCHANGE:sgo.events}
     dead-letter-exchange: ${SGO_OUTBOX_DLX:sgo.events.dlx}
     dead-letter-queue: ${SGO_OUTBOX_DLQ:sgo.events.dlq}
+  security:
+    enabled: ${SGO_SECURITY_ENABLED:true}
+    jwt:
+      secret: ${SGO_SECURITY_JWT_SECRET:local_dev_only_jwt_secret_change_me_32b!}
+      issuer: ${SGO_SECURITY_JWT_ISSUER:sgo-logic}
+      ttl: ${SGO_SECURITY_JWT_TTL:PT8H}
+    users:
+      - username: ${SGO_SECURITY_CLIENT_USER:cliente@megastore.com}
+        password: ${SGO_SECURITY_CLIENT_PASSWORD:Cliente123}
+        roles: [CLIENT]
+      - username: ${SGO_SECURITY_SUPPORT_USER:staff@megastore.com}
+        password: ${SGO_SECURITY_SUPPORT_PASSWORD:Staff123}
+        roles: [SUPPORT]
+      - username: ${SGO_SECURITY_LOGISTICS_USER:logistica@megastore.com}
+        password: ${SGO_SECURITY_LOGISTICS_PASSWORD:Logistica123}
+        roles: [LOGISTICS]
+      - username: ${SGO_SECURITY_FINANCE_USER:finanzas@megastore.com}
+        password: ${SGO_SECURITY_FINANCE_PASSWORD:Finanzas123}
+        roles: [FINANCE]

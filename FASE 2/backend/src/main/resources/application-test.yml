@@ -25,3 +25,7 @@ management:
 sgo:
   outbox:
     poll-interval-ms: 86400000
+  security:
+    # Las pruebas de negocio no envían token; la prueba de seguridad lo
+    # habilita explícitamente con @TestPropertySource.
+    enabled: false
