@@ -31,6 +31,12 @@ class InventoryExceptionHandler {
         return errorResponse(HttpStatus.NOT_FOUND, "INVENTORY_RESERVATION_NOT_FOUND", exception, request);
     }
 
+    @ExceptionHandler(InventoryLocationNotFoundException.class)
+    public ResponseEntity<ApiError> handleLocationNotFound(InventoryLocationNotFoundException exception,
+                                                             HttpServletRequest request) {
+        return errorResponse(HttpStatus.NOT_FOUND, "INVENTORY_LOCATION_NOT_FOUND", exception, request);
+    }
+
     /** CDU-02 E1: incluye el caso de dos solicitudes compitiendo por la última unidad. */
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ApiError> handleInsufficientStock(InsufficientStockException exception,

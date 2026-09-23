@@ -80,12 +80,16 @@ public class InventoryController {
                 : reservationService.reserveAtBestOrigin(
                         request.orderId(), request.productId(), request.quantity(),
                         correlationId, idempotencyKey);
-        return ResponseEntity.status(HttpStatus.CREATED).body(InventoryReservationResponse.from(reservation));
+        InventoryLocation location = queryService.getLocationById(reservation.getLocationId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(InventoryReservationResponse.from(reservation, location));
     }
 
     @GetMapping("/reservations/{reservationId}")
     public InventoryReservationResponse getReservation(@PathVariable UUID reservationId) {
-        return InventoryReservationResponse.from(reservationService.getReservation(reservationId));
+        InventoryReservation reservation = reservationService.getReservation(reservationId);
+        InventoryLocation location = queryService.getLocationById(reservation.getLocationId());
+        return InventoryReservationResponse.from(reservation, location);
     }
 
     private UUID correlationId(HttpServletRequest request) {
