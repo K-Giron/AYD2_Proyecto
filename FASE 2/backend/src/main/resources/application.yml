@@ -33,3 +33,36 @@ management:
   info:
     env:
       enabled: false
+
+sgo:
+  simulators:
+    payklik:
+      mode: ${SGO_SIMULATORS_PAYKLIK_MODE:SUCCESS}
+      latency-ms: ${SGO_SIMULATORS_PAYKLIK_LATENCY_MS:1200}
+      failure-rate: ${SGO_SIMULATORS_PAYKLIK_FAILURE_RATE:0.10}
+    sat:
+      mode: ${SGO_SIMULATORS_SAT_MODE:SUCCESS}
+      latency-ms: ${SGO_SIMULATORS_SAT_LATENCY_MS:1500}
+      failure-rate: ${SGO_SIMULATORS_SAT_FAILURE_RATE:0.10}
+    erp:
+      mode: ${SGO_SIMULATORS_ERP_MODE:SUCCESS}
+      latency-ms: ${SGO_SIMULATORS_ERP_LATENCY_MS:1000}
+      failure-rate: ${SGO_SIMULATORS_ERP_FAILURE_RATE:0.05}
+    pos:
+      mode: ${SGO_SIMULATORS_POS_MODE:SUCCESS}
+      latency-ms: ${SGO_SIMULATORS_POS_LATENCY_MS:400}
+      failure-rate: ${SGO_SIMULATORS_POS_FAILURE_RATE:0.05}
+      unavailable-stores: ${SGO_SIMULATORS_POS_UNAVAILABLE_STORES:}
+    logiexpress:
+      mode: ${SGO_SIMULATORS_LOGIEXPRESS_MODE:RANDOM}
+      latency-ms: ${SGO_SIMULATORS_LOGIEXPRESS_LATENCY_MS:800}
+      failure-rate: ${SGO_SIMULATORS_LOGIEXPRESS_FAILURE_RATE:0.02}
+    notifications:
+      mode: ${SGO_SIMULATORS_NOTIFICATIONS_MODE:RANDOM}
+      latency-ms: ${SGO_SIMULATORS_NOTIFICATIONS_LATENCY_MS:500}
+      failure-rate: ${SGO_SIMULATORS_NOTIFICATIONS_FAILURE_RATE:0.05}
+  integrations:
+    erp:
+      format: ${SGO_ERP_FORMAT:CSV}
+      interval-ms: ${SGO_ERP_INTERVAL_MS:1800000}
+      initial-delay-ms: ${SGO_ERP_INITIAL_DELAY_MS:1800000}

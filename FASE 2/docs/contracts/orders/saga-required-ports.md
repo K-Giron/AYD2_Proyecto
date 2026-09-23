@@ -2,7 +2,7 @@
 
 **Estado:** `PROPOSED`
 
-**Implementación:** no iniciada
+**Implementación:** parcial; Fiscal y Logistics tienen implementaciones locales, pero la Saga aún no está conectada
 
 Este documento describe capacidades, no interfaces Java definitivas. Cada módulo conserva la propiedad de su implementación y sus datos.
 
@@ -30,3 +30,10 @@ Este documento describe capacidades, no interfaces Java definitivas. Cada módul
 | Payments | Edson Sosa | Pendiente | Pendiente |
 | Fiscal | Andy Sánchez | Pendiente | Pendiente |
 | Logistics | Kevin Girón | Pendiente | Pendiente |
+
+## Estado de materialización local
+
+- `FiscalService` implementa la solicitud idempotente, el documento `FISCAL_PENDING`, la autorización/rechazo SAT y la consulta de la compuerta de confirmación. Trabaja contra esta propuesta y ADR-010; no convierte el contrato en aceptado.
+- `ShipmentService` materializa el puerto de Logistics según la entrega de Kevin.
+- ORD-03 sigue pendiente: Jairo debe consumir APIs públicas/eventos y no las entidades o repositorios internos.
+- El despacho durable mediante Outbox/Inbox sigue bloqueado por BB-04.

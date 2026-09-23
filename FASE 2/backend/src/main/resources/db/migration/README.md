@@ -10,5 +10,6 @@ Como BB-03 aún no reserva un rango de versiones y Flyway solo exige enteros asc
 |---|---|---|
 | V1-V99 (sugerido) | orders / inventory | Jorge Pumay |
 | V1001-V1099 | logistics, notifications, query, incidents | Kevin Girón |
+| V2001-V2099 | fiscal, ERP y POS | Andy Sánchez |
 
 Esta convención no está aprobada por el arquitecto integrador; si el equipo acuerda otra numeración en el daily, estas migraciones deben renumerarse antes de integrar a `develop`.

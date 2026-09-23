@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Materializar el DDA de la Fase 1 como un MVP reproducible de gestión de órdenes y logística omnicanal. Este incremento crea el backbone técnico; no implementa todavía flujos de negocio.
+Materializar el DDA de la Fase 1 como un MVP reproducible de gestión de órdenes y logística omnicanal. El repositorio contiene el backbone técnico y entregas funcionales incrementales; la Saga completa todavía no está integrada.
 
 ## Arquitectura
 
@@ -30,7 +30,7 @@ FASE 2/
 `frontend/` (Kevin Girón, UI-01) es un sitio estático de tres páginas, sin build tooling (HTML/CSS/JS planos), servido por nginx con proxy inverso hacia `/api/` para evitar configurar CORS:
 
 - `index.html` — landing que elige entre las dos experiencias siguientes.
-- `cliente.html` (tema claro, `store.css`) — tienda omnicanal: catálogo y carrito son una vitrina de referencia sin backend (no existe `INV-01`); "Mis pedidos" y "Devoluciones" sí llaman a QRY-01, LOG-02 y NOT-01/INC-01 reales. El checkout se ve completo pero, al confirmar, explica honestamente que depende de `ORD-01`/`PAY-01`/`FIS-01`, que no existen — no simula una compra real.
+- `cliente.html` (tema claro, `store.css`) — tienda omnicanal: catálogo y carrito son una vitrina de referencia sin backend (no existe `INV-01`); "Mis pedidos" y "Devoluciones" sí llaman a QRY-01, LOG-02 y NOT-01/INC-01 reales. El checkout no crea una compra real porque todavía faltan ORD-01/PAY-01 y la integración de esos flujos con FIS-01.
 - `staff.html` (tema oscuro, `styles.css`) — consola operativa para Personal de logística/atención al cliente (actores reales de CDU-07, 09, 10 y 11): buscar una orden y gestionar despacho (LOG-01/02/03), notificaciones (NOT-01), resumen consolidado (QRY-01) y devoluciones (INC-01).
 
 ## Tecnologías y versiones
@@ -59,7 +59,7 @@ FASE 2/
 | Andy Sánchez | `fiscal`, SAT, ERP, POS y simuladores |
 | Kevin Girón | `logistics`, `notifications`, `query`, `incidents` y frontend |
 
-`integration` es un área compartida bajo la propiedad técnica definida para Edson y la coordinación de archivos comunes de Jairo. En este incremento solo se declara el módulo.
+`integration` contiene los adaptadores legacy ERP/POS entregados por Andy. El mecanismo transversal Outbox/Inbox y la infraestructura de mensajería siguen bajo la propiedad técnica de Edson; cualquier cambio de contrato común se coordina con Jairo.
 
 ## Requisitos locales
 
@@ -78,6 +78,11 @@ Copie manualmente `.env.example` como `.env` solo si desea personalizar el entor
 - `RABBITMQ_USER`, `RABBITMQ_PASSWORD`, `RABBITMQ_HOST`, `RABBITMQ_PORT`
 - `RABBITMQ_MANAGEMENT_PORT`
 - `SPRING_PROFILES_ACTIVE`
+- `SGO_SIMULATORS_{PAYKLIK,SAT,ERP,POS,LOGIEXPRESS,NOTIFICATIONS}_MODE`
+- `SGO_SIMULATORS_{PAYKLIK,SAT,ERP,POS,LOGIEXPRESS,NOTIFICATIONS}_LATENCY_MS`
+- `SGO_SIMULATORS_{PAYKLIK,SAT,ERP,POS,LOGIEXPRESS,NOTIFICATIONS}_FAILURE_RATE`
+- `SGO_SIMULATORS_POS_UNAVAILABLE_STORES`
+- `SGO_ERP_FORMAT`, `SGO_ERP_INTERVAL_MS`, `SGO_ERP_INITIAL_DELAY_MS`
 
 Los valores predeterminados son exclusivamente locales y ficticios.
 
@@ -91,7 +96,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual ejecuta 24 pruebas: conectividad real con PostgreSQL/RabbitMQ, tres controles modulares, cuatro escenarios de correlación, cuatro escenarios del manejador común de errores, el endpoint técnico y 14 pruebas unitarias de `logistics`, `notifications`, `query` e `incidents` (Kevin Girón).
+La suite actual contiene 41 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, los módulos de Kevin, y 16 pruebas nuevas de fiscal/SAT, ERP, POS y PayKlik. Andy ejecutó las 40 pruebas que no requieren Docker con 0 fallos; la prueba restante y el `verify` completo requieren Java 25 y Docker.
 
 ## Verificación completa con un comando
 
@@ -168,6 +173,17 @@ Actuator expone únicamente `health` e `info`.
 
 Todos usan el formato común de error de `shared.http.ApiError` y propagan `X-Correlation-Id`.
 
+## Endpoints fiscal e integraciones (Andy Sánchez)
+
+- `POST /api/v1/fiscal-documents` (`Idempotency-Key` requerido, responde `202`), `GET /api/v1/fiscal-documents/{id}`, `GET /api/v1/fiscal-documents/orders/{orderId}` y `GET /api/v1/fiscal-documents/orders/{orderId}/confirmation` — FIS-01/FIS-02.
+- `POST /api/v1/integrations/erp/sales`, `POST /api/v1/integrations/erp/batches` y `GET /api/v1/integrations/erp/batches/{id}` — ERP-01/ERP-02. La ventana programada es de 30 minutos por defecto y no envía archivos vacíos.
+- `POST /api/v1/integrations/pos/events`, `GET /api/v1/integrations/pos/deliveries/{id}` y `GET /api/v1/integrations/pos/events/{eventId}` — POS-01, tiendas 1–32, acuse y deduplicación por evento+tienda.
+- `POST /api/v1/simulators/payklik/authorizations` — contrato simulado BB-06 para PayKlik; solo acepta referencias seguras, nunca PAN/CVV.
+
+Fiscal, ERP y POS persisten estado, correlación, intentos y resultados. Los fallos transitorios usan reintentos 2/8/32 s; la entrega durable después de un reinicio se conectará al Outbox de BB-04 cuando Edson lo entregue.
+
+Los simuladores de PayKlik, SAT, ERP, POS, LogiExpress y notificaciones admiten `SUCCESS`, `REJECTION`, `LATENCY`, `TIMEOUT`, `OUTAGE` y `RANDOM`. Son contratos de desarrollo propuestos en ADR-012, no integraciones reales con proveedores.
+
 ## Integración continua — QA-01
 
 El workflow `.github/workflows/qa-integracion-base.yml` usa dos jobs: primero compila y prueba el backend; después construye Compose y ejecuta el smoke test. Se activa en pull requests, push a `develop`/`main` y manualmente. Puede utilizar estos secretos de GitHub Actions:
@@ -183,6 +199,8 @@ Use valores exclusivos y no productivos para CI. Como no existe despliegue y los
 ## Guías y propuestas para integración
 
 - `docs/contracts/contract-status.md`: estado y aprobaciones de contratos.
+- `docs/adr/ADR-010-confirmacion-fiscal-asincrona.md`: compuerta fiscal y política ante SAT.
+- `docs/adr/ADR-012-contratos-de-simuladores.md`: modos y contratos BB-06.
 - `docs/contracts/compatibility-policy.md`: reglas para cambios compatibles.
 - `docs/contracts/orders/ord-01-cart-proposal.md`: casos preparatorios del carrito.
 - `docs/contracts/orders/ord-02-state-machine-proposal.md`: matriz candidata de estados.
@@ -194,7 +212,7 @@ Use valores exclusivos y no productivos para CI. Como no existe despliegue y los
 - `docs/integration/qa-01-ci-contract.md`: comportamiento y secretos del workflow.
 - `docs/evidence/functional/VALIDACION_CRUZADA_BB01_BB05.md`: procedimiento y evidencia pendiente para una persona no autora.
 
-Todos los diseños de Orders y Saga permanecen `PROPOSED`; no existen entidades, repositorios, transiciones ejecutables, compensaciones ni simuladores funcionales.
+Todos los diseños de Orders y Saga permanecen `PROPOSED`; no existen todavía sus entidades, transiciones ejecutables ni compensaciones. Los puertos fiscal y logístico ya tienen implementaciones locales, y los simuladores BB-06 son funcionales, pero la Saga aún no los consume.
 
 ## Alcance de este incremento
 
@@ -202,20 +220,24 @@ Se prepararon la estructura oficial, backend Spring Boot, módulos, configuraci�
 
 Kevin Girón agregó, sobre esa base: `logistics` (LOG-01/02/03, con integración simulada de LogiExpress y reintentos 2/8/32 s), `notifications` (NOT-01, despacho no bloqueante), `query` (QRY-01, vista consolidada con indicador de dato desactualizado) e `incidents` (INC-01, devoluciones/incidencias), cada uno con su propia migración Flyway y pruebas; y `frontend` (UI-01), la base de UI que ADR-009 reservaba para él, con checkout deliberadamente bloqueado por depender de `ORD-01`.
 
-Continúan pendientes: esquema y migraciones de `orders`/`inventory` (BB-03), carrito, estados ejecutables, Saga, compensaciones, E2E funcional, inventario, pagos, auditoría funcional, seguridad/JWT, Outbox/Inbox/retries/DLQ (BB-04, del que Logistics y Notifications dependen con colas locales temporales), fiscal, integraciones legacy y los simuladores oficiales de BB-06 (LogiExpress y el proveedor de notificaciones usan adaptadores simulados propios de Kevin mientras tanto). El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
+Andy Sánchez agregó `fiscal` (XML, CUI/serie, estado `FISCAL_PENDING`, SAT asíncrono, idempotencia y compuerta de confirmación), lotes ERP CSV/XML cada 30 minutos, distribución POS a 32 tiendas y los simuladores configurables BB-06, además de las migraciones `V2001`–`V2003`, ADR-010/ADR-012 y pruebas de FIS-03.
+
+Continúan pendientes: esquema y migraciones de `orders`/`inventory` (BB-03), carrito, estados ejecutables, Saga, compensaciones, E2E funcional, inventario, pagos completos de Edson, auditoría funcional, seguridad/JWT y Outbox/Inbox transversal (BB-04). El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
 
 BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanece parcial hasta integrar frontend y componentes compartidos pendientes. Los contratos de estados, eventos y API son propuestas sujetas a aprobación del equipo.
 
 ## Limitaciones actuales
 
 - El endpoint de plataforma no representa funcionalidad de negocio ni sustituye Actuator.
-- No existen entidades JPA ni tablas de negocio; Hibernate solo valida lo que esté mapeado.
-- RabbitMQ está disponible, pero no existen productores, consumidores ni topología funcional.
+- Existen entidades y migraciones de Logistics, Notifications, Query, Incidents, Fiscal, ERP y POS; Orders, Inventory, Payments y Saga continúan pendientes o incompletos.
+- RabbitMQ está disponible, pero fiscal, ERP y POS todavía no publican mediante el Outbox transversal de BB-04.
 - No hay autenticación ni autorización hasta BB-07.
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
-- `logistics` y `notifications` usan adaptadores simulados propios (`SimulatedLogiExpressAdapter`, `SimulatedNotificationProviderAdapter`) mientras BB-06 no entrega los simuladores oficiales; deben sustituirse, no coexistir con ellos.
+- `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.
 - `logistics` (`shipment_dead_letters`) usa una cola de fallidos local en vez del Outbox transversal porque BB-04 todavía no existe.
 - `query` se alimenta manualmente vía `POST /api/v1/query/order-summary`; no hay todavía un consumidor de eventos real.
 - `shared` se declaró `@ApplicationModule(type = OPEN)` y `ModularArchitectureTest` se amplió para permitir que un módulo de negocio dependa de `shared`; ambos cambios tocan código compartido y están pendientes de revisión por Jairo Gómez (arquitecto integrador).
 - Las migraciones `V1001`-`V1004` (logistics/notifications/query/incidents) usan una numeración provisional de Kevin Girón; BB-03 aún no reserva su propio rango (ver `backend/src/main/resources/db/migration/README.md`).
+- Las migraciones `V2001`-`V2003` (fiscal/ERP/POS) no se ejecutaron en esta máquina contra PostgreSQL real porque Docker no está instalado; deben validarse en el entorno oficial Java 25 + Docker.
+- Los ejecutores asíncronos actuales conservan el estado de negocio y reintentan dentro del proceso. La recuperación durable de una tarea justo después de reiniciar depende de BB-04/Outbox.

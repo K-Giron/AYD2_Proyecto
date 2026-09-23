@@ -17,12 +17,12 @@ Verificar que una falla de un proveedor externo (PayKlik, SAT, LogiExpress o el 
 | Timeout de LogiExpress (~2 %) | Logistics (Kevin) | **Verificado** | `ShipmentServiceTest.exhaustsThreeRetriesThenSendsToDeadLetterQueue`: fuerza `LogiExpressTimeoutException` en las 4 llamadas, confirma backoff 2/8/32 s exacto y registro en `shipment_dead_letters` con `attempts = 4`. También `requestsLabelAndMarksIssuedOnSuccess` cubre el camino feliz para contraste. |
 | Indisponibilidad del proveedor de notificaciones | Notifications (Kevin) | **Verificado** | `NotificationServiceTest.retriesOnceThenFailsWhenProviderStaysUnavailable`: fuerza `NotificationProviderUnavailableException` en cada intento, confirma exactamente 1 reintento y estado final `FAILED` sin bloquear la respuesta original (`202` ya se había devuelto). |
 | Indeterminación de pago (PayKlik) | Payments (Edson) | **Bloqueado** | PAY-01/PAY-02 no existen en `develop` a la fecha de este corte (ver `BITACORA_FASE_2.md`, §5). No hay código que probar. |
-| Confirmación fiscal pendiente/timeout (SAT) | Fiscal (Andy) | **Bloqueado** | FIS-01/FIS-02 no existen en `develop` a la fecha de este corte. No hay código que probar. |
+| Confirmación fiscal pendiente/timeout (SAT) | Fiscal (Andy) | **Verificado localmente** | `FiscalServiceTest.transientSatFailureRetriesThreeTimesAndRemainsFiscalPending`: fuerza timeout en 4 llamadas (inicial + 2/8/32 s), confirma `FISCAL_PENDING`, `SAT_RETRY_EXHAUSTED` y compuerta de orden cerrada. El camino feliz y el rechazo explícito también están cubiertos. |
 
 ## 3. Lo que falta para cerrar QA-05
 
 1. Edson entrega PAY-02 (timeout, circuit breaker, pago indeterminado) con su propia prueba de falla forzada, análoga a `ShipmentServiceTest`.
-2. Andy entrega FIS-02 (confirmación SAT asíncrona) con su propia prueba de falla forzada.
+2. Ejecutar FIS-02 con Java 25, PostgreSQL y Docker reales; la verificación local de Andy se realizó con Java 21 y dobles de repositorio por falta de Docker.
 3. Kevin (o quien coordine QA) ejecuta una prueba de extremo a extremo que fuerce **las cuatro** fallas simultáneamente sobre una orden real de la Saga (ORD-03, Jairo) y confirma:
    - La orden no se pierde ni queda en un estado inconsistente.
    - Ninguna operación principal esperó de forma bloqueante a un proveedor caído.
@@ -31,4 +31,4 @@ Verificar que una falla de un proveedor externo (PayKlik, SAT, LogiExpress o el 
 
 ## 4. Conclusión de este corte
 
-QA-05 está **parcialmente cubierto**: las dos piezas propiedad de Kevin (LOG-03, NOT-01) tienen prueba automatizada y pasan en `./mvnw clean verify`. La tarjeta no puede moverse a `Done` — ni afirmarse como tal ante la ingeniera — porque PAY-02 y FIS-02 no existen todavía. Este documento debe releerse cuando Edson y Andy entreguen sus módulos, siguiendo la misma regla de honestidad del resto de esta fase: nada se marca cumplido sin evidencia reproducible.
+QA-05 está **parcialmente cubierto**: LOG-03, NOT-01 y FIS-02 tienen pruebas automatizadas. La evidencia de FIS-02 forma parte de la suite local de 40 pruebas, pero no todavía de `clean verify` con Docker. La tarjeta no puede moverse a `Done` porque PAY-02 y la prueba E2E con la Saga siguen pendientes.
