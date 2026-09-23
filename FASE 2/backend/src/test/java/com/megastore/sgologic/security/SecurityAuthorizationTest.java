@@ -165,6 +165,29 @@ class SecurityAuthorizationTest {
     }
 
     @Test
+    void onlyFinanceCanQueryAuditEvidence() throws Exception {
+        String clientToken = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
+        String financeToken = login("finanzas@megastore.com", "Finanzas123").get("accessToken").asText();
+        String orderId = UUID.randomUUID().toString();
+
+        mockMvc.perform(get("/api/v1/audit/events").param("orderId", orderId)
+                        .header("Authorization", "Bearer " + clientToken))
+                .andExpect(status().isForbidden());
+
+        // Con FINANCE la autorización pasa; sin evidencia -> 404.
+        mockMvc.perform(get("/api/v1/audit/events").param("orderId", orderId)
+                        .header("Authorization", "Bearer " + financeToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("AUDIT_EVIDENCE_NOT_FOUND"));
+
+        // Criterio inválido -> 400 con el formato común.
+        mockMvc.perform(get("/api/v1/audit/events")
+                        .header("Authorization", "Bearer " + financeToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_AUDIT_QUERY"));
+    }
+
+    @Test
     void clientRoleCanReadInventoryAndPublicHealthStaysOpen() throws Exception {
         String token = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
 
