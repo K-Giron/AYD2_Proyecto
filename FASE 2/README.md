@@ -166,6 +166,13 @@ Actuator expone únicamente `health` e `info`.
 - `GET /api/v1/orders/{orderId}/summary` — QRY-01. `POST /api/v1/query/order-summary` es un punto de ingesta temporal mientras no exista un consumidor del Outbox (BB-04).
 - `POST /api/v1/incidents`, `GET /api/v1/incidents/{id}`, `GET /api/v1/incidents?orderId=`, `PATCH /api/v1/incidents/{id}/resolution` — INC-01.
 
+## Endpoints de negocio (Jorge Pumay)
+
+- `GET /api/v1/inventory/locations` — INV-01, las 34 ubicaciones (2 centros de distribución + 32 tiendas).
+- `GET /api/v1/inventory/stock?productId=&locationId=` (`locationId` opcional) — INV-01, disponibilidad por producto y ubicación (`quantityAvailable = quantityOnHand - quantityReserved`).
+- `POST /api/v1/inventory/reservations` (`Idempotency-Key` requerido), `GET /api/v1/inventory/reservations/{id}` — INV-02, reserva atómica e idempotente (CDU-02). `409 INSUFFICIENT_STOCK` cuando no hay disponibilidad (incluye el caso de dos solicitudes compitiendo por la última unidad); `404 INVENTORY_ITEM_NOT_FOUND` cuando el producto no tiene stock registrado en esa ubicación.
+- Datos semilla de demostración: tres `productId` fijos documentados en `V2__inventory_seed_locations_and_stock.sql` (SGO-Logic no gestiona catálogo de productos, ver DDA §2.2).
+
 Todos usan el formato común de error de `shared.http.ApiError` y propagan `X-Correlation-Id`.
 
 ## Integración continua — QA-01
