@@ -19,10 +19,10 @@ Basado en el historial real de `git log` sobre `origin/develop` (no en lo que la
 | Jairo Gómez | BB-01, BB-02 (borrador), BB-05, QA-01 (local) | 2026-09-14 |
 | Jorge Pumay | Ninguna todavía (BB-03 pendiente) | — |
 | Edson Sosa | Ninguna todavía (BB-04, BB-07, PAY pendientes) | — |
-| Andy Sánchez | Ninguna todavía (BB-06, FIS pendientes) | — |
+| Andy Sánchez | Ninguna visible en `origin/develop`; BB-06, FIS, ERP y POS preparados localmente sin commit por instrucción del autor | 2026-09-22 (local) |
 | Kevin Girón | `logistics`, `notifications`, `query`, `incidents`, `frontend` (esta rama, sin commitear todavía) | 2026-09-22 |
 
-El plan original suponía que todos empezarían en paralelo el 10 de septiembre contra contratos congelados. A la fecha de corte, solo Jairo y Kevin tienen entregas visibles en el repositorio.
+El plan original suponía que todos empezarían en paralelo el 10 de septiembre contra contratos congelados. A la fecha de corte de Git, solo Jairo y Kevin tienen entregas visibles; el trabajo local de Andy todavía no forma parte del historial ni de `origin/develop`.
 
 ## 3. Prioridades P0/P1 (sin inventar alcance nuevo)
 
@@ -32,12 +32,12 @@ Se listan tal como aparecen en `RESPONSABILIDADES_INTEGRANTES_FASE_2.md`; este d
 |---|---|---|---|
 | P0 | BB-03 (modelo relacional) | Jorge | Pendiente — bloquea INV-01, ORD-01/02, AUD-01 |
 | P0 | BB-04 (Outbox) | Edson | Pendiente — bloquea PAY, FIS, LOG-03/NOT-01 definitivos, ERP, POS |
-| P0 | BB-06 (simuladores oficiales) | Andy | Pendiente — bloquea reemplazar los simuladores temporales de Kevin |
+| P0 | BB-06 (simuladores oficiales) | Andy | Implementado localmente; pruebas y revisión cruzada pendientes antes de integrar |
 | P0 | LOG-01/02/03, NOT-01, QRY-01, INC-01 | Kevin | **Entregado** en esta rama, verificado con `./mvnw clean verify` (24/24) |
 | P0 | UI-01 | Kevin | **Entregado** en esta rama, probado con `docker compose up` real |
 | P1 | ORD-03 (Saga) | Jairo | Pendiente — depende de INV-01, PAY-01, FIS-01, LOG-01 (Kevin ya lo expone) |
 | P1 | QA-03 (esta matriz) | Kevin | **Entregado** (`QA-03-matriz-eac.md`), 2 de 12 EaC cubiertos con evidencia |
-| P1 | QA-05 (fallas externas) | Kevin | Parcial (`QA-05-pruebas-fallas-externas.md`); bloqueado por PAY-02 y FIS-02 |
+| P1 | QA-05 (fallas externas) | Kevin | Parcial (`QA-05-pruebas-fallas-externas.md`); FIS-02 tiene prueba local, continúa bloqueado por PAY-02 y E2E |
 | P1 | DEMO-01 | Kevin | Guion y datos entregados (`DEMO-01-guion-demo.md`); falta el ensayo con el equipo |
 
 ## 4. Registro de feedback real

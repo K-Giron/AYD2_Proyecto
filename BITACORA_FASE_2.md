@@ -144,6 +144,23 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Resultado funcional o numérico: `session.js`, `app-login.js`, `app.js`, `app-cliente.js` verificados con `node --check`. `docker compose up --build -d frontend`: los 4 servicios quedaron `healthy`; `login.html`, `cliente.html`, `staff.html` responden `200`.
 - Impedimentos: ninguno nuevo. Sigue siendo login simulado del lado del cliente, documentado como tal dentro del propio panel de credenciales de demo — el diseño más pulido no cambia esa realidad.
 
+### Fecha: 2026-09-22 — Integrante: Andy Sánchez
+
+- Ayer: no existe una entrada anterior verificable de Andy en esta bitácora; no se reconstruye retroactivamente.
+- Trabajo realizado hoy:
+  - `[DEC-01]` se redactó ADR-010 para separar la aceptación asíncrona del documento fiscal de la compuerta sincrónica de confirmación de la orden.
+  - `[DEC-04]` se redactó ADR-012 con contratos y modos configurables para PayKlik, SAT, ERP, POS, LogiExpress y notificaciones.
+  - `[BB-06]` se implementaron simuladores configurables (`SUCCESS`, `REJECTION`, `LATENCY`, `TIMEOUT`, `OUTAGE`, `RANDOM`), configuración externa y restricción de PAN/CVV para PayKlik.
+  - `[FIS-01/FIS-02]` se implementaron XML fiscal escapado, CUI/serie, persistencia, `FISCAL_PENDING`, envío SAT asíncrono, respuesta aprobada/rechazada, correlación, idempotencia y reintentos 2/8/32 s.
+  - `[ERP-01/ERP-02]` se implementaron registro idempotente de ventas, lotes CSV/XML cada 30 minutos, ejecución vacía sin archivo, acuse, reintentos y `DEAD_LETTER`.
+  - `[POS-01]` se implementó distribución a tiendas 1–32, acuse, deduplicación por evento+tienda, reintentos y `DEAD_LETTER`, sin modificar POS.
+  - `[FIS-03/DOC-02]` se agregaron 16 pruebas, documentación de endpoints/configuración, checklist de entrega y evidencia QA.
+- Resultado funcional o numérico: compilación local `BUILD SUCCESS`. Suite completa sin contenedores: 40 pruebas ejecutadas, 0 fallos, 0 errores y 0 omitidas; dentro de ella, 16 pruebas nuevas cubren la entrega de Andy. Se usó Java 21 con `-Djava.version=21` porque la máquina no tiene JDK 25; no se modificó `pom.xml`.
+- Hoy y trazabilidad: CDU-04/FIS-01/FIS-02, ERP-01/ERP-02, POS-01, BB-06, EaC-04/EaC-11/EaC-12 y ADR-001. Las entidades solo conservan UUID de agregados ajenos; no leen sus tablas.
+- Impedimentos, responsable e impacto: Docker no está instalado, por lo que quedan pendientes `clean verify`, Testcontainers, Flyway contra PostgreSQL y smoke Compose. BB-04/Outbox (Edson) y ORD-03/Saga (Jairo) no existen en el árbol local; las entregas conservan estado propio, pero la recuperación durable e integración E2E quedan pendientes. Edson debe realizar la revisión cruzada asignada.
+- Horas reales y estimadas restantes: pendientes de registrar por Andy.
+- Persona que quedaría bloqueada y acción temporal: Jairo puede revisar el endpoint de compuerta fiscal y los contratos propuestos; no debe acoplarse a entidades/repositorios internos ni aceptar ADR-010/012 sin la revisión del equipo.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -167,6 +184,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-14 | ADR-009, borrador de stack y topología | Proposed | Jairo (redacción); aprobación del equipo pendiente | Pendiente | BB-02 no puede cerrarse |
 | 2026-09-14 | Diferencia de versión JUnit | Pendiente de ratificación | Jairo (detección); equipo pendiente | Resolución efectiva del BOM de Spring Boot 4.1.1 | La planificación indica JUnit 5 y el BOM resuelve JUnit Jupiter 6.0.3 |
 | 2026-09-14 | Línea base documental de integración | Proposed | Jairo (preparación); propietarios pendientes | Documentos en `FASE 2/docs/contracts` y `docs/integration` | Permite revisión anticipada sin declarar contratos aceptados |
+| 2026-09-22 | ADR-010, confirmación fiscal asíncrona | Proposed | Andy (redacción); Edson y Jairo pendientes | `FASE 2/docs/adr/ADR-010-confirmacion-fiscal-asincrona.md` | La orden solo puede confirmarse con documento fiscal aprobado |
+| 2026-09-22 | ADR-012, contratos de simuladores | Proposed | Andy (redacción); Edson, Kevin y Jairo pendientes | `FASE 2/docs/adr/ADR-012-contratos-de-simuladores.md` | Modos externos reproducibles sin afirmar integración real |
 
 ## 7. Resultados de pruebas
 
@@ -178,6 +197,9 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-14 | `./tests/smoke/verify-platform.sh` | `.env` local ignorado; Maven, Compose, PostgreSQL, RabbitMQ y backend | Correcto; 13 pruebas verdes, tres health checks, Actuator y status/correlation ID verificados | Reportes Surefire y salida local de las 14:18–14:19 | Comando único reproducible; Compose apagado sin eliminar volúmenes |
 | 2026-09-14 | Workflow QA-01 | Secretos `SGO_*` todavía no configurados en GitHub | Pendiente de ejecución remota | Espacio de captura reservado | No se marca QA-01 terminado hasta observar una ejecución verde |
 | 2026-09-14 | Primera ejecución remota QA-01 | Cuatro secretos disponibles; `SGO_RABBITMQ_PASSWORD` llegó vacío | Falló en la validación previa con exit code 1, antes de compilar | Salida de GitHub Actions reportada por Jairo | Se separaron pruebas y smoke test; se agregaron credenciales ficticias de respaldo porque CI no realiza despliegue |
+| 2026-09-22 | Compilación de entrega Andy | Java 21 local mediante `-Djava.version=21`; fuentes de producción | `BUILD SUCCESS` | Salida Maven local | El código compila; falta repetir con Java 25 oficial |
+| 2026-09-22 | FIS-03 + integraciones + arquitectura | `FiscalServiceTest`, `ErpIntegrationServiceTest`, `PosIntegrationServiceTest`, `SimulatedPayKlikAdapterTest`, `ModularArchitectureTest` | 19 pruebas incluidas en la suite final, 0 fallos, 0 errores, 0 omitidas | Surefire local y `FASE 2/docs/qa/FIS-03-pruebas-fiscal-erp-pos.md` | Caminos feliz/negativo, timeout, reintento, idempotencia y límites modulares verificados sin infraestructura |
+| 2026-09-22 | Suite local sin contenedores | Todas las pruebas salvo `InfrastructureIntegrationTest` | `BUILD SUCCESS`; 40 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local | Los cambios no rompen los módulos unitarios/MVC existentes; falta Docker/Testcontainers |
 
 ## 8. Retrospectiva individual
 

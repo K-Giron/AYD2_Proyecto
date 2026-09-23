@@ -9,7 +9,7 @@
 
 ## 1. Qué se puede demostrar hoy (y qué no)
 
-Este guion demuestra el camino feliz de **despacho, notificación, consulta e incidencia** de forma aislada, porque son los módulos que Kevin entregó. No demuestra un checkout real de punta a punta: eso requiere ORD-01 (Jairo), INV-01 (Jorge), PAY-01 (Edson) y FIS-01 (Andy), ninguno disponible a la fecha de este corte (ver `BITACORA_FASE_2.md`). Presentar esto como un checkout funcional sería exactamente lo que la ingeniera dijo que va a verificar contra el DDA y los diagramas — por eso el guion es explícito sobre el límite.
+Este guion demuestra el camino feliz de **despacho, notificación, consulta e incidencia** de forma aislada. No demuestra un checkout real de punta a punta: FIS-01 ya está preparado localmente, pero todavía faltan ORD-01 (Jairo), INV-01 (Jorge), PAY-01 (Edson) y la conexión de la Saga. Presentarlo como checkout funcional incumpliría el DDA, por eso el límite sigue explícito.
 
 ## 2. Preparación (antes de la demo)
 
@@ -49,7 +49,7 @@ La UI es un panel único por orden (no pestañas sueltas): se escribe un Order I
 2. Crear un segundo despacho con origen `DISTRIBUTION_CENTER`: explicar que dispara la solicitud a LogiExpress (simulado) en segundo plano; la fila aparece con estado `ASSIGNED` y pasa a `LABEL_ISSUED` al refrescar.
 3. Pulsar "Ver tracking" sobre esa fila para mostrar la línea de tiempo (vacía todavía).
 4. Pulsar "Marcar en tránsito" y luego "Marcar entregado" para llenar la línea de tiempo en vivo.
-5. Mencionar explícitamente: el simulador y la cola de fallidos local son temporales hasta que Andy entregue BB-06 y Edson el Outbox (BB-04) — no se presenta como el mecanismo final.
+5. Mencionar explícitamente: LogiExpress ya usa los modos configurables de BB-06, pero la cola de fallidos local es temporal hasta que Edson entregue el Outbox (BB-04); no se presenta como el mecanismo final.
 
 ### 4.2 Notificaciones (NOT-01) — CUN-11
 
@@ -65,7 +65,7 @@ La UI es un panel único por orden (no pestañas sueltas): se escribe un Order I
 ### 4.4 Devolución (INC-01) — CDU-10
 
 1. Registrar una devolución parcial referenciando el mismo `orderId`.
-2. Mostrar que la incidencia queda en `REGISTERED` y que el sistema **no** procesa un reembolso automático (CDU-10, E1: resolución manual mientras AUD-01/FIS-02 no existen).
+2. Mostrar que la incidencia queda en `REGISTERED` y que el sistema **no** procesa un reembolso automático (CDU-10, E1: resolución manual mientras AUD-01/PAY y la integración de nota de crédito no existen).
 
 ### 4.5 Cierre
 
