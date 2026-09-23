@@ -96,7 +96,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 41 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, los módulos de Kevin, y 16 pruebas nuevas de fiscal/SAT, ERP, POS y PayKlik. Andy ejecutó las 40 pruebas que no requieren Docker con 0 fallos; la prueba restante y el `verify` completo requieren Java 25 y Docker.
+La suite actual contiene 60 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin y 16 pruebas de fiscal/SAT, ERP, POS y PayKlik. El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 60/60 en verde (ver `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`).
 
 ## Verificación completa con un comando
 
@@ -208,6 +208,9 @@ Use valores exclusivos y no productivos para CI. Como no existe despliegue y los
 - `docs/contracts/contract-status.md`: estado y aprobaciones de contratos.
 - `docs/adr/ADR-010-confirmacion-fiscal-asincrona.md`: compuerta fiscal y política ante SAT.
 - `docs/adr/ADR-012-contratos-de-simuladores.md`: modos y contratos BB-06.
+- `docs/diagrams/modelo-datos.md`: modelo de datos del MVP con ERD, propiedad por esquema y mapeo a CDU/EaC/migraciones.
+- `docs/qa/trazabilidad-cun-mvp.md`: trazabilidad CUN/CDU → código → datos → despliegue → EaC/ADR y elementos técnicos justificados.
+- `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`: revisión cruzada de fiscal/ERP/POS e inventario con evidencia `clean verify`.
 - `docs/contracts/compatibility-policy.md`: reglas para cambios compatibles.
 - `docs/contracts/orders/ord-01-cart-proposal.md`: casos preparatorios del carrito.
 - `docs/contracts/orders/ord-02-state-machine-proposal.md`: matriz candidata de estados.

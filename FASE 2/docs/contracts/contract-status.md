@@ -15,16 +15,21 @@ Esta tabla permite trabajar contra una línea base visible sin presentar como ap
 | Diseño de máquina ORD-02 | Borrador / `PROPOSED` | Jairo, Edson y Andy | Implementación ORD-02 |
 | Puertos requeridos por la Saga | Borrador / `PROPOSED` | Jairo, Jorge, Edson, Andy y Kevin | ORD-03 |
 | ADR-009 | `Proposed` | Al menos tres integrantes | Cierre BB-02 y BB-05 |
-| ADR-010, confirmación fiscal asíncrona | `Proposed` | Andy, Edson y Jairo | Integración FIS-02 con ORD-03 |
-| ADR-012, contratos de simuladores | `Proposed` | Andy, Edson, Kevin y Jairo | Ratificación de BB-06 |
+| ADR-010, confirmación fiscal asíncrona | `Proposed`; aprobación de Edson registrada (2026-09-23); faltan Jairo | Andy, Edson y Jairo | Integración FIS-02 con ORD-03 |
+| ADR-012, contratos de simuladores | `Proposed`; aprobación de Edson registrada (2026-09-23); faltan Kevin y Jairo | Andy, Edson, Kevin y Jairo | Ratificación de BB-06 |
 
 ## Implementaciones locales contra contratos propuestos
 
 | Implementación | Estado local | Pendiente antes de integración |
 |---|---|---|
-| Puerto y flujo fiscal SAT | Implementado y probado por Andy | Revisión de Edson, ratificación de Jairo y conexión con la Saga |
-| Simuladores PayKlik, SAT, ERP, POS, LogiExpress y notificaciones | Implementados y configurables | Ratificar ADR-012; no equivalen a integración con proveedores reales |
-| Lotes ERP y distribución POS | Implementados con persistencia, acuse, deduplicación y reintentos | Integrar BB-04/Outbox y ejecutar pruebas con PostgreSQL/RabbitMQ reales |
+| Puerto y flujo fiscal SAT | Implementado, probado por Andy y **revisado por Edson el 2026-09-23** | Ratificación de Jairo y conexión con la Saga |
+| Simuladores PayKlik, SAT, ERP, POS, LogiExpress y notificaciones | Implementados, configurables y **revisados por Edson el 2026-09-23** | Ratificar ADR-012 con Kevin y Jairo; no equivalen a integración con proveedores reales |
+| Lotes ERP y distribución POS | Implementados con persistencia, acuse, deduplicación y reintentos; `clean verify` con PostgreSQL/RabbitMQ reales ejecutado en la revisión | Corregir A3 (reclamo atómico de ventas) y definir A1 (fan-out POS); integrar BB-04/Outbox |
+| Inventario, reservas y origen de despacho | Implementado y **revisado por Edson el 2026-09-23** | Externalizar configuración (J2); registrar riesgo J1 para ORD-04 |
+
+La revisión cruzada completa, con fortalezas, hallazgos y evidencia, está en
+`docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`. Ninguna
+fila de esta tabla convierte un contrato `PROPOSED` en `ACCEPTED`.
 
 ## Uso permitido de la línea base
 
@@ -38,4 +43,7 @@ Esta tabla permite trabajar contra una línea base visible sin presentar como ap
 
 | Documento | Integrante | Decisión | Fecha | Enlace o captura |
 |---|---|---|---|---|
-| Pendiente | Pendiente | Pendiente | Pendiente | Pendiente |
+| ADR-009 | Edson Sosa | Aprobar (revisión de stack y topología) | 2026-09-23 | `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md` |
+| ADR-010 | Edson Sosa | Aprobar (resiliencia y compuerta fiscal) | 2026-09-23 | `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md` |
+| ADR-012 | Edson Sosa | Aprobar (contratos de simuladores y protección de datos) | 2026-09-23 | `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md` |
+| ADR-009 | Jairo, Jorge, Andy y Kevin | Pendiente | — | — |
