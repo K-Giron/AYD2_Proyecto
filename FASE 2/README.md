@@ -83,6 +83,8 @@ Copie manualmente `.env.example` como `.env` solo si desea personalizar el entor
 - `SGO_SIMULATORS_{PAYKLIK,SAT,ERP,POS,LOGIEXPRESS,NOTIFICATIONS}_FAILURE_RATE`
 - `SGO_SIMULATORS_POS_UNAVAILABLE_STORES`
 - `SGO_ERP_FORMAT`, `SGO_ERP_INTERVAL_MS`, `SGO_ERP_INITIAL_DELAY_MS`
+- `SGO_OUTBOX_ENABLED`, `SGO_OUTBOX_POLL_INTERVAL_MS`, `SGO_OUTBOX_BATCH_SIZE`, `SGO_OUTBOX_MAX_ATTEMPTS`, `SGO_OUTBOX_RETRY_DELAYS`
+- `SGO_OUTBOX_EXCHANGE`, `SGO_OUTBOX_DLX`, `SGO_OUTBOX_DLQ`
 
 Los valores predeterminados son exclusivamente locales y ficticios.
 
@@ -96,7 +98,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 65 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, y 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 65/65 en verde (ver `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`).
+La suite actual contiene 74 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`) y 9 de Outbox/Inbox (atomicidad, sobre publicado, concurrencia `SKIP LOCKED`, deduplicación y backoff). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 74/74 en verde (ver `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`).
 
 ## Verificación completa con un comando
 
@@ -190,6 +192,18 @@ Todos usan el formato común de error de `shared.http.ApiError` y propagan `X-Co
 Fiscal, ERP y POS persisten estado, correlación, intentos y resultados. Los fallos transitorios usan reintentos 2/8/32 s; la entrega durable después de un reinicio se conectará al Outbox de BB-04 cuando Edson lo entregue.
 
 Los simuladores de PayKlik, SAT, ERP, POS, LogiExpress y notificaciones admiten `SUCCESS`, `REJECTION`, `LATENCY`, `TIMEOUT`, `OUTAGE` y `RANDOM`. Son contratos de desarrollo propuestos en ADR-012, no integraciones reales con proveedores.
+
+## Outbox e Inbox (Edson Sosa, BB-04)
+
+El mecanismo transversal de publicación confiable (ADR-002) ya está implementado en `integration.outbox` con migración `V3001`:
+
+- Un módulo de negocio registra un evento con `PublishEvent.publish(...)` **dentro de su propia transacción**; la implementación exige transacción activa (`MANDATORY`) y el evento se confirma o revierte junto con el cambio de negocio.
+- Un dispatcher programado publica los pendientes en el exchange topic `sgo.events` con el sobre de `docs/contracts/events/event-envelope-v1.md`; ante fallo aplica backoff 2/8/32 s y tras agotar los intentos el evento queda `FAILED` visible en la tabla.
+- El lote se reclama con `FOR UPDATE SKIP LOCKED`, por lo que varios dispatchers no duplican publicaciones.
+- Los consumidores deduplican reenvíos con `IdempotentConsumer.registerProcessed(...)` sobre `inbox_event` (`UNIQUE (consumer, event_id)`).
+- Topología declarada: exchange `sgo.events`, dead-letter exchange `sgo.events.dlx` y cola `sgo.events.dlq`.
+
+Ningún flujo de negocio consume todavía el Outbox: la conexión de la Saga (ORD-03, Jairo) y de los trabajadores de cada módulo es el siguiente paso de integración.
 
 ## Integración continua — QA-01
 

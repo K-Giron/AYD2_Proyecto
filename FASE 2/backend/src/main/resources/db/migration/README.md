@@ -14,14 +14,23 @@ reservado abajo.
 productos de identificador fijo, documentados en el propio archivo para que
 Carrito/Órdenes los reutilice en sus datos de prueba.
 
-## Numeración propuesta por Kevin Girón (pendiente de ratificar con el equipo)
+`V3001__integration_create_outbox_tables.sql` (BB-04, Edson Sosa) crea
+`outbox_event` e `inbox_event` en el esquema lógico de `integration`,
+conforme a ADR-002 y al sobre de eventos `docs/contracts/events/event-envelope-v1.md`.
 
-Como BB-03 aún no reservaba un rango de versiones cuando se escribió esta nota, las migraciones de Logistics, Notifications, Query e Incidents usan el rango `V1001`-`V1099` para reducir el riesgo de colisión con las migraciones que Jorge (inventory), Edson (BB-04/Outbox) y Andy (Fiscal/ERP/POS) todavía deben agregar:
+## Rangos ratificados (2026-09-23)
+
+El equipo ratificó la convención de rangos para evitar colisiones entre
+propietarios. Cada nueva migración usa el siguiente número libre dentro del
+rango de su módulo:
 
 | Rango | Módulo | Propietario |
 |---|---|---|
-| V1-V99 (sugerido) | orders / inventory | Jorge Pumay (inventory) / Jairo Gómez (orders) |
+| V1-V99 | orders / inventory | Jorge Pumay (inventory) / Jairo Gómez (orders) |
 | V1001-V1099 | logistics, notifications, query, incidents | Kevin Girón |
 | V2001-V2099 | fiscal, ERP y POS | Andy Sánchez |
+| V3001-V3999 | integration (Outbox/Inbox), payments, audit | Edson Sosa |
 
-Esta convención no está aprobada por el arquitecto integrador; si el equipo acuerda otra numeración en el daily, estas migraciones deben renumerarse antes de integrar a `develop`.
+Estado de uso: `V1`, `V2`; `V1001`-`V1004`; `V2001`-`V2003`; `V3001`. Las
+migraciones de `payments` y `audit` (PAY-01 y AUD-01) continúan libres dentro
+de `V3001`-`V3999`.

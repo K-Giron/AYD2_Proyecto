@@ -32,7 +32,7 @@ Estados usados:
 | CUN-03 Procesar pago / CDU-03 | **Parcial** (BB-06 hecho; PAY-01 a PAY-03, Edson) | `payments`: `PayKlikGatewayPort`, `SimulatedPayKlikAdapter`, `PayKlikSimulatorController`; faltan intentos, timeout/CB y conciliación | `payment_attempts`, `payment_reconciliations` (planificado, §4.2 modelo) | Adaptadores de salida (timeout + Circuit Breaker), Outbox, Broker, Base operacional | EaC-04, EaC-07, EaC-12 | ADR-003, ADR-005, ADR-012 | `SimulatedPayKlikAdapterTest` (3); PAY-01/02/03 pendientes |
 | CUN-04 Documentación fiscal / CDU-04 | **Implementado** (FIS-01/FIS-02, Andy) | `fiscal`: `FiscalController` (`POST/GET /fiscal-documents`, `GET .../orders/{orderId}`, `GET .../confirmation`), `FiscalService`, `FiscalXmlGenerator`, `SatGatewayPort`, `SimulatedSatGatewayAdapter` | `fiscal_documents` (`V2001`) | Adaptadores de salida → SAT, estado fiscal pendiente, Registro de auditoría | EaC-02, EaC-07 | ADR-002, ADR-007, ADR-010 | `FiscalServiceTest` (6) |
 | CUN-05 Sincronizar ERP / CDU-05 | **Implementado** (ERP-01/ERP-02, Andy) | `integration`: `ErpIntegrationService`, `ErpIntegrationController` (`POST /integrations/erp/sales`, `POST/GET .../batches`), `SimulatedErpGatewayAdapter` | `erp_batches`, `erp_sales` (`V2002`) | Trabajadores de integración, Área de intercambio ERP, Broker/DLQ | EaC-07, EaC-11 | ADR-002, ADR-004 | `ErpIntegrationServiceTest` (4) |
-| CUN-06 Eventos a POS / CDU-06 | **Parcial** (POS-01, Andy; fan-out y Outbox pendientes) | `integration`: `PosIntegrationService`, `PosIntegrationController` (`POST /integrations/pos/events`, `GET .../deliveries/{id}`, `GET .../events/{eventId}`), `SimulatedPosGatewayAdapter` | `pos_deliveries` (`V2003`) | Trabajadores → POS, Broker, Mensajes fallidos/DLQ | EaC-06, EaC-07 | ADR-002, ADR-004, ADR-012 | `PosIntegrationServiceTest` (3) |
+| CUN-06 Eventos a POS / CDU-06 | **Parcial** (POS-01, Andy; fan-out y consumo del Outbox pendientes) | `integration`: `PosIntegrationService`, `PosIntegrationController` (`POST /integrations/pos/events`, `GET .../deliveries/{id}`, `GET .../events/{eventId}`), `SimulatedPosGatewayAdapter` | `pos_deliveries` (`V2003`) | Trabajadores → POS, Broker, Mensajes fallidos/DLQ | EaC-06, EaC-07 | ADR-002, ADR-004, ADR-012 | `PosIntegrationServiceTest` (3) |
 | CUN-07 Gestionar despacho / CDU-07 | **Implementado** (LOG-01/02/03, Kevin) | `logistics`: `ShipmentController` (`POST/GET /shipments`, `PATCH .../delivery-method`), `ShipmentService`, `ShipmentDeadLetterRepository` | `shipments`, `shipment_tracking_events`, `shipment_dead_letters` (`V1001`) | Trabajadores, Broker, DLQ, Registro de auditoría | EaC-05, EaC-06, EaC-07 | ADR-004, ADR-005, ADR-006 | `ShipmentServiceTest` (5) |
 | CUN-08 Integrar LogiExpress / CDU-08 | **Implementado** (LOG-02/LOG-03, Kevin) | `logistics`: `LogiExpressGatewayPort`, `SimulatedLogiExpressAdapter`, reintentos 2/8/32 s en `ShipmentService` | `shipments.tracking_number`, `shipment_tracking_events`, `shipment_dead_letters` (`V1001`) | Adaptadores de salida (retry/backoff), Broker, DLQ | EaC-05 | ADR-004, ADR-012 | `ShipmentServiceTest` (5) |
 | CUN-09 Consultar orden / CDU-09 | **Implementado** (QRY-01, Kevin) | `query`: `OrderSummaryController` (`GET /orders/{orderId}/summary`), `OrderSummaryQueryService`; ingesta temporal `POST /query/order-summary` | `order_summary_projections` (`V1003`) | SGO-Logic, Base operacional, Outbox/Broker (alimentación real pendiente BB-04) | EaC-01, EaC-07 | ADR-005, ADR-006 | `OrderSummaryQueryServiceTest` (3) |
@@ -47,7 +47,7 @@ respaldo documental previo.
 
 | Tarjeta | CUN/CDU que la respalda | Artefacto de datos | Elemento de despliegue | EaC | ADR/contrato |
 |---|---|---|---|---|---|
-| BB-04 Outbox/Inbox/retry/DLQ | CDU-06 precondición explícita; CDU-03 E1; CDU-04, CDU-05, CDU-11 (entrega asíncrona) | `outbox_event`, `inbox_event` (planificado, §4.4) | Outbox transaccional, Broker, Mensajes fallidos/DLQ | EaC-04, EaC-05, EaC-06, EaC-07 | ADR-002, ADR-004; `event-envelope-v1` (`PROPOSED`) |
+| BB-04 Outbox/Inbox/retry/DLQ | CDU-06 precondición explícita; CDU-03 E1; CDU-04, CDU-05, CDU-11 (entrega asíncrona) | `outbox_event`, `inbox_event` (**implementado**, `V3001`, modelo §3.6) | Outbox transaccional, Broker, Mensajes fallidos/DLQ | EaC-04, EaC-05, EaC-06, EaC-07 | ADR-002, ADR-004; `event-envelope-v1` (`PROPOSED`) |
 | BB-07 Seguridad, roles y sanitización | CDU-12 precondición "solicitante autorizado"; CDU-03 paso 3 (sin PAN/CVV) | `audit_events.actor`; sin tablas nuevas obligatorias | Entrada segura + SGO-Logic | EaC-12 | ADR-013 (por redactar), DEC-06, R4 |
 | PAY-01 Intentos de pago | CDU-03 pasos 2 y 3, postcondición de registro auditable | `payment_attempts` (planificado, §4.2) | Base operacional, Adaptadores de salida | EaC-12 | ADR-003 |
 | PAY-02 Timeout/Circuit Breaker/indeterminado | CDU-03 E1 y postcondición "Pago pendiente de confirmación" | `payment_attempts.status = INDETERMINATE` | Adaptadores de salida (timeout + CB), Outbox | EaC-04 | ADR-003, ADR-010 como precedente |
@@ -92,9 +92,11 @@ planificación, sección 12).
 
 - `./mvnw clean verify` con Java 25 (`eclipse-temurin:25.0.4_7-jdk-alpine-3.23`)
   y Testcontainers (PostgreSQL 17.11 + RabbitMQ 4.3.5): **BUILD SUCCESS**,
-  18 clases, **65 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
-  incluida la regresión `AsyncIntegrationPersistenceTest` que cubre el
-  bloqueo optimista de los flujos asíncronos (ver REV-EDSON §7).
+  21 clases, **74 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
+  incluida la regresión `AsyncIntegrationPersistenceTest` (bloqueo optimista
+  de flujos asíncronos, ver REV-EDSON §7) y las pruebas de Outbox
+  `OutboxEventTest`, `OutboxDispatcherTest` y `OutboxIntegrationTest`
+  (atomicidad, sobre publicado, concurrencia `SKIP LOCKED` e inbox).
 - Migraciones Flyway ejecutadas contra PostgreSQL real durante la suite de
   integración: `V1`, `V2`, `V1001`–`V1004`, `V2001`–`V2003`.
 - El detalle de la revisión cruzada está en

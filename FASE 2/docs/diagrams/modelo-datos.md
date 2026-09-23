@@ -34,7 +34,7 @@ Reglas de lectura:
 | `inventory` | `inventory` | Jorge Pumay | CUN-02 / CDU-02 | EaC-03, EaC-07 | `V1`, `V2` |
 | `fiscal` | `fiscal` | Andy Sánchez | CUN-04 / CDU-04 | EaC-02, EaC-07 | `V2001` |
 | `integration` (ERP/POS) | `integration` | Andy Sánchez | CUN-05, CUN-06 | EaC-06, EaC-07 | `V2002`, `V2003` |
-| `integration` (Outbox/Inbox) | `integration` | Edson Sosa | Transversal a CDU-03 a CDU-06 y CDU-11 | EaC-04, EaC-07 | **PLANIFICADO** (BB-04) |
+| `integration` (Outbox/Inbox) | `integration` | Edson Sosa | Transversal a CDU-03 a CDU-06 y CDU-11 | EaC-04, EaC-07 | `V3001` (BB-04) |
 | `logistics` | `logistics` | Kevin Girón | CUN-07, CUN-08 | EaC-05, EaC-07 | `V1001` |
 | `notifications` | `notifications` | Kevin Girón | CUN-11 / CDU-11 | EaC-08, EaC-07 | `V1002` |
 | `query` | `query` | Kevin Girón | CUN-09 / CDU-09 | EaC-01, EaC-07 | `V1003` |
@@ -247,12 +247,50 @@ erDiagram
 - Su alimentación actual por `POST /api/v1/query/order-summary` es temporal;
   el consumidor de Outbox la reemplaza cuando BB-04 exista.
 
+### 3.6 `integration` Outbox/Inbox — transversal (BB-04)
+
+```mermaid
+erDiagram
+    outbox_event {
+        uuid event_id PK
+        varchar aggregate_type
+        uuid aggregate_id
+        varchar event_type
+        int event_version "CHECK > 0"
+        text payload
+        uuid correlation_id
+        uuid causation_id
+        varchar status "PENDING | PUBLISHED | FAILED"
+        int attempts
+        timestamptz next_attempt_at
+        timestamptz published_at
+        bigint version
+    }
+    inbox_event {
+        uuid id PK
+        varchar consumer
+        uuid event_id "UK con consumer"
+        timestamptz processed_at
+    }
+```
+
+- `outbox_event` se escribe en la **misma transacción** que el cambio de
+  negocio (ADR-002, `PublishEvent` exige transacción activa); el dispatcher
+  publica después al exchange `sgo.events`.
+- Reintentos 2/8/32 s y estado `FAILED` tras agotar los intentos; el lote se
+  reclama con `FOR UPDATE SKIP LOCKED` para que varios dispatchers no
+  dupliquen publicaciones.
+- `inbox_event` con `UNIQUE (consumer, event_id)` da idempotencia al
+  consumidor mediante `INSERT ... ON CONFLICT DO NOTHING`.
+- Es la precondición explícita de CDU-06 y el cierre de la ventana de pérdida
+  descrita en ADR-010.
+
 ---
 
 ## 4. Esquemas planificados
 
 > Estas tablas **no existen todavía**. Se documentan para que la
-> implementación de Edson (BB-04, BB-07, PAY-01 a PAY-03, AUD-01/AUD-02) y de
+> implementación de Edson (BB-07, PAY-01 a PAY-03, AUD-01/AUD-02) y de
 > Jairo (ORD-01/ORD-02) no se convierta en código huérfano. Su forma final se
 > ratifica en el ADR o contrato correspondiente antes de la migración.
 
@@ -355,37 +393,6 @@ erDiagram
   en menos de 1 s (EaC-02).
 - CDU-12 exige además registrar el acceso a la evidencia, la búsqueda fallida
   con alerta y la exportación autorizada; AUD-02 debe cubrir esos pasos.
-
-### 4.4 `integration` Outbox/Inbox — transversal (BB-04, Edson Sosa)
-
-```mermaid
-erDiagram
-    outbox_event {
-        uuid event_id PK
-        varchar aggregate_type
-        uuid aggregate_id
-        varchar event_type
-        int event_version
-        jsonb payload
-        uuid correlation_id
-        uuid causation_id
-        varchar status "PENDING | PUBLISHED | FAILED"
-        int attempts
-        timestamptz next_attempt_at
-        timestamptz published_at
-    }
-    inbox_event {
-        varchar consumer
-        uuid event_id
-        timestamptz processed_at
-    }
-```
-
-- `outbox_event` se escribe en la **misma transacción** que el cambio de
-  negocio (ADR-002); el dispatcher publica después a RabbitMQ.
-- `inbox_event` con `UK(consumer, event_id)` da idempotencia al consumidor.
-- Es la precondición explícita de CDU-06 ("evento registrado por Outbox") y el
-  cierre de la ventana de pérdida descrita en ADR-010.
 
 ---
 

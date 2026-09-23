@@ -26,6 +26,7 @@ Esta tabla permite trabajar contra una línea base visible sin presentar como ap
 | Simuladores PayKlik, SAT, ERP, POS, LogiExpress y notificaciones | Implementados, configurables y **revisados por Edson el 2026-09-23** | Ratificar ADR-012 con Kevin y Jairo; no equivalen a integración con proveedores reales |
 | Lotes ERP y distribución POS | Implementados con persistencia, acuse, deduplicación y reintentos; `clean verify` con PostgreSQL/RabbitMQ reales ejecutado en la revisión | Corregir A3 (reclamo atómico de ventas) y definir A1 (fan-out POS); integrar BB-04/Outbox |
 | Inventario, reservas y origen de despacho | Implementado y **revisado por Edson el 2026-09-23** | Externalizar configuración (J2); registrar riesgo J1 para ORD-04 |
+| Outbox/Inbox transversal (BB-04) | Implementado y probado por Edson contra el sobre v1 `PROPOSED` (`V3001`, `integration.outbox`) | Revisión de Jairo de la API pública; ratificación del sobre; conexión con ORD-03 |
 
 La revisión cruzada completa, con fortalezas, hallazgos y evidencia, está en
 `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`. Ninguna

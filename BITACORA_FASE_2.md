@@ -21,6 +21,7 @@
 | BB-05 | Docker Compose y configuración por ambiente | Jairo | `Ready for Testing` en captura | ADR-009 y componentes compartidos | `FASE 2/docker-compose.yml`, `.env.example` y tarjeta [eu881SUz](https://trello.com/c/eu881SUz) |
 | QA-01 | Contrato e integración continua | Jairo | Implementación local preparada; ejecución GitHub pendiente | Repositorio, secretos y stack | `.github/workflows/qa-integracion-base.yml` y `FASE 2/docs/integration/qa-01-ci-contract.md` |
 | DOC-03 | Bitácora, capturas Kanban y burndown | Jairo | `In Progress` en captura | Registro diario de todos | Esta bitácora y tarjeta [MnIkXzvZ](https://trello.com/c/MnIkXzvZ) |
+| BB-04 | Outbox transaccional, dispatcher, reintento y DLQ | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y ratificación de rangos | `V3001`, `integration/outbox`, `OutboxIntegrationTest` y `docs/qa/trazabilidad-cun-mvp.md` |
 | Resto del backlog | Consultar planificación oficial | Según planificación | Pendiente | Contratos e implementaciones del equipo | Pendiente |
 
 Los estados anteriores describen únicamente los artefactos presentes; no equivalen a tarjetas `Done` ni inventan aceptación del equipo.
@@ -161,6 +162,20 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendientes de registrar por Andy.
 - Persona que quedaría bloqueada y acción temporal: Jairo puede revisar el endpoint de compuerta fiscal y los contratos propuestos; no debe acoplarse a entidades/repositorios internos ni aceptar ADR-010/012 sin la revisión del equipo.
 
+### Fecha: 2026-09-23 — Integrante: Edson Sosa
+
+- Ayer: revisión cruzada de las entregas de Andy (fiscal/ERP/POS) y Jorge (inventario), aprobación de Edson sobre ADR-009/010/012, modelo de datos y matriz de trazabilidad CUN (commits `56de66d`, `e08b939`, `340eb1e`). En la prueba manual se detectó y corrigió el bloqueo optimista A8 de los flujos asíncronos (commits `4525bae`, `2b0aab1`).
+- Trabajo realizado hoy:
+  - `[BB-04]` Outbox/Inbox transversal en `integration.outbox` con migración `V3001`: `PublishEvent` con transacción obligatoria, dispatcher con reintentos 2/8/32 s y estado `FAILED`, reclamo con `FOR UPDATE SKIP LOCKED`, topología `sgo.events` / `sgo.events.dlx` / `sgo.events.dlq` e `IdempotentConsumer` con `INSERT ... ON CONFLICT DO NOTHING`.
+  - `[DEC-06]` decisión de autenticación JWT registrada para ADR-013 (BB-07, siguiente tarjeta).
+  - Rangos de migración ratificados (`V3001`-`V3999` para integration/payments/audit) y documentados en `db/migration/README.md`.
+  - Se actualizó `ModularArchitectureTest` para permitir la dependencia a la API pública `integration.outbox`, y la documentación del sobre de eventos, modelo de datos, trazabilidad y README.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 74 pruebas, 0 fallos, 0 errores, 0 omitidas. Smoke manual en Compose: un evento insertado en `outbox_event` pasó a `PUBLISHED`; se capturó el sobre con `messageId`, `X-Correlation-Id` y `X-Event-Type`; y el exchange, exchange de fallidos y cola de fallidos quedaron declarados en RabbitMQ.
+- Hoy y trazabilidad: BB-04; precondición de CDU-06, E1 de CDU-03 y entrega asíncrona de CDU-04/CDU-05/CDU-11; ADR-002 y ADR-004; EaC-04, EaC-05, EaC-06 y EaC-07. Los consumidores de negocio se conectarán con ORD-03.
+- Impedimentos: ninguno propio. Los flujos de negocio todavía no consumen el Outbox porque dependen de ORD-03 (Jairo); la rama permanece local por indicación del equipo.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: Jairo puede consumir `PublishEvent` desde la Saga; Kevin y Andy pueden reemplazar sus colas locales por la DLQ del broker cuando integren.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -186,6 +201,9 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-14 | Línea base documental de integración | Proposed | Jairo (preparación); propietarios pendientes | Documentos en `FASE 2/docs/contracts` y `docs/integration` | Permite revisión anticipada sin declarar contratos aceptados |
 | 2026-09-22 | ADR-010, confirmación fiscal asíncrona | Proposed | Andy (redacción); Edson y Jairo pendientes | `FASE 2/docs/adr/ADR-010-confirmacion-fiscal-asincrona.md` | La orden solo puede confirmarse con documento fiscal aprobado |
 | 2026-09-22 | ADR-012, contratos de simuladores | Proposed | Andy (redacción); Edson, Kevin y Jairo pendientes | `FASE 2/docs/adr/ADR-012-contratos-de-simuladores.md` | Modos externos reproducibles sin afirmar integración real |
+| 2026-09-23 | ADR-009, ADR-010 y ADR-012, aprobación de Edson | Aprobados por Edson; siguen `Proposed` | Edson (revisión); Jairo y Kevin pendientes | `contract-status.md` y REV-EDSON | Habilita construir pagos y auditoría sobre contratos ya revisados |
+| 2026-09-23 | DEC-06, autenticación para ADR-013 | Aceptada: JWT | Equipo (registrada por Edson) | Pendiente de redactar ADR-013 en BB-07 | BB-07 y SEC-01 usarán tokens JWT y roles por endpoint |
+| 2026-09-23 | BB-04, implementación del sobre de eventos v1 | Implementado contra contrato `Proposed` | Edson | `V3001`, `integration/outbox` y `OutboxIntegrationTest` | El contrato sigue `Proposed` hasta ratificación del equipo |
 
 ## 7. Resultados de pruebas
 
@@ -200,6 +218,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-22 | Compilación de entrega Andy | Java 21 local mediante `-Djava.version=21`; fuentes de producción | `BUILD SUCCESS` | Salida Maven local | El código compila; falta repetir con Java 25 oficial |
 | 2026-09-22 | FIS-03 + integraciones + arquitectura | `FiscalServiceTest`, `ErpIntegrationServiceTest`, `PosIntegrationServiceTest`, `SimulatedPayKlikAdapterTest`, `ModularArchitectureTest` | 19 pruebas incluidas en la suite final, 0 fallos, 0 errores, 0 omitidas | Surefire local y `FASE 2/docs/qa/FIS-03-pruebas-fiscal-erp-pos.md` | Caminos feliz/negativo, timeout, reintento, idempotencia y límites modulares verificados sin infraestructura |
 | 2026-09-22 | Suite local sin contenedores | Todas las pruebas salvo `InfrastructureIntegrationTest` | `BUILD SUCCESS`; 40 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local | Los cambios no rompen los módulos unitarios/MVC existentes; falta Docker/Testcontainers |
+| 2026-09-23 | `./mvnw clean verify` | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 74 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/qa/trazabilidad-cun-mvp.md` | Incluye la regresión A8 y las pruebas de Outbox/Inbox |
+| 2026-09-23 | Smoke Outbox en Compose | Cuatro servicios `healthy`; evento `PENDING` insertado y capturado con cola temporal | Evento `PUBLISHED`; sobre con `messageId`, correlación y tipo; topología declarada | Salida local del 2026-09-23 | Publicación confiable verificada contra RabbitMQ real |
 
 ## 8. Retrospectiva individual
 
