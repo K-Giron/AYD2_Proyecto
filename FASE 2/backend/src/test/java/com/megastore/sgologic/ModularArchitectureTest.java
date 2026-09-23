@@ -48,13 +48,17 @@ class ModularArchitectureTest {
      *
      * <p>{@code integration} expone únicamente su API pública de Outbox
      * ({@code integration.outbox.PublishEvent} e
-     * {@code integration.outbox.IdempotentConsumer}, BB-04). El resto del
-     * módulo es interno: {@code ApplicationModules.verify()} rechaza el
-     * acceso a subpaquetes no anotados con {@code @NamedInterface}.</p>
+     * {@code integration.outbox.IdempotentConsumer}, BB-04) y {@code audit}
+     * su API pública de evidencia ({@code audit.api.AuditRecorder}, AUD-01).
+     * El resto de cada módulo es interno:
+     * {@code ApplicationModules.verify()} rechaza el acceso a subpaquetes no
+     * anotados con {@code @NamedInterface}.</p>
      */
     private static final String SHARED_MODULE = "shared";
     private static final String INTEGRATION_MODULE = "integration";
-    private static final Set<String> APPROVED_DEPENDENCIES = Set.of(SHARED_MODULE, INTEGRATION_MODULE);
+    private static final String AUDIT_MODULE = "audit";
+    private static final Set<String> APPROVED_DEPENDENCIES =
+            Set.of(SHARED_MODULE, INTEGRATION_MODULE, AUDIT_MODULE);
 
     @Test
     void hasNoUnapprovedDependenciesBetweenModules() {
@@ -71,8 +75,9 @@ class ModularArchitectureTest {
                     .map(dependency -> dependency.getTargetModule().getIdentifier().toString())
                     .collect(Collectors.toSet());
             assertThat(dependencyIds)
-                    .as("El módulo %s solo puede depender de shared o de la API pública de "
-                            + "integration.outbox (BB-04); cualquier otro contrato requiere aprobación",
+                    .as("El módulo %s solo puede depender de shared o de las APIs públicas de "
+                            + "integration.outbox (BB-04) y audit.api (AUD-01); cualquier otro "
+                            + "contrato requiere aprobación",
                             module.getIdentifier())
                     .isSubsetOf(APPROVED_DEPENDENCIES);
         });
