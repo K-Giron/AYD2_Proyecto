@@ -48,12 +48,16 @@
                 <button id="reveal-demo-btn" type="button" class="demo-reveal-link">¿Necesitas datos de acceso de prueba?</button>
                 <div id="demo-credentials" class="demo-credentials hidden">
                     <p>
-                        Ambiente de demostración académica (UI-01, Kevin Girón). La autenticación real
-                        depende de <code>BB-07</code> / <code>ADR-013</code> (Edson Sosa), que todavía no
-                        existe en el backend — el módulo <code>security</code> solo está declarado.
+                        Ambiente de demostración académica. La autenticación es real desde
+                        <code>BB-07</code> / <code>ADR-013</code>: el formulario llama a
+                        <code>POST /api/v1/auth/login</code> y las llamadas siguientes envían el JWT.
+                        Estas cuentas son locales y ficticias; se configuran por variables
+                        <code>SGO_SECURITY_*</code>.
                     </p>
                     <div class="demo-credentials-row"><strong>Cliente</strong><span><code>cliente@megastore.com</code> · <code>Cliente123</code></span></div>
-                    <div class="demo-credentials-row"><strong>Personal interno</strong><span><code>staff@megastore.com</code> · <code>Staff123</code></span></div>
+                    <div class="demo-credentials-row"><strong>Soporte</strong><span><code>staff@megastore.com</code> · <code>Staff123</code></span></div>
+                    <div class="demo-credentials-row"><strong>Logística</strong><span><code>logistica@megastore.com</code> · <code>Logistica123</code></span></div>
+                    <div class="demo-credentials-row"><strong>Finanzas</strong><span><code>finanzas@megastore.com</code> · <code>Finanzas123</code></span></div>
                 </div>
             </div>
         </main>
