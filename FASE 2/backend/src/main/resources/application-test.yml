@@ -29,3 +29,7 @@ sgo:
     # Las pruebas de negocio no envían token; la prueba de seguridad lo
     # habilita explícitamente con @TestPropertySource.
     enabled: false
+  payments:
+    reconciliation:
+      # La conciliación se invoca manualmente en las pruebas.
+      poll-interval-ms: 86400000

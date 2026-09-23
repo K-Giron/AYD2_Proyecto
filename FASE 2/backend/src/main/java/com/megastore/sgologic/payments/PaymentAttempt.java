@@ -61,6 +61,10 @@ public class PaymentAttempt {
     @Column(name = "idempotency_key", nullable = false, updatable = false, unique = true, length = 128)
     private String idempotencyKey;
 
+    /** Referencia segura del procesador; nunca PAN ni CVV (EaC-12). */
+    @Column(name = "payment_reference", updatable = false, length = 128)
+    private String paymentReference;
+
     @Column(name = "correlation_id", nullable = false, updatable = false)
     private UUID correlationId;
 
@@ -80,7 +84,7 @@ public class PaymentAttempt {
 
     static PaymentAttempt create(UUID id, UUID orderId, PaymentChannel channel, PaymentMethod method,
                                  BigDecimal amount, String currency, UUID correlationId,
-                                 String idempotencyKey, Instant now) {
+                                 String idempotencyKey, String paymentReference, Instant now) {
         PaymentAttempt attempt = new PaymentAttempt();
         attempt.id = id;
         attempt.orderId = orderId;
@@ -91,6 +95,7 @@ public class PaymentAttempt {
         attempt.status = PaymentAttemptStatus.PENDING;
         attempt.correlationId = correlationId;
         attempt.idempotencyKey = idempotencyKey;
+        attempt.paymentReference = paymentReference;
         attempt.createdAt = now;
         attempt.updatedAt = now;
         return attempt;
@@ -132,6 +137,7 @@ public class PaymentAttempt {
     public String getFailureCode() { return failureCode; }
     public String getFailureMessage() { return failureMessage; }
     public String getIdempotencyKey() { return idempotencyKey; }
+    public String getPaymentReference() { return paymentReference; }
     public UUID getCorrelationId() { return correlationId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

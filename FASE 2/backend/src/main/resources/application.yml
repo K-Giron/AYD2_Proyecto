@@ -74,6 +74,14 @@ sgo:
       minimum-number-of-calls: ${SGO_PAYKLIK_MINIMUM_CALLS:5}
       wait-duration-in-open-state: ${SGO_PAYKLIK_OPEN_STATE_WAIT:30s}
       permitted-number-of-calls-in-half-open-state: ${SGO_PAYKLIK_HALF_OPEN_CALLS:3}
+    reconciliation:
+      enabled: ${SGO_PAYMENT_RECONCILIATION_ENABLED:true}
+      poll-interval-ms: ${SGO_PAYMENT_RECONCILIATION_POLL_INTERVAL_MS:5000}
+      batch-size: ${SGO_PAYMENT_RECONCILIATION_BATCH_SIZE:20}
+      max-attempts: ${SGO_PAYMENT_RECONCILIATION_MAX_ATTEMPTS:4}
+      first-delay: ${SGO_PAYMENT_RECONCILIATION_FIRST_DELAY:30s}
+      retry-delays: ${SGO_PAYMENT_RECONCILIATION_RETRY_DELAYS:60s,120s,240s}
+      alert-after: ${SGO_PAYMENT_RECONCILIATION_ALERT_AFTER:5m}
   outbox:
     enabled: ${SGO_OUTBOX_ENABLED:true}
     poll-interval-ms: ${SGO_OUTBOX_POLL_INTERVAL_MS:2000}

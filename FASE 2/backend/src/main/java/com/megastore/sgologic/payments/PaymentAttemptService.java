@@ -60,7 +60,7 @@ public class PaymentAttemptService implements PaymentPort {
         PaymentAttempt attempt;
         try {
             attempt = writer.create(request.orderId(), channel, method, request.amount(), request.currency(),
-                    request.correlationId(), request.idempotencyKey());
+                    request.correlationId(), request.idempotencyKey(), request.paymentReference());
         } catch (DataIntegrityViolationException duplicate) {
             return repository.findByIdempotencyKey(request.idempotencyKey())
                     .map(stored -> new PaymentAttemptOutcome(stored, false))

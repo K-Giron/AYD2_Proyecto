@@ -13,10 +13,11 @@ import java.time.Clock;
 import java.util.UUID;
 
 /**
- * Persiste cada paso del intento en su propia transacción y deja la
- * evidencia auditable en la misma transacción (CDU-03, postcondición).
- * Relee la entidad dentro de cada transacción para no arrastrar versiones
- * desconectadas.
+ * Persiste cada paso del intento en su propia transacción, deja la evidencia
+ * auditable y publica el evento correspondiente por Outbox en la misma
+ * transacción (ADR-002). Al quedar indeterminado programa la conciliación de
+ * PAY-03 dentro de los 60 s. Relee la entidad dentro de cada transacción
+ * para no arrastrar versiones desconectadas.
  */
 @Service
 class PaymentAttemptWriter {
@@ -24,13 +25,19 @@ class PaymentAttemptWriter {
     private static final String AGGREGATE_TYPE = "PaymentAttempt";
 
     private final PaymentAttemptRepository repository;
+    private final PaymentReconciliationRepository reconciliationRepository;
+    private final PaymentReconciliationProperties reconciliationProperties;
     private final AuditRecorder auditRecorder;
     private final PublishEvent publishEvent;
     private final Clock clock;
 
-    PaymentAttemptWriter(PaymentAttemptRepository repository, AuditRecorder auditRecorder,
-                         PublishEvent publishEvent, Clock clock) {
+    PaymentAttemptWriter(PaymentAttemptRepository repository,
+                         PaymentReconciliationRepository reconciliationRepository,
+                         PaymentReconciliationProperties reconciliationProperties,
+                         AuditRecorder auditRecorder, PublishEvent publishEvent, Clock clock) {
         this.repository = repository;
+        this.reconciliationRepository = reconciliationRepository;
+        this.reconciliationProperties = reconciliationProperties;
         this.auditRecorder = auditRecorder;
         this.publishEvent = publishEvent;
         this.clock = clock;
@@ -38,9 +45,9 @@ class PaymentAttemptWriter {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     PaymentAttempt create(UUID orderId, PaymentChannel channel, PaymentMethod method, BigDecimal amount,
-                          String currency, UUID correlationId, String idempotencyKey) {
+                          String currency, UUID correlationId, String idempotencyKey, String paymentReference) {
         PaymentAttempt attempt = PaymentAttempt.create(UUID.randomUUID(), orderId, channel, method, amount,
-                currency, correlationId, idempotencyKey, clock.instant());
+                currency, correlationId, idempotencyKey, paymentReference, clock.instant());
         repository.save(attempt);
         auditRecorder.record(new AuditEntryRequest(AGGREGATE_TYPE, attempt.getId(), orderId,
                 "PAYMENT_ATTEMPT_CREATED", attempt.getStatus().name(), null,
@@ -57,6 +64,8 @@ class PaymentAttemptWriter {
         auditRecorder.record(new AuditEntryRequest(AGGREGATE_TYPE, attemptId, saved.getOrderId(),
                 "PAYMENT_APPROVED", saved.getStatus().name(), state(previous, null),
                 state(saved.getStatus().name(), null), saved.getCorrelationId(), null, null));
+        publishEvent.publish(new OutboxEventRequest(AGGREGATE_TYPE, attemptId, "PaymentApproved", 1,
+                saved.getCorrelationId(), null, payload(saved, null)));
         return saved;
     }
 
@@ -69,6 +78,8 @@ class PaymentAttemptWriter {
         auditRecorder.record(new AuditEntryRequest(AGGREGATE_TYPE, attemptId, saved.getOrderId(),
                 "PAYMENT_REJECTED", saved.getStatus().name(), state(previous, null),
                 state(saved.getStatus().name(), rejectionCode), saved.getCorrelationId(), null, null));
+        publishEvent.publish(new OutboxEventRequest(AGGREGATE_TYPE, attemptId, "PaymentRejected", 1,
+                saved.getCorrelationId(), null, payload(saved, rejectionCode)));
         return saved;
     }
 
@@ -81,12 +92,31 @@ class PaymentAttemptWriter {
                 "PAYMENT_INDETERMINATE", saved.getStatus().name(), state("PENDING", null),
                 state(saved.getStatus().name(), code), saved.getCorrelationId(), null, null));
         // El evento sale en la misma transacción del cambio de estado
-        // (ADR-002): la conciliación de PAY-03 no depende de leer la tabla.
+        // (ADR-002): la Saga y PAY-03 no dependen de leer la tabla.
         publishEvent.publish(new OutboxEventRequest(AGGREGATE_TYPE, attemptId, "PaymentIndeterminate", 1,
-                saved.getCorrelationId(), null, new PaymentIndeterminatePayload(saved.getId(), saved.getOrderId(),
-                        saved.getAmount(), saved.getCurrency(), saved.getChannel().name(),
-                        saved.getMethod().name(), code)));
+                saved.getCorrelationId(), null, payload(saved, code)));
+        scheduleReconciliation(saved);
         return saved;
+    }
+
+    /**
+     * Programa la conciliación (PAY-03) con un primer trabajo dentro de los
+     * 60 s. El índice único parcial impide dos trabajos abiertos por intento.
+     */
+    private void scheduleReconciliation(PaymentAttempt attempt) {
+        if (reconciliationRepository
+                .findByPaymentAttemptIdAndStatus(attempt.getId(), PaymentReconciliationStatus.PENDING)
+                .isPresent()) {
+            return;
+        }
+        reconciliationRepository.save(PaymentReconciliation.schedule(attempt.getId(),
+                clock.instant().plus(reconciliationProperties.getFirstDelay()), clock.instant()));
+    }
+
+    private PaymentEventPayload payload(PaymentAttempt attempt, String failureCode) {
+        return new PaymentEventPayload(attempt.getId(), attempt.getOrderId(), attempt.getAmount(),
+                attempt.getCurrency(), attempt.getChannel().name(), attempt.getMethod().name(),
+                attempt.getStatus().name(), attempt.getProviderReference(), failureCode);
     }
 
     private PaymentAttempt load(UUID attemptId) {
