@@ -66,3 +66,12 @@ sgo:
       format: ${SGO_ERP_FORMAT:CSV}
       interval-ms: ${SGO_ERP_INTERVAL_MS:1800000}
       initial-delay-ms: ${SGO_ERP_INITIAL_DELAY_MS:1800000}
+  outbox:
+    enabled: ${SGO_OUTBOX_ENABLED:true}
+    poll-interval-ms: ${SGO_OUTBOX_POLL_INTERVAL_MS:2000}
+    batch-size: ${SGO_OUTBOX_BATCH_SIZE:50}
+    max-attempts: ${SGO_OUTBOX_MAX_ATTEMPTS:4}
+    retry-delays: ${SGO_OUTBOX_RETRY_DELAYS:2s,8s,32s}
+    exchange: ${SGO_OUTBOX_EXCHANGE:sgo.events}
+    dead-letter-exchange: ${SGO_OUTBOX_DLX:sgo.events.dlx}
+    dead-letter-queue: ${SGO_OUTBOX_DLQ:sgo.events.dlq}
