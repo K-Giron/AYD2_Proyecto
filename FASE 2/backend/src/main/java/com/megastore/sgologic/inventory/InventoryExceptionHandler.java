@@ -20,15 +20,33 @@ import java.time.Instant;
 class InventoryExceptionHandler {
 
     @ExceptionHandler(InventoryItemNotFoundException.class)
-    public ResponseEntity<ApiError> handleNotFound(InventoryItemNotFoundException exception,
+    public ResponseEntity<ApiError> handleItemNotFound(InventoryItemNotFoundException exception,
+                                                         HttpServletRequest request) {
+        return errorResponse(HttpStatus.NOT_FOUND, "INVENTORY_ITEM_NOT_FOUND", exception, request);
+    }
+
+    @ExceptionHandler(InventoryReservationNotFoundException.class)
+    public ResponseEntity<ApiError> handleReservationNotFound(InventoryReservationNotFoundException exception,
+                                                                HttpServletRequest request) {
+        return errorResponse(HttpStatus.NOT_FOUND, "INVENTORY_RESERVATION_NOT_FOUND", exception, request);
+    }
+
+    /** CDU-02 E1: incluye el caso de dos solicitudes compitiendo por la última unidad. */
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<ApiError> handleInsufficientStock(InsufficientStockException exception,
+                                                              HttpServletRequest request) {
+        return errorResponse(HttpStatus.CONFLICT, "INSUFFICIENT_STOCK", exception, request);
+    }
+
+    private ResponseEntity<ApiError> errorResponse(HttpStatus status, String code, RuntimeException exception,
                                                      HttpServletRequest request) {
         Object correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME);
         ApiError body = new ApiError(
-                "INVENTORY_ITEM_NOT_FOUND",
+                code,
                 exception.getMessage(),
                 Instant.now(),
                 request.getRequestURI(),
                 correlationId == null ? "unavailable" : correlationId.toString());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+        return ResponseEntity.status(status).body(body);
     }
 }
