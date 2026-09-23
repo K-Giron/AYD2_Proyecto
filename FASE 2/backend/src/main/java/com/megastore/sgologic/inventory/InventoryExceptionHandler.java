@@ -38,6 +38,13 @@ class InventoryExceptionHandler {
         return errorResponse(HttpStatus.CONFLICT, "INSUFFICIENT_STOCK", exception, request);
     }
 
+    /** INV-04: ninguna ubicación candidata tenía disponibilidad suficiente. */
+    @ExceptionHandler(NoAvailableOriginException.class)
+    public ResponseEntity<ApiError> handleNoAvailableOrigin(NoAvailableOriginException exception,
+                                                              HttpServletRequest request) {
+        return errorResponse(HttpStatus.CONFLICT, "NO_AVAILABLE_ORIGIN", exception, request);
+    }
+
     private ResponseEntity<ApiError> errorResponse(HttpStatus status, String code, RuntimeException exception,
                                                      HttpServletRequest request) {
         Object correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME);

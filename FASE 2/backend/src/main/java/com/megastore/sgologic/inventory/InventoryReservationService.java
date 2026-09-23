@@ -7,8 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * INV-02: implementa el puerto de reserva de inventario que la Saga
@@ -37,16 +41,29 @@ import java.util.UUID;
 @Service
 public class InventoryReservationService {
 
+    /**
+     * ADR-014: centros de distribución antes que tiendas; dentro del mismo
+     * tipo, por código ascendente. Determinista y explicable, no representa
+     * cercanía real al cliente (el DDA no define esos datos).
+     */
+    private static final Comparator<InventoryLocation> ORIGIN_PRIORITY = Comparator
+            .<InventoryLocation>comparingInt(
+                    location -> location.getType() == InventoryLocationType.DISTRIBUTION_CENTER ? 0 : 1)
+            .thenComparing(InventoryLocation::getCode);
+
     private final InventoryItemRepository itemRepository;
+    private final InventoryLocationRepository locationRepository;
     private final InventoryReservationRepository reservationRepository;
     private final Clock clock;
     private final Duration reservationTtl;
 
     public InventoryReservationService(InventoryItemRepository itemRepository,
+                                        InventoryLocationRepository locationRepository,
                                         InventoryReservationRepository reservationRepository,
                                         Clock clock,
                                         @Value("${sgo-logic.inventory.reservation-ttl:PT15M}") Duration reservationTtl) {
         this.itemRepository = itemRepository;
+        this.locationRepository = locationRepository;
         this.reservationRepository = reservationRepository;
         this.clock = clock;
         this.reservationTtl = reservationTtl;
@@ -74,6 +91,45 @@ public class InventoryReservationService {
                 orderId, productId, locationId, quantity, correlationId, idempotencyKey,
                 now.plus(reservationTtl), now);
         return reservationRepository.save(reservation);
+    }
+
+    /**
+     * INV-04 / ADR-014: como {@link #reserve}, pero sin ubicación conocida.
+     * Recorre las ubicaciones con stock registrado para el producto en el
+     * orden de {@link #ORIGIN_PRIORITY} e intenta la misma sentencia
+     * atómica de {@link #reserve} en cada una hasta que una tenga éxito.
+     * No hay ventana entre "elegir" y "reservar": cada intento es atómico
+     * por sí mismo, así que si la candidata preferida pierde una carrera
+     * concurrente, simplemente se continúa con la siguiente.
+     */
+    @Transactional
+    public InventoryReservation reserveAtBestOrigin(UUID orderId, UUID productId, int quantity,
+                                                      UUID correlationId, String idempotencyKey) {
+        Optional<InventoryReservation> existing = reservationRepository.findByIdempotencyKey(idempotencyKey);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        List<InventoryItem> candidates = itemRepository.findByProductIdOrderByLocationId(productId);
+        Map<UUID, InventoryLocation> locationsById = locationRepository.findAllById(
+                        candidates.stream().map(InventoryItem::getLocationId).toList()).stream()
+                .collect(Collectors.toMap(InventoryLocation::getId, location -> location));
+
+        List<UUID> orderedLocationIds = candidates.stream()
+                .map(InventoryItem::getLocationId)
+                .sorted(Comparator.comparing(locationsById::get, ORIGIN_PRIORITY))
+                .toList();
+
+        Instant now = clock.instant();
+        for (UUID locationId : orderedLocationIds) {
+            if (itemRepository.tryReserve(productId, locationId, quantity, now) == 1) {
+                InventoryReservation reservation = InventoryReservation.create(
+                        orderId, productId, locationId, quantity, correlationId, idempotencyKey,
+                        now.plus(reservationTtl), now);
+                return reservationRepository.save(reservation);
+            }
+        }
+        throw new NoAvailableOriginException(productId, quantity);
     }
 
     public InventoryReservation getReservation(UUID reservationId) {

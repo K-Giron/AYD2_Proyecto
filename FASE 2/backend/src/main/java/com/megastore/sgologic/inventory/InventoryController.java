@@ -62,7 +62,10 @@ public class InventoryController {
      * CDU-02: reserva atómica e idempotente. Puerto que consumirá la Saga
      * (ORD-03). Devuelve {@code 201} en la primera solicitud y también en
      * una repetición idempotente (la reserva ya existía, no se creó una
-     * nueva ni se comprometió stock de más).
+     * nueva ni se comprometió stock de más). Con {@code locationId}:
+     * reserva exactamente ahí. Sin {@code locationId} (el caso del
+     * contrato de la Saga, que no lo incluye): aplica el algoritmo de
+     * selección de origen de INV-04/ADR-014.
      */
     @PostMapping("/reservations")
     public ResponseEntity<InventoryReservationResponse> createReservation(
@@ -70,9 +73,13 @@ public class InventoryController {
             @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
             HttpServletRequest httpRequest) {
         UUID correlationId = correlationId(httpRequest);
-        InventoryReservation reservation = reservationService.reserve(
-                request.orderId(), request.productId(), request.locationId(), request.quantity(),
-                correlationId, idempotencyKey);
+        InventoryReservation reservation = request.locationId() != null
+                ? reservationService.reserve(
+                        request.orderId(), request.productId(), request.locationId(), request.quantity(),
+                        correlationId, idempotencyKey)
+                : reservationService.reserveAtBestOrigin(
+                        request.orderId(), request.productId(), request.quantity(),
+                        correlationId, idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED).body(InventoryReservationResponse.from(reservation));
     }
 
