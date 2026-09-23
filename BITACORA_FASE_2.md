@@ -22,6 +22,7 @@
 | QA-01 | Contrato e integración continua | Jairo | Implementación local preparada; ejecución GitHub pendiente | Repositorio, secretos y stack | `.github/workflows/qa-integracion-base.yml` y `FASE 2/docs/integration/qa-01-ci-contract.md` |
 | DOC-03 | Bitácora, capturas Kanban y burndown | Jairo | `In Progress` en captura | Registro diario de todos | Esta bitácora y tarjeta [MnIkXzvZ](https://trello.com/c/MnIkXzvZ) |
 | BB-04 | Outbox transaccional, dispatcher, reintento y DLQ | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y ratificación de rangos | `V3001`, `integration/outbox`, `OutboxIntegrationTest` y `docs/qa/trazabilidad-cun-mvp.md` |
+| BB-07 | Autenticación, autorización y sanitización | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | ADR-013 y decisión JWT | `security/`, `ADR-013`, `SecurityAuthorizationTest` y `SensitiveDataSanitizerTest` |
 | Resto del backlog | Consultar planificación oficial | Según planificación | Pendiente | Contratos e implementaciones del equipo | Pendiente |
 
 Los estados anteriores describen únicamente los artefactos presentes; no equivalen a tarjetas `Done` ni inventan aceptación del equipo.
@@ -176,6 +177,21 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendiente de registrar por Edson.
 - Persona que quedaría bloqueada y acción temporal: Jairo puede consumir `PublishEvent` desde la Saga; Kevin y Andy pueden reemplazar sus colas locales por la DLQ del broker cuando integren.
 
+### Fecha: 2026-09-23 (continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entrada anterior del mismo día; BB-04 cerrado con Outbox/Inbox, dispatcher, reintentos y DLQ.
+- Trabajo realizado hoy:
+  - `[BB-07/DEC-06]` autenticación JWT HMAC-SHA256 sin estado en el módulo `security`: `POST /api/v1/auth/login`, cuentas de demostración configurables por `SGO_SECURITY_*`, `JwtTokenService` con vigencia de 8 h y roles `CLIENT`, `SUPPORT`, `LOGISTICS` y `FINANCE`.
+  - Autorización por endpoint en la cadena de filtros y respuestas `401 UNAUTHENTICATED` / `403 FORBIDDEN` con el formato común `ApiError` y correlation ID.
+  - `SensitiveDataSanitizer` para PAN/CVV y registro de eventos de seguridad con ruta enmascarada.
+  - `ADR-013` redactado en estado `Proposed` con la matriz de autorización, alternativas, consecuencias y limitaciones.
+  - UI-01 (Kevin): el login simulado se reemplazó por el real; `session.js` guarda el JWT y `apiCall` lo envía como `Authorization: Bearer`. Cambio sujeto a revisión de Kevin.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 85 pruebas, 0 fallos, 0 errores, 0 omitidas. Smoke en Compose: login válido devuelve token; sin token 401; `CLIENT` recibe 403 en fiscal y despacho; `FINANCE` y `LOGISTICS` acceden a lo suyo; health, estado de plataforma y frontend siguen públicos.
+- Hoy y trazabilidad: BB-07, DEC-06, precondición de CDU-12, paso 3 de CDU-03, EaC-12, R4 y ADR-013.
+- Impedimentos: ninguno propio. El ADR-013 queda `Proposed` hasta la revisión de Jairo, Andy y Kevin; SEC-01 cerrará el escaneo de PAN/CVV sobre base, mensajes y logs.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: PAY-01 (Edson) ya puede construirse sobre la API protegida; SEC-01 usará los roles y el sanitizador existentes.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -204,6 +220,7 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | ADR-009, ADR-010 y ADR-012, aprobación de Edson | Aprobados por Edson; siguen `Proposed` | Edson (revisión); Jairo y Kevin pendientes | `contract-status.md` y REV-EDSON | Habilita construir pagos y auditoría sobre contratos ya revisados |
 | 2026-09-23 | DEC-06, autenticación para ADR-013 | Aceptada: JWT | Equipo (registrada por Edson) | Pendiente de redactar ADR-013 en BB-07 | BB-07 y SEC-01 usarán tokens JWT y roles por endpoint |
 | 2026-09-23 | BB-04, implementación del sobre de eventos v1 | Implementado contra contrato `Proposed` | Edson | `V3001`, `integration/outbox` y `OutboxIntegrationTest` | El contrato sigue `Proposed` hasta ratificación del equipo |
+| 2026-09-23 | ADR-013, autenticación JWT, roles y sanitización | Proposed | Edson (redacción y decisión JWT del equipo); revisión de Jairo, Andy y Kevin pendiente | `docs/adr/ADR-013-autenticacion-jwt-y-roles.md` | BB-07 implementado; SEC-01 y PAY-01 se apoyan en la API protegida |
 
 ## 7. Resultados de pruebas
 
@@ -220,6 +237,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-22 | Suite local sin contenedores | Todas las pruebas salvo `InfrastructureIntegrationTest` | `BUILD SUCCESS`; 40 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local | Los cambios no rompen los módulos unitarios/MVC existentes; falta Docker/Testcontainers |
 | 2026-09-23 | `./mvnw clean verify` | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 74 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/qa/trazabilidad-cun-mvp.md` | Incluye la regresión A8 y las pruebas de Outbox/Inbox |
 | 2026-09-23 | Smoke Outbox en Compose | Cuatro servicios `healthy`; evento `PENDING` insertado y capturado con cola temporal | Evento `PUBLISHED`; sobre con `messageId`, correlación y tipo; topología declarada | Salida local del 2026-09-23 | Publicación confiable verificada contra RabbitMQ real |
+| 2026-09-23 | `./mvnw clean verify` (BB-07) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 85 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/adr/ADR-013-autenticacion-jwt-y-roles.md` | Login JWT, 401/403 por rol y sanitización verificados |
+| 2026-09-23 | Smoke de seguridad en Compose | Backend y frontend `healthy`; login de los cuatro roles | Token válido; 401 sin token; 403 de `CLIENT` en fiscal/despacho; health y frontend públicos | Salida local del 2026-09-23 | Autorización por rol operando en el stack real |
 
 ## 8. Retrospectiva individual
 

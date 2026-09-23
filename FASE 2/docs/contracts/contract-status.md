@@ -17,6 +17,7 @@ Esta tabla permite trabajar contra una línea base visible sin presentar como ap
 | ADR-009 | `Proposed` | Al menos tres integrantes | Cierre BB-02 y BB-05 |
 | ADR-010, confirmación fiscal asíncrona | `Proposed`; aprobación de Edson registrada (2026-09-23); faltan Jairo | Andy, Edson y Jairo | Integración FIS-02 con ORD-03 |
 | ADR-012, contratos de simuladores | `Proposed`; aprobación de Edson registrada (2026-09-23); faltan Kevin y Jairo | Andy, Edson, Kevin y Jairo | Ratificación de BB-06 |
+| ADR-013, autenticación JWT, roles y sanitización | `Proposed`; decisión JWT del equipo registrada (2026-09-23) | Edson, Jairo, Andy y Kevin | Implementación BB-07 y SEC-01 |
 
 ## Implementaciones locales contra contratos propuestos
 
@@ -27,6 +28,7 @@ Esta tabla permite trabajar contra una línea base visible sin presentar como ap
 | Lotes ERP y distribución POS | Implementados con persistencia, acuse, deduplicación y reintentos; `clean verify` con PostgreSQL/RabbitMQ reales ejecutado en la revisión | Corregir A3 (reclamo atómico de ventas) y definir A1 (fan-out POS); integrar BB-04/Outbox |
 | Inventario, reservas y origen de despacho | Implementado y **revisado por Edson el 2026-09-23** | Externalizar configuración (J2); registrar riesgo J1 para ORD-04 |
 | Outbox/Inbox transversal (BB-04) | Implementado y probado por Edson contra el sobre v1 `PROPOSED` (`V3001`, `integration.outbox`) | Revisión de Jairo de la API pública; ratificación del sobre; conexión con ORD-03 |
+| Autenticación JWT, roles y sanitización (BB-07) | Implementado y probado por Edson: login, 401/403 por rol y `SensitiveDataSanitizer` | Revisión de la matriz de autorización por Jairo/Andy/Kevin; ratificar ADR-013 |
 
 La revisión cruzada completa, con fortalezas, hallazgos y evidencia, está en
 `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`. Ninguna

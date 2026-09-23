@@ -85,6 +85,8 @@ Copie manualmente `.env.example` como `.env` solo si desea personalizar el entor
 - `SGO_ERP_FORMAT`, `SGO_ERP_INTERVAL_MS`, `SGO_ERP_INITIAL_DELAY_MS`
 - `SGO_OUTBOX_ENABLED`, `SGO_OUTBOX_POLL_INTERVAL_MS`, `SGO_OUTBOX_BATCH_SIZE`, `SGO_OUTBOX_MAX_ATTEMPTS`, `SGO_OUTBOX_RETRY_DELAYS`
 - `SGO_OUTBOX_EXCHANGE`, `SGO_OUTBOX_DLX`, `SGO_OUTBOX_DLQ`
+- `SGO_SECURITY_ENABLED`, `SGO_SECURITY_JWT_SECRET`, `SGO_SECURITY_JWT_ISSUER`, `SGO_SECURITY_JWT_TTL`
+- `SGO_SECURITY_{CLIENT,SUPPORT,LOGISTICS,FINANCE}_{USER,PASSWORD}`
 
 Los valores predeterminados son exclusivamente locales y ficticios.
 
@@ -98,7 +100,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 74 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`) y 9 de Outbox/Inbox (atomicidad, sobre publicado, concurrencia `SKIP LOCKED`, deduplicación y backoff). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 74/74 en verde (ver `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`).
+La suite actual contiene 85 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`), 9 de Outbox/Inbox y 11 de seguridad (login JWT, 401/403 por rol y sanitización). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 85/85 en verde.
 
 ## Verificación completa con un comando
 
@@ -205,6 +207,18 @@ El mecanismo transversal de publicación confiable (ADR-002) ya está implementa
 
 Ningún flujo de negocio consume todavía el Outbox: la conexión de la Saga (ORD-03, Jairo) y de los trabajadores de cada módulo es el siguiente paso de integración.
 
+## Autenticación, roles y sanitización (Edson Sosa, BB-07)
+
+La API está protegida con JWT HMAC-SHA256 según ADR-013:
+
+- `POST /api/v1/auth/login` recibe `{"username","password"}` y devuelve `accessToken`, `tokenType`, `expiresAt` y `roles`. Es el único endpoint de negocio público, junto con Actuator y el estado técnico de plataforma.
+- El resto de endpoints requiere `Authorization: Bearer <token>`: sin token responden `401 UNAUTHENTICATED` y con rol insuficiente `403 FORBIDDEN`, ambos con `ApiError` y correlation ID.
+- Autorización: `FINANCE` para fiscal/ERP/simuladores; `LOGISTICS` para despachos y POS; `CLIENT`/`SUPPORT` para notificaciones e incidencias; `CLIENT`/`SUPPORT`/`LOGISTICS` para inventario; `SUPPORT`/`LOGISTICS` para la ingesta de query. Detalle en `docs/adr/ADR-013-autenticacion-jwt-y-roles.md`.
+- Cuentas de demostración locales, configurables por `SGO_SECURITY_*`: `cliente@megastore.com` / `Cliente123`, `staff@megastore.com` / `Staff123`, `logistica@megastore.com` / `Logistica123`, `finanzas@megastore.com` / `Finanzas123`.
+- `SensitiveDataSanitizer` enmascara PAN (13–19 dígitos) y campos CVV antes de cualquier log; `RestSecurityErrorWriter` registra la ruta enmascarada de los 401/403.
+- `sgo.security.enabled=false` permite que las pruebas de negocio corran sin token; `SecurityAuthorizationTest` lo habilita para validar login, 401, 403 y sanitización.
+- La UI (`frontend/`) usa el login real: guarda el JWT y lo envía en cada llamada.
+
 ## Integración continua — QA-01
 
 El workflow `.github/workflows/qa-integracion-base.yml` usa dos jobs: primero compila y prueba el backend; después construye Compose y ejecuta el smoke test. Se activa en pull requests, push a `develop`/`main` y manualmente. Puede utilizar estos secretos de GitHub Actions:
@@ -246,16 +260,18 @@ Kevin Girón agregó, sobre esa base: `logistics` (LOG-01/02/03, con integració
 
 Andy Sánchez agregó `fiscal` (XML, CUI/serie, estado `FISCAL_PENDING`, SAT asíncrono, idempotencia y compuerta de confirmación), lotes ERP CSV/XML cada 30 minutos, distribución POS a 32 tiendas y los simuladores configurables BB-06, además de las migraciones `V2001`–`V2003`, ADR-010/ADR-012 y pruebas de FIS-03.
 
-Continúan pendientes: esquema y migraciones de `orders`/`inventory` (BB-03), carrito, estados ejecutables, Saga, compensaciones, E2E funcional, inventario, pagos completos de Edson, auditoría funcional, seguridad/JWT y Outbox/Inbox transversal (BB-04). El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
+Edson Sosa agregó el Outbox/Inbox transversal (BB-04: `V3001`, `PublishEvent`, dispatcher con reintentos y DLQ, `IdempotentConsumer`) y la seguridad del MVP (BB-07/ADR-013: login JWT, autorización por roles, respuestas 401/403 con `ApiError` y sanitización de PAN/CVV).
+
+Continúan pendientes: esquema y migraciones de `orders` (Jairo), carrito, estados ejecutables, Saga, compensaciones, E2E funcional, pagos y auditoría funcional de Edson (PAY-01 a PAY-03 y AUD-01/AUD-02), y que los flujos de negocio consuman el Outbox. El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
 
 BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanece parcial hasta integrar frontend y componentes compartidos pendientes. Los contratos de estados, eventos y API son propuestas sujetas a aprobación del equipo.
 
 ## Limitaciones actuales
 
 - El endpoint de plataforma no representa funcionalidad de negocio ni sustituye Actuator.
-- Existen entidades y migraciones de Logistics, Notifications, Query, Incidents, Fiscal, ERP y POS; Orders, Inventory, Payments y Saga continúan pendientes o incompletos.
-- RabbitMQ está disponible, pero fiscal, ERP y POS todavía no publican mediante el Outbox transversal de BB-04.
-- No hay autenticación ni autorización hasta BB-07.
+- Existen entidades y migraciones de Logistics, Notifications, Query, Incidents, Fiscal, ERP, POS, Outbox e Inbox; Orders, Payments y Saga continúan pendientes o incompletos.
+- El Outbox transversal (BB-04) está operativo, pero fiscal, ERP, POS y notificaciones todavía no publican sus hechos a través de él; usan sus adaptadores y colas locales hasta que se conecten.
+- La autenticación JWT y la autorización por roles están implementadas (BB-07/ADR-013); las cuentas son de demostración local y no hay refresh token, revocación ni límite de intentos.
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
 - `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.

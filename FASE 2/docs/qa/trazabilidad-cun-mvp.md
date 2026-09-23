@@ -48,7 +48,7 @@ respaldo documental previo.
 | Tarjeta | CUN/CDU que la respalda | Artefacto de datos | Elemento de despliegue | EaC | ADR/contrato |
 |---|---|---|---|---|---|
 | BB-04 Outbox/Inbox/retry/DLQ | CDU-06 precondición explícita; CDU-03 E1; CDU-04, CDU-05, CDU-11 (entrega asíncrona) | `outbox_event`, `inbox_event` (**implementado**, `V3001`, modelo §3.6) | Outbox transaccional, Broker, Mensajes fallidos/DLQ | EaC-04, EaC-05, EaC-06, EaC-07 | ADR-002, ADR-004; `event-envelope-v1` (`PROPOSED`) |
-| BB-07 Seguridad, roles y sanitización | CDU-12 precondición "solicitante autorizado"; CDU-03 paso 3 (sin PAN/CVV) | `audit_events.actor`; sin tablas nuevas obligatorias | Entrada segura + SGO-Logic | EaC-12 | ADR-013 (por redactar), DEC-06, R4 |
+| BB-07 Seguridad, roles y sanitización | CDU-12 precondición "solicitante autorizado"; CDU-03 paso 3 (sin PAN/CVV) | Usuarios demo en memoria (**implementado**, sin tablas); `audit_events.actor` al llegar AUD-01 | Entrada segura + SGO-Logic | EaC-12 | **ADR-013** (`Proposed`), DEC-06, R4 |
 | PAY-01 Intentos de pago | CDU-03 pasos 2 y 3, postcondición de registro auditable | `payment_attempts` (planificado, §4.2) | Base operacional, Adaptadores de salida | EaC-12 | ADR-003 |
 | PAY-02 Timeout/Circuit Breaker/indeterminado | CDU-03 E1 y postcondición "Pago pendiente de confirmación" | `payment_attempts.status = INDETERMINATE` | Adaptadores de salida (timeout + CB), Outbox | EaC-04 | ADR-003, ADR-010 como precedente |
 | PAY-03 Conciliación idempotente ≤ 60 s | CDU-03 E1 ("antes de reintentar debe consultar o conciliar") | `payment_reconciliations` (planificado, §4.2) | Broker, cola de conciliación/reintentos | EaC-04 | ADR-003 |
@@ -92,11 +92,11 @@ planificación, sección 12).
 
 - `./mvnw clean verify` con Java 25 (`eclipse-temurin:25.0.4_7-jdk-alpine-3.23`)
   y Testcontainers (PostgreSQL 17.11 + RabbitMQ 4.3.5): **BUILD SUCCESS**,
-  21 clases, **74 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
+  23 clases, **85 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
   incluida la regresión `AsyncIntegrationPersistenceTest` (bloqueo optimista
-  de flujos asíncronos, ver REV-EDSON §7) y las pruebas de Outbox
-  `OutboxEventTest`, `OutboxDispatcherTest` y `OutboxIntegrationTest`
-  (atomicidad, sobre publicado, concurrencia `SKIP LOCKED` e inbox).
+  de flujos asíncronos, ver REV-EDSON §7), las pruebas de Outbox
+  (`OutboxEventTest`, `OutboxDispatcherTest` y `OutboxIntegrationTest`) y las
+  de seguridad (`SecurityAuthorizationTest` y `SensitiveDataSanitizerTest`).
 - Migraciones Flyway ejecutadas contra PostgreSQL real durante la suite de
   integración: `V1`, `V2`, `V1001`–`V1004`, `V2001`–`V2003`.
 - El detalle de la revisión cruzada está en
