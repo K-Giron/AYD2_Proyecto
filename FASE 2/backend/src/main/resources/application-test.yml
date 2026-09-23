@@ -18,3 +18,18 @@ management:
   health:
     rabbit:
       enabled: true
+
+# El dispatcher del Outbox se invoca manualmente en las pruebas. Con un
+# intervalo de un día se evita que el scheduler siga consultando la base
+# cuando Testcontainers ya detuvo PostgreSQL.
+sgo:
+  outbox:
+    poll-interval-ms: 86400000
+  security:
+    # Las pruebas de negocio no envían token; la prueba de seguridad lo
+    # habilita explícitamente con @TestPropertySource.
+    enabled: false
+  payments:
+    reconciliation:
+      # La conciliación se invoca manualmente en las pruebas.
+      poll-interval-ms: 86400000

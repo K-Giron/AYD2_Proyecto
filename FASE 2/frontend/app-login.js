@@ -23,29 +23,33 @@ document.querySelectorAll(".auth-role-btn").forEach((button) => {
     });
 });
 
-document.getElementById("login-form").addEventListener("submit", (event) => {
+document.getElementById("login-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const email = document.getElementById("login-email").value;
     const password = document.getElementById("login-password").value;
     const remember = document.getElementById("login-remember").checked;
     const errorEl = document.getElementById("login-error");
+    const submitButton = event.target.querySelector("button[type=submit]");
 
-    const account = sgoFindAccount(email, password);
-    if (!account) {
-        errorEl.textContent = "Correo o contraseña incorrectos.";
+    errorEl.classList.add("hidden");
+    if (submitButton) submitButton.disabled = true;
+    const result = await sgoLogin(email, password);
+    if (submitButton) submitButton.disabled = false;
+
+    if (!result.ok) {
+        errorEl.textContent = result.message;
         errorEl.classList.remove("hidden");
         return;
     }
-    if (account.role !== selectedRole) {
-        const otherLabel = account.role === "CLIENTE" ? "Cliente" : "Personal interno";
+    if (result.session.role !== selectedRole) {
+        const otherLabel = result.session.role === "CLIENTE" ? "Cliente" : "Personal interno";
         errorEl.textContent = `Esa cuenta pertenece al perfil "${otherLabel}". Cambia la pestaña de arriba.`;
         errorEl.classList.remove("hidden");
         return;
     }
 
-    errorEl.classList.add("hidden");
-    sgoCreateSession(account, remember);
-    goToRoleHome(account.role);
+    sgoCreateSession(result.session, remember);
+    goToRoleHome(result.session.role);
 });
 
 document.getElementById("reveal-demo-btn").addEventListener("click", () => {

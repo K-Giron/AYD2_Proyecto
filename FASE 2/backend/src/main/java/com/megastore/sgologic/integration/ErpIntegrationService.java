@@ -90,7 +90,9 @@ public class ErpIntegrationService {
             return;
         }
         batch.markAttempt(clock.instant());
-        batchRepository.save(batch);
+        // Reasignar la copia gestionada: conserva la version vigente para el
+        // siguiente save y evita el bloqueo optimista del objeto desconectado.
+        batch = batchRepository.save(batch);
         try {
             ErpGatewayPort.DeliveryResult result = gateway.deliver(batch.getId(), batch.getFormat(), batch.getPayload());
             if (!result.accepted()) {
@@ -112,8 +114,9 @@ public class ErpIntegrationService {
         int retryIndex = batch.getAttempts() - 1;
         if (retryIndex < RETRY_DELAYS_SECONDS.length) {
             batch.markPendingRetry(reason, clock.instant());
-            batchRepository.save(batch);
-            retryScheduler.schedule(() -> deliverBatch(batch.getId()),
+            batch = batchRepository.save(batch);
+            UUID batchId = batch.getId();
+            retryScheduler.schedule(() -> deliverBatch(batchId),
                     clock.instant().plusSeconds(RETRY_DELAYS_SECONDS[retryIndex]));
         } else {
             batch.markDeadLetter(reason, clock.instant());

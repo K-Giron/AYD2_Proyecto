@@ -80,7 +80,7 @@ function formToObject(form) {
 
 /** Cliente HTTP mínimo: siempre propaga X-Correlation-Id y, si se indica, Idempotency-Key. */
 async function apiCall(method, path, body, idempotencyKey) {
-    const headers = { "X-Correlation-Id": CORRELATION_ID };
+    const headers = { "X-Correlation-Id": CORRELATION_ID, ...sgoAuthHeaders() };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
     const response = await fetch(path, {

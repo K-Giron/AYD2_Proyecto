@@ -69,7 +69,7 @@ function isValidUuid(value) {
 }
 
 async function apiCall(method, path, body) {
-    const headers = { "X-Correlation-Id": CORRELATION_ID };
+    const headers = { "X-Correlation-Id": CORRELATION_ID, ...sgoAuthHeaders() };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     const response = await fetch(path, {
         method,

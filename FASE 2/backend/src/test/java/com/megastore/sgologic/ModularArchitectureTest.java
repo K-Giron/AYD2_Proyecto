@@ -44,10 +44,21 @@ class ModularArchitectureTest {
      * {@code shared} concentra la infraestructura HTTP transversal que el
      * checklist de entrega exige a todo módulo (formato común de error,
      * propagación de {@code X-Correlation-Id}): ver
-     * {@code FASE 2/docs/integration/module-delivery-checklist.md}. Ningún
-     * módulo de negocio puede depender de otro módulo de negocio.
+     * {@code FASE 2/docs/integration/module-delivery-checklist.md}.
+     *
+     * <p>{@code integration} expone únicamente su API pública de Outbox
+     * ({@code integration.outbox.PublishEvent} e
+     * {@code integration.outbox.IdempotentConsumer}, BB-04) y {@code audit}
+     * su API pública de evidencia ({@code audit.api.AuditRecorder}, AUD-01).
+     * El resto de cada módulo es interno:
+     * {@code ApplicationModules.verify()} rechaza el acceso a subpaquetes no
+     * anotados con {@code @NamedInterface}.</p>
      */
     private static final String SHARED_MODULE = "shared";
+    private static final String INTEGRATION_MODULE = "integration";
+    private static final String AUDIT_MODULE = "audit";
+    private static final Set<String> APPROVED_DEPENDENCIES =
+            Set.of(SHARED_MODULE, INTEGRATION_MODULE, AUDIT_MODULE);
 
     @Test
     void hasNoUnapprovedDependenciesBetweenModules() {
@@ -64,9 +75,11 @@ class ModularArchitectureTest {
                     .map(dependency -> dependency.getTargetModule().getIdentifier().toString())
                     .collect(Collectors.toSet());
             assertThat(dependencyIds)
-                    .as("El módulo %s solo puede depender de shared hasta que el equipo apruebe otro contrato",
+                    .as("El módulo %s solo puede depender de shared o de las APIs públicas de "
+                            + "integration.outbox (BB-04) y audit.api (AUD-01); cualquier otro "
+                            + "contrato requiere aprobación",
                             module.getIdentifier())
-                    .isSubsetOf(Set.of(SHARED_MODULE));
+                    .isSubsetOf(APPROVED_DEPENDENCIES);
         });
     }
 }
