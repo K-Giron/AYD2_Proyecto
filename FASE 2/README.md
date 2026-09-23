@@ -88,6 +88,7 @@ Copie manualmente `.env.example` como `.env` solo si desea personalizar el entor
 - `SGO_SECURITY_ENABLED`, `SGO_SECURITY_JWT_SECRET`, `SGO_SECURITY_JWT_ISSUER`, `SGO_SECURITY_JWT_TTL`
 - `SGO_SECURITY_{CLIENT,SUPPORT,LOGISTICS,FINANCE}_{USER,PASSWORD}`
 - `SGO_PAYKLIK_TIMEOUT_MS`, `SGO_PAYKLIK_FAILURE_RATE_THRESHOLD`, `SGO_PAYKLIK_SLIDING_WINDOW_SIZE`, `SGO_PAYKLIK_MINIMUM_CALLS`, `SGO_PAYKLIK_OPEN_STATE_WAIT`, `SGO_PAYKLIK_HALF_OPEN_CALLS`
+- `SGO_PAYMENT_RECONCILIATION_ENABLED`, `SGO_PAYMENT_RECONCILIATION_POLL_INTERVAL_MS`, `SGO_PAYMENT_RECONCILIATION_BATCH_SIZE`, `SGO_PAYMENT_RECONCILIATION_MAX_ATTEMPTS`, `SGO_PAYMENT_RECONCILIATION_FIRST_DELAY`, `SGO_PAYMENT_RECONCILIATION_RETRY_DELAYS`, `SGO_PAYMENT_RECONCILIATION_ALERT_AFTER`
 
 Los valores predeterminados son exclusivamente locales y ficticios.
 
@@ -101,7 +102,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 112 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario, los módulos de Kevin, fiscal/SAT/ERP/POS, Outbox/Inbox, seguridad (JWT, 401/403 y sanitización), auditoría (registro, consulta y EaC-02) y pagos (intentos idempotentes, ausencia de PAN/CVV, timeout, circuit breaker e indeterminado). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 112/112 en verde.
+La suite actual contiene 116 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario, los módulos de Kevin, fiscal/SAT/ERP/POS, Outbox/Inbox, seguridad (JWT, 401/403 y sanitización), auditoría (registro, consulta y EaC-02) y pagos (intentos idempotentes, ausencia de PAN/CVV, timeout, circuit breaker, indeterminado y conciliación sin doble cobro). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 116/116 en verde.
 
 ## Verificación completa con un comando
 
@@ -230,16 +231,17 @@ El registro auditable transversal (CDU-12) está implementado y protegido con ro
 - Medida EaC-02: `AuditQueryIntegrationTest` verifica < 1 s sobre el conjunto declarado de 10 000 eventos (1 000 de una misma orden); en el smoke real la consulta respondió en ~63 ms.
 - `AuditRecorder` (AUD-01) escribe la evidencia en la misma transacción del cambio de negocio; `incidents` ya lo usa.
 
-## Pagos (Edson Sosa, PAY-01/PAY-02)
+## Pagos (Edson Sosa, PAY-01 a PAY-03)
 
 El módulo `payments` materializa la capacidad "autorización de pago" de `docs/contracts/orders/saga-required-ports.md`:
 
 - `POST /api/v1/payments/attempts` con `Idempotency-Key` registra el intento con orden, canal (`WEB`/`MOBILE`/`STORE`/`CONTACT_CENTER`), método (`CARD`/`TRANSFER`/`DIGITAL_WALLET`), importe, moneda y referencia segura. Responde `201` con el resultado (aprobado, rechazado o indeterminado) y `200` si la llave ya existía.
 - `GET /api/v1/payments/attempts/{id}` y `GET /api/v1/payments/attempts?orderId=` consultan los intentos; solo `CLIENT` y `SUPPORT`.
 - Rechaza referencias con PAN (13–19 dígitos) o CVV antes de llamar a PayKlik (`400 INVALID_PAYMENT_REQUEST`) y no almacena PAN/CVV.
-- PAY-02: el adaptador está envuelto con límite de tiempo y circuit breaker (Resilience4j). Un timeout, una caída o el circuito abierto dejan el intento `INDETERMINATE` (nunca aprobado), conservan la orden y publican `PaymentIndeterminate` por Outbox en la misma transacción para que PAY-03 concilie.
-- Cada intento y su resultado dejan evidencia auditable (`PAYMENT_ATTEMPT_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_REJECTED`, `PAYMENT_INDETERMINATE`).
-- `payments.api.PaymentPort` es la API pública para ORD-03. La conciliación ≤ 60 s (PAY-03) sigue pendiente.
+- PAY-02: el adaptador está envuelto con límite de tiempo y circuit breaker (Resilience4j). Un timeout, una caída o el circuito abierto dejan el intento `INDETERMINATE` (nunca aprobado), conservan la orden y publican `PaymentIndeterminate` por Outbox en la misma transacción.
+- PAY-03: al quedar indeterminado se programa una conciliación dentro de los 60 s (`SGO_PAYMENT_RECONCILIATION_FIRST_DELAY`, por defecto 30 s). Reutiliza la misma `Idempotency-Key` y la referencia segura del intento, por lo que **nunca genera un segundo cobro**; reintenta con backoff y, si sigue sin resolver tras 5 min o agota los intentos, queda `DEAD_LETTER` con alerta auditable (`PAYMENT_RECONCILIATION_ALERT`). Al resolver publica `PaymentApproved`/`PaymentRejected`.
+- Cada intento y su resultado dejan evidencia auditable (`PAYMENT_ATTEMPT_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_REJECTED`, `PAYMENT_INDETERMINATE`, `PAYMENT_RECONCILIATION_ALERT`).
+- `payments.api.PaymentPort` es la API pública para ORD-03.
 
 ## Integración continua — QA-01
 
@@ -284,7 +286,7 @@ Andy Sánchez agregó `fiscal` (XML, CUI/serie, estado `FISCAL_PENDING`, SAT as�
 
 Edson Sosa agregó el Outbox/Inbox transversal (BB-04: `V3001`, `PublishEvent`, dispatcher con reintentos y DLQ, `IdempotentConsumer`) y la seguridad del MVP (BB-07/ADR-013: login JWT, autorización por roles, respuestas 401/403 con `ApiError` y sanitización de PAN/CVV).
 
-Continúan pendientes: esquema y migraciones de `orders` (Jairo), carrito, estados ejecutables, Saga, compensaciones, E2E funcional, la conciliación de pagos ≤ 60 s (PAY-03) y que los flujos de negocio consuman el Outbox. El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
+Continúan pendientes: esquema y migraciones de `orders` (Jairo), carrito, estados ejecutables, Saga, compensaciones, E2E funcional y que los flujos de negocio consuman el Outbox. El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
 
 BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanece parcial hasta integrar frontend y componentes compartidos pendientes. Los contratos de estados, eventos y API son propuestas sujetas a aprobación del equipo.
 
@@ -295,7 +297,7 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 - El Outbox transversal (BB-04) está operativo, pero fiscal, ERP, POS y notificaciones todavía no publican sus hechos a través de él; usan sus adaptadores y colas locales hasta que se conecten.
 - La autenticación JWT y la autorización por roles están implementadas (BB-07/ADR-013); las cuentas son de demostración local y no hay refresh token, revocación ni límite de intentos.
 - `audit` registra evidencia transversal atómica (AUD-01, `V3002`) y expone consulta indexada y exportación (AUD-02); `incidents` y `payments` son sus consumidores. Fiscal y logística aún deben sumar sus acciones al registro para completar la reconstrucción de CDU-12.
-- `payments` registra intentos idempotentes con orden, canal, fecha, referencia y resultado y aplica timeout y circuit breaker con estado `INDETERMINATE` (PAY-01/PAY-02); no hay todavía reintento programado ni conciliación ≤ 60 s (PAY-03).
+- `payments` registra intentos idempotentes con orden, canal, fecha, referencia y resultado, aplica timeout y circuit breaker (PAY-01/PAY-02) y concilia los indeterminados sin segundo cobro (PAY-03); la alerta operativa es un log y un registro auditable, sin canal externo de notificaciones.
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
 - `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.

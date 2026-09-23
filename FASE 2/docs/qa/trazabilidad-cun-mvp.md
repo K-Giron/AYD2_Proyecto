@@ -29,7 +29,7 @@ Estados usados:
 |---|---|---|---|---|---|---|---|
 | CUN-01 Carrito omnicanal / CDU-01 | **Planificado** (ORD-01, Jairo) | `orders` (no existe); frontend `cliente.html` es vitrina sin backend | `carts`, `cart_items` (planificado, §4.1 modelo) | SGO-Logic + Base operacional | EaC-01, EaC-09, EaC-11 | ADR-001, ADR-005 | Pendiente |
 | CUN-02 Reservar inventario / CDU-02 | **Implementado** (INV-01 a INV-05, Jorge) | `inventory`: `InventoryController` (`GET /inventory/locations`, `GET /inventory/stock`, `POST /inventory/reservations`, `GET /inventory/reservations/{id}`), `InventoryReservationService`, `InventoryExpirationService`, `InventoryQueryService` | `inventory_locations`, `inventory_items`, `inventory_reservations` (`V1`, `V2`) | Base operacional + SGO-Logic + Registro de auditoría (pendiente AUD-01) | EaC-03, EaC-07 | ADR-001, ADR-005, ADR-011, ADR-014 | `InventoryReservationServiceTest` (9), `InventoryConcurrencyIntegrationTest` (2), `InventoryExpirationServiceTest` (3), `InventoryQueryServiceTest` (5) |
-| CUN-03 Procesar pago / CDU-03 | **Parcial** (BB-06, PAY-01 y PAY-02 hechos; PAY-03 pendiente, Edson) | `payments`: `PayKlikGatewayPort`, `SimulatedPayKlikAdapter`, `ResilientPayKlikClient` (timeout + CB), `PaymentAttemptService`, `PaymentController`, `payments.api.PaymentPort`; falta conciliación | `payment_attempts` (**implementado**, `V3003`, modelo §3.8); `payment_reconciliations` planificado (§4.2) | Adaptadores de salida (timeout + Circuit Breaker), Outbox, Broker, Base operacional | EaC-04, EaC-07, EaC-12 | ADR-003, ADR-005, ADR-012 | `PaymentAttemptServiceTest` (6), `PaymentIntegrationTest` (4), `ResilientPayKlikClientTest` (3), `PaymentIndeterminateIntegrationTest` (1) y `SimulatedPayKlikAdapterTest` (3) |
+| CUN-03 Procesar pago / CDU-03 | **Parcial** (BB-06 y PAY-01 a PAY-03 hechos; el cambio de estado de la orden depende de ORD-03, Edson/Jairo) | `payments`: `PayKlikGatewayPort`, `SimulatedPayKlikAdapter`, `ResilientPayKlikClient` (timeout + CB), `PaymentAttemptService`, `PaymentReconciliationService`, `PaymentController`, `payments.api.PaymentPort` | `payment_attempts` y `payment_reconciliations` (**implementados**, `V3003`/`V3004`, modelo §3.8) | Adaptadores de salida (timeout + Circuit Breaker), Outbox, Broker, Base operacional | EaC-04, EaC-07, EaC-12 | ADR-003, ADR-005, ADR-012 | `PaymentAttemptServiceTest` (6), `PaymentIntegrationTest` (4), `ResilientPayKlikClientTest` (3), `PaymentIndeterminateIntegrationTest` (1), `PaymentReconciliationServiceTest` (3), `PaymentReconciliationIntegrationTest` (1) y `SimulatedPayKlikAdapterTest` (3) |
 | CUN-04 Documentación fiscal / CDU-04 | **Implementado** (FIS-01/FIS-02, Andy) | `fiscal`: `FiscalController` (`POST/GET /fiscal-documents`, `GET .../orders/{orderId}`, `GET .../confirmation`), `FiscalService`, `FiscalXmlGenerator`, `SatGatewayPort`, `SimulatedSatGatewayAdapter` | `fiscal_documents` (`V2001`) | Adaptadores de salida → SAT, estado fiscal pendiente, Registro de auditoría | EaC-02, EaC-07 | ADR-002, ADR-007, ADR-010 | `FiscalServiceTest` (6) |
 | CUN-05 Sincronizar ERP / CDU-05 | **Implementado** (ERP-01/ERP-02, Andy) | `integration`: `ErpIntegrationService`, `ErpIntegrationController` (`POST /integrations/erp/sales`, `POST/GET .../batches`), `SimulatedErpGatewayAdapter` | `erp_batches`, `erp_sales` (`V2002`) | Trabajadores de integración, Área de intercambio ERP, Broker/DLQ | EaC-07, EaC-11 | ADR-002, ADR-004 | `ErpIntegrationServiceTest` (4) |
 | CUN-06 Eventos a POS / CDU-06 | **Parcial** (POS-01, Andy; fan-out y consumo del Outbox pendientes) | `integration`: `PosIntegrationService`, `PosIntegrationController` (`POST /integrations/pos/events`, `GET .../deliveries/{id}`, `GET .../events/{eventId}`), `SimulatedPosGatewayAdapter` | `pos_deliveries` (`V2003`) | Trabajadores → POS, Broker, Mensajes fallidos/DLQ | EaC-06, EaC-07 | ADR-002, ADR-004, ADR-012 | `PosIntegrationServiceTest` (3) |
@@ -51,7 +51,7 @@ respaldo documental previo.
 | BB-07 Seguridad, roles y sanitización | CDU-12 precondición "solicitante autorizado"; CDU-03 paso 3 (sin PAN/CVV) | Usuarios demo en memoria (**implementado**, sin tablas); `audit_events.actor` al llegar AUD-01 | Entrada segura + SGO-Logic | EaC-12 | **ADR-013** (`Proposed`), DEC-06, R4 |
 | PAY-01 Intentos de pago | CDU-03 pasos 2 y 3, postcondición de registro auditable | `payment_attempts` (**implementado**, `V3003`, modelo §3.8) | Base operacional, Adaptadores de salida | EaC-12 | ADR-003 |
 | PAY-02 Timeout/Circuit Breaker/indeterminado | CDU-03 E1 y postcondición "Pago pendiente de confirmación" | `payment_attempts.status = INDETERMINATE` (**implementado**, `V3003`) + evento `PaymentIndeterminate` | Adaptadores de salida (timeout + CB), Outbox | EaC-04 | ADR-003, ADR-010 como precedente |
-| PAY-03 Conciliación idempotente ≤ 60 s | CDU-03 E1 ("antes de reintentar debe consultar o conciliar") | `payment_reconciliations` (planificado, §4.2) | Broker, cola de conciliación/reintentos | EaC-04 | ADR-003 |
+| PAY-03 Conciliación idempotente ≤ 60 s | CDU-03 E1 ("antes de reintentar debe consultar o conciliar") | `payment_reconciliations` (**implementado**, `V3004`, modelo §3.8) | Broker, cola de conciliación/reintentos | EaC-04 | ADR-003 |
 | AUD-01 Registro auditable | CDU-12 pasos 2 y 3; postcondición de toda operación relevante | `audit_events` (**implementado**, `V3002`, modelo §3.7) | Registro y lectura de auditoría | EaC-02, EaC-07 | ADR-002, ADR-006, ADR-007 |
 | AUD-02 Consulta indexada < 1 s | CDU-12 paso 5 y 6 (registrar acceso); A1 exportación; E1 búsqueda fallida | `audit_events` con índices por orden, agregado y correlación (**implementado**, `V3002`) | Registro y lectura de auditoría | EaC-02 | ADR-006 |
 | SEC-01 Pruebas 401/403 y fuga | CDU-12 precondición; CDU-03 paso 3 | `audit_events`, `payment_attempts` | Entrada segura, SGO-Logic | EaC-12 | ADR-013 |
@@ -92,7 +92,7 @@ planificación, sección 12).
 
 - `./mvnw clean verify` con Java 25 (`eclipse-temurin:25.0.4_7-jdk-alpine-3.23`)
   y Testcontainers (PostgreSQL 17.11 + RabbitMQ 4.3.5): **BUILD SUCCESS**,
-  29 clases, **112 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
+  31 clases, **116 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
   incluida la regresión `AsyncIntegrationPersistenceTest` (bloqueo optimista
   de flujos asíncronos, ver REV-EDSON §7), las pruebas de Outbox
   (`OutboxEventTest`, `OutboxDispatcherTest` y `OutboxIntegrationTest`), las
@@ -100,7 +100,8 @@ planificación, sección 12).
   las de auditoría (`AuditIntegrationTest` y `AuditQueryIntegrationTest`,
   esta última con la medida de EaC-02) y las de pagos
   (`PaymentAttemptServiceTest`, `PaymentIntegrationTest`,
-  `ResilientPayKlikClientTest` y `PaymentIndeterminateIntegrationTest`).
+  `ResilientPayKlikClientTest`, `PaymentIndeterminateIntegrationTest`,
+  `PaymentReconciliationServiceTest` y `PaymentReconciliationIntegrationTest`).
 - Migraciones Flyway ejecutadas contra PostgreSQL real durante la suite de
   integración: `V1`, `V2`, `V1001`–`V1004`, `V2001`–`V2003`.
 - El detalle de la revisión cruzada está en
