@@ -59,7 +59,7 @@ class SecurityConfig {
                                     "/actuator/info", "/api/v1/platform/**")
                             .permitAll()
                             .requestMatchers("/api/v1/fiscal-documents/**", "/api/v1/integrations/erp/**",
-                                    "/api/v1/simulators/**")
+                                    "/api/v1/simulators/**", "/api/v1/audit/**")
                             .hasRole("FINANCE")
                             // El seguimiento es visible para el cliente (CDU-09); solo
                             // Logística crea despachos, guías y cambios de método.
