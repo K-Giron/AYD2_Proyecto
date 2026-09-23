@@ -100,7 +100,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 85 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`), 9 de Outbox/Inbox y 11 de seguridad (login JWT, 401/403 por rol y sanitización). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 85/85 en verde.
+La suite actual contiene 91 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`), 9 de Outbox/Inbox, 11 de seguridad (login JWT, 401/403 por rol y sanitización) y 4 de auditoría (evidencia atómica, actor y registro desde incidencias). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 91/91 en verde.
 
 ## Verificación completa con un comando
 
@@ -262,7 +262,7 @@ Andy Sánchez agregó `fiscal` (XML, CUI/serie, estado `FISCAL_PENDING`, SAT as�
 
 Edson Sosa agregó el Outbox/Inbox transversal (BB-04: `V3001`, `PublishEvent`, dispatcher con reintentos y DLQ, `IdempotentConsumer`) y la seguridad del MVP (BB-07/ADR-013: login JWT, autorización por roles, respuestas 401/403 con `ApiError` y sanitización de PAN/CVV).
 
-Continúan pendientes: esquema y migraciones de `orders` (Jairo), carrito, estados ejecutables, Saga, compensaciones, E2E funcional, pagos y auditoría funcional de Edson (PAY-01 a PAY-03 y AUD-01/AUD-02), y que los flujos de negocio consuman el Outbox. El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
+Continúan pendientes: esquema y migraciones de `orders` (Jairo), carrito, estados ejecutables, Saga, compensaciones, E2E funcional, pagos de Edson (PAY-01 a PAY-03), la consulta indexada de auditoría (AUD-02) y que los flujos de negocio consuman el Outbox. El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
 
 BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanece parcial hasta integrar frontend y componentes compartidos pendientes. Los contratos de estados, eventos y API son propuestas sujetas a aprobación del equipo.
 
@@ -272,6 +272,7 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 - Existen entidades y migraciones de Logistics, Notifications, Query, Incidents, Fiscal, ERP, POS, Outbox e Inbox; Orders, Payments y Saga continúan pendientes o incompletos.
 - El Outbox transversal (BB-04) está operativo, pero fiscal, ERP, POS y notificaciones todavía no publican sus hechos a través de él; usan sus adaptadores y colas locales hasta que se conecten.
 - La autenticación JWT y la autorización por roles están implementadas (BB-07/ADR-013); las cuentas son de demostración local y no hay refresh token, revocación ni límite de intentos.
+- `audit` ya registra evidencia transversal de forma atómica (AUD-01, `V3002`) y `incidents` es su primer consumidor; la consulta indexada < 1 s y el registro de acceso a la evidencia (AUD-02) siguen pendientes.
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
 - `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.

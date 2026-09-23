@@ -23,6 +23,7 @@
 | DOC-03 | Bitácora, capturas Kanban y burndown | Jairo | `In Progress` en captura | Registro diario de todos | Esta bitácora y tarjeta [MnIkXzvZ](https://trello.com/c/MnIkXzvZ) |
 | BB-04 | Outbox transaccional, dispatcher, reintento y DLQ | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y ratificación de rangos | `V3001`, `integration/outbox`, `OutboxIntegrationTest` y `docs/qa/trazabilidad-cun-mvp.md` |
 | BB-07 | Autenticación, autorización y sanitización | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | ADR-013 y decisión JWT | `security/`, `ADR-013`, `SecurityAuthorizationTest` y `SensitiveDataSanitizerTest` |
+| AUD-01 | Registro auditable transversal | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y correlación | `V3002`, `audit/api`, `AuditIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.7 |
 | Resto del backlog | Consultar planificación oficial | Según planificación | Pendiente | Contratos e implementaciones del equipo | Pendiente |
 
 Los estados anteriores describen únicamente los artefactos presentes; no equivalen a tarjetas `Done` ni inventan aceptación del equipo.
@@ -192,6 +193,19 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendiente de registrar por Edson.
 - Persona que quedaría bloqueada y acción temporal: PAY-01 (Edson) ya puede construirse sobre la API protegida; SEC-01 usará los roles y el sanitizador existentes.
 
+### Fecha: 2026-09-23 (segunda continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; BB-04 y BB-07 cerrados.
+- Trabajo realizado hoy:
+  - `[AUD-01]` registro auditable transversal en el módulo `audit` con migración `V3002`: `AuditRecorder` como API pública (`@NamedInterface`), `AuditService` que exige transacción activa, actor tomado del contexto autenticado (o `system`) y evidencia con acción, resultado, antes/después, correlación y causalidad.
+  - Tabla `audit_events` de solo anexado: el repositorio extiende `Repository` y no expone actualización ni borrado; índices por orden, agregado y correlación para AUD-02.
+  - Primer consumidor: `incidents` registra `INCIDENT_REGISTERED` e `INCIDENT_RESOLVED` en la misma transacción del cambio, y `ModularArchitectureTest` permite la dependencia a `audit.api`.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 91 pruebas, 0 fallos, 0 errores, 0 omitidas; `AuditIntegrationTest` verifica atomicidad, actor autenticado, rechazo sin transacción y evidencia desde incidencias.
+- Hoy y trazabilidad: AUD-01, CDU-12 pasos 2 y 3, EaC-02/EaC-07, ADR-002/ADR-006/ADR-007 y modelo de datos §3.7.
+- Impedimentos: ninguno propio. AUD-02 (consulta indexada < 1 s, registro de acceso, búsqueda fallida y exportación) es la siguiente tarjeta.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: PAY-01 podrá dejar evidencia de cada intento; fiscal, logística y órdenes podrán sumar sus acciones al registro cuando integren `AuditRecorder`.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -239,6 +253,7 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | Smoke Outbox en Compose | Cuatro servicios `healthy`; evento `PENDING` insertado y capturado con cola temporal | Evento `PUBLISHED`; sobre con `messageId`, correlación y tipo; topología declarada | Salida local del 2026-09-23 | Publicación confiable verificada contra RabbitMQ real |
 | 2026-09-23 | `./mvnw clean verify` (BB-07) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 85 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/adr/ADR-013-autenticacion-jwt-y-roles.md` | Login JWT, 401/403 por rol y sanitización verificados |
 | 2026-09-23 | Smoke de seguridad en Compose | Backend y frontend `healthy`; login de los cuatro roles | Token válido; 401 sin token; 403 de `CLIENT` en fiscal/despacho; health y frontend públicos | Salida local del 2026-09-23 | Autorización por rol operando en el stack real |
+| 2026-09-23 | `./mvnw clean verify` (AUD-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 91 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/diagrams/modelo-datos.md` §3.7 | Evidencia auditable atómica con actor, cambio, resultado y correlación |
 
 ## 8. Retrospectiva individual
 

@@ -41,7 +41,7 @@ Reglas de lectura:
 | `incidents` | `incidents` | Kevin Girón | CUN-10 / CDU-10 | EaC-02, EaC-07 | `V1004` |
 | `orders` | `orders` | Jairo Gómez | CUN-01 / CDU-01 | EaC-01, EaC-09 | **PLANIFICADO** (ORD-01/ORD-02) |
 | `payments` | `payments` | Edson Sosa | CUN-03 / CDU-03 | EaC-04, EaC-12 | **PLANIFICADO** (PAY-01) |
-| `audit` | `audit` | Edson Sosa | CUN-12 / CDU-12 | EaC-02, EaC-07 | **PLANIFICADO** (AUD-01) |
+| `audit` | `audit` | Edson Sosa | CUN-12 / CDU-12 | EaC-02, EaC-07 | `V3002` (AUD-01) |
 
 La instancia PostgreSQL es una sola; la separación es lógica y verificable por
 Spring Modulith, según ADR-001 y la sección 8 del stack.
@@ -285,14 +285,45 @@ erDiagram
 - Es la precondición explícita de CDU-06 y el cierre de la ventana de pérdida
   descrita en ADR-010.
 
+### 3.7 `audit` — CUN-12 (AUD-01/AUD-02)
+
+```mermaid
+erDiagram
+    audit_events {
+        uuid id PK
+        uuid event_id UK "idempotencia del registro"
+        varchar aggregate_type
+        uuid aggregate_id
+        uuid order_id "correlacion de la orden"
+        varchar actor
+        varchar action
+        varchar result
+        text before_state
+        text after_state
+        uuid correlation_id
+        uuid causation_id
+        timestamptz occurred_at
+    }
+```
+
+- Tabla de solo anexado: el repositorio extiende `Repository` y no expone
+  actualización ni borrado.
+- El registro se escribe en la misma transacción del cambio de negocio
+  (`AuditRecorder` exige transacción activa); el actor sale del contexto
+  autenticado o es `system`.
+- Índices por `order_id`, por `(aggregate_type, aggregate_id)` y por
+  `correlation_id` para responder en menos de 1 s (EaC-02).
+- CDU-12 exige además registrar el acceso a la evidencia, la búsqueda fallida
+  con alerta y la exportación autorizada; AUD-02 debe cubrir esos pasos.
+
 ---
 
 ## 4. Esquemas planificados
 
 > Estas tablas **no existen todavía**. Se documentan para que la
-> implementación de Edson (BB-07, PAY-01 a PAY-03, AUD-01/AUD-02) y de
-> Jairo (ORD-01/ORD-02) no se convierta en código huérfano. Su forma final se
-> ratifica en el ADR o contrato correspondiente antes de la migración.
+> implementación de Edson (PAY-01 a PAY-03) y de Jairo (ORD-01/ORD-02) no se
+> convierta en código huérfano. Su forma final se ratifica en el ADR o
+> contrato correspondiente antes de la migración.
 
 ### 4.1 `orders` — CUN-01 (ORD-01/ORD-02, Jairo Gómez)
 
@@ -366,33 +397,6 @@ erDiagram
 Cubre CDU-03 paso 2 (intento con orden, canal y fecha), paso 3 (idempotencia
 sin PAN/CVV), E1 (resultado indeterminado y conciliación antes de reintentar) y
 la postcondición de registro auditable. No almacena PAN ni CVV (EaC-12).
-
-### 4.3 `audit` — CUN-12 (AUD-01/AUD-02, Edson Sosa)
-
-```mermaid
-erDiagram
-    audit_events {
-        uuid id PK
-        uuid event_id UK "idempotencia del registro"
-        varchar aggregate_type
-        uuid aggregate_id
-        uuid order_id "correlacion de la orden"
-        varchar actor
-        varchar action
-        varchar result
-        jsonb before_state
-        jsonb after_state
-        uuid correlation_id
-        uuid causation_id
-        timestamptz occurred_at
-    }
-```
-
-- Tabla de solo anexado: la aplicación no actualiza ni elimina filas.
-- Índices por `order_id` y por `(aggregate_type, aggregate_id)` para responder
-  en menos de 1 s (EaC-02).
-- CDU-12 exige además registrar el acceso a la evidencia, la búsqueda fallida
-  con alerta y la exportación autorizada; AUD-02 debe cubrir esos pasos.
 
 ---
 
