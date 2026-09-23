@@ -188,6 +188,38 @@ class SecurityAuthorizationTest {
     }
 
     @Test
+    void paymentsRequireClientOrSupportRole() throws Exception {
+        String clientToken = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
+        String financeToken = login("finanzas@megastore.com", "Finanzas123").get("accessToken").asText();
+        String body = objectMapper.writeValueAsString(Map.of(
+                "orderId", UUID.randomUUID().toString(),
+                "amount", 150.00,
+                "currency", "GTQ",
+                "channel", "MOBILE",
+                "method", "CARD",
+                "paymentReference", "tok_test_123"));
+
+        mockMvc.perform(post("/api/v1/payments/attempts")
+                        .header("Authorization", "Bearer " + financeToken)
+                        .header("Idempotency-Key", "sec-pay-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/payments/attempts")
+                        .header("Authorization", "Bearer " + clientToken)
+                        .header("Idempotency-Key", "sec-pay-2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/payments/attempts")
+                        .param("orderId", UUID.randomUUID().toString())
+                        .header("Authorization", "Bearer " + clientToken))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void clientRoleCanReadInventoryAndPublicHealthStaysOpen() throws Exception {
         String token = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
 
