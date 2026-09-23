@@ -100,7 +100,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 91 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`), 9 de Outbox/Inbox, 11 de seguridad (login JWT, 401/403 por rol y sanitización) y 4 de auditoría (evidencia atómica, actor y registro desde incidencias). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 91/91 en verde.
+La suite actual contiene 97 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`), 9 de Outbox/Inbox, 12 de seguridad (login JWT, 401/403 por rol, auditoría y sanitización) y 9 de auditoría (evidencia atómica, actor, registro desde incidencias, consulta, búsqueda fallida, exportación y la medida < 1 s). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 97/97 en verde.
 
 ## Verificación completa con un comando
 
@@ -213,11 +213,21 @@ La API está protegida con JWT HMAC-SHA256 según ADR-013:
 
 - `POST /api/v1/auth/login` recibe `{"username","password"}` y devuelve `accessToken`, `tokenType`, `expiresAt` y `roles`. Es el único endpoint de negocio público, junto con Actuator y el estado técnico de plataforma.
 - El resto de endpoints requiere `Authorization: Bearer <token>`: sin token responden `401 UNAUTHENTICATED` y con rol insuficiente `403 FORBIDDEN`, ambos con `ApiError` y correlation ID.
-- Autorización: `FINANCE` para fiscal/ERP/simuladores; `LOGISTICS` para crear despachos, guías y eventos POS, mientras que `GET /shipments/**` (seguimiento, CDU-09) también lo ven `CLIENT` y `SUPPORT`; `CLIENT`/`SUPPORT` leen y crean incidencias y solo `SUPPORT` las resuelve; `CLIENT`/`SUPPORT` leen notificaciones y solo `SUPPORT` las emite; `CLIENT`/`SUPPORT`/`LOGISTICS` para inventario; `SUPPORT`/`LOGISTICS` para la ingesta de query. Detalle en `docs/adr/ADR-013-autenticacion-jwt-y-roles.md`.
+- Autorización: `FINANCE` para fiscal/ERP/simuladores y para la consulta/exportación de auditoría; `LOGISTICS` para crear despachos, guías y eventos POS, mientras que `GET /shipments/**` (seguimiento, CDU-09) también lo ven `CLIENT` y `SUPPORT`; `CLIENT`/`SUPPORT` leen y crean incidencias y solo `SUPPORT` las resuelve; `CLIENT`/`SUPPORT` leen notificaciones y solo `SUPPORT` las emite; `CLIENT`/`SUPPORT`/`LOGISTICS` para inventario; `SUPPORT`/`LOGISTICS` para la ingesta de query. Detalle en `docs/adr/ADR-013-autenticacion-jwt-y-roles.md`.
 - Cuentas de demostración locales, configurables por `SGO_SECURITY_*`: `cliente@megastore.com` / `Cliente123` (`CLIENT`), `staff@megastore.com` / `Staff123` (`SUPPORT` + `LOGISTICS`, la consola interna completa), `logistica@megastore.com` / `Logistica123` (`LOGISTICS`), `finanzas@megastore.com` / `Finanzas123` (`FINANCE`).
 - `SensitiveDataSanitizer` enmascara PAN (13–19 dígitos) y campos CVV antes de cualquier log; `RestSecurityErrorWriter` registra la ruta enmascarada de los 401/403.
 - `sgo.security.enabled=false` permite que las pruebas de negocio corran sin token; `SecurityAuthorizationTest` lo habilita para validar login, 401, 403 y sanitización.
 - La UI (`frontend/`) usa el login real: guarda el JWT y lo envía en cada llamada.
+
+## Auditoría (Edson Sosa, AUD-01/AUD-02)
+
+El registro auditable transversal (CDU-12) está implementado y protegido con rol `FINANCE`:
+
+- `GET /api/v1/audit/events?orderId={uuid}` o `?aggregateType={tipo}&aggregateId={uuid}` recupera la evidencia en orden cronológico.
+- `GET /api/v1/audit/orders/{orderId}/export` descarga la evidencia en CSV (`Content-Disposition: attachment`).
+- Cada acceso y cada exportación quedan registrados como evidencia (`AUDIT_EVIDENCE_ACCESSED`, `AUDIT_EVIDENCE_EXPORTED`); una búsqueda sin resultados responde `404 AUDIT_EVIDENCE_NOT_FOUND`, registra `AUDIT_SEARCH_FAILED` y deja una alerta para Finanzas sin inventar información (CDU-12 E1).
+- Medida EaC-02: `AuditQueryIntegrationTest` verifica < 1 s sobre el conjunto declarado de 10 000 eventos (1 000 de una misma orden); en el smoke real la consulta respondió en ~63 ms.
+- `AuditRecorder` (AUD-01) escribe la evidencia en la misma transacción del cambio de negocio; `incidents` ya lo usa.
 
 ## Integración continua — QA-01
 
@@ -272,7 +282,7 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 - Existen entidades y migraciones de Logistics, Notifications, Query, Incidents, Fiscal, ERP, POS, Outbox e Inbox; Orders, Payments y Saga continúan pendientes o incompletos.
 - El Outbox transversal (BB-04) está operativo, pero fiscal, ERP, POS y notificaciones todavía no publican sus hechos a través de él; usan sus adaptadores y colas locales hasta que se conecten.
 - La autenticación JWT y la autorización por roles están implementadas (BB-07/ADR-013); las cuentas son de demostración local y no hay refresh token, revocación ni límite de intentos.
-- `audit` ya registra evidencia transversal de forma atómica (AUD-01, `V3002`) y `incidents` es su primer consumidor; la consulta indexada < 1 s y el registro de acceso a la evidencia (AUD-02) siguen pendientes.
+- `audit` registra evidencia transversal atómica (AUD-01, `V3002`) y expone consulta indexada y exportación (AUD-02); `incidents` es su primer consumidor. Pagos, fiscal y logística aún deben sumar sus acciones al registro para completar la reconstrucción de CDU-12.
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
 - `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.

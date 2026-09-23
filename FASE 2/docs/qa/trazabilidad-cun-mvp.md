@@ -38,7 +38,7 @@ Estados usados:
 | CUN-09 Consultar orden / CDU-09 | **Implementado** (QRY-01, Kevin) | `query`: `OrderSummaryController` (`GET /orders/{orderId}/summary`), `OrderSummaryQueryService`; ingesta temporal `POST /query/order-summary` | `order_summary_projections` (`V1003`) | SGO-Logic, Base operacional, Outbox/Broker (alimentación real pendiente BB-04) | EaC-01, EaC-07 | ADR-005, ADR-006 | `OrderSummaryQueryServiceTest` (3) |
 | CUN-10 Devoluciones y reembolsos / CDU-10 | **Parcial** (INC-01, Kevin; falta reembolso, reintegro de inventario y nota de crédito integrada) | `incidents`: `IncidentController` (`POST/GET /incidents`, `PATCH .../resolution`), `IncidentService`; `fiscal` ya soporta `CREDIT_NOTE` (CDU-04 A1) | `incidents`, `incident_items` (`V1004`); `fiscal_documents` (`V2001`) | SGO-Logic, Base operacional, Adaptadores → SAT | EaC-02, EaC-07 | ADR-002, ADR-005, ADR-007 | `IncidentServiceTest` (2) |
 | CUN-11 Notificar cliente / CDU-11 | **Implementado** (NOT-01, Kevin) | `notifications`: `NotificationController` (`POST /notifications` → 202, `GET ...`), `NotificationService`, `NotificationProviderPort`, `SimulatedNotificationProviderAdapter` | `notification_requests` (`V1002`) | Trabajadores, Broker, cola de notificaciones | EaC-08, EaC-07 | ADR-002, ADR-008 | `NotificationServiceTest` (2) |
-| CUN-12 Auditar operaciones / CDU-12 | **Parcial** (AUD-01 implementado; AUD-02 pendiente, Edson) | `audit`: `AuditService`, `AuditRecorder`; `incidents` ya registra evidencia | `audit_events` (`V3002`, modelo §3.7) | Registro de auditoría implementado; lectura indexada pendiente | EaC-02, EaC-07 | ADR-002, ADR-006, ADR-007 | `AuditIntegrationTest` (4) y `IncidentServiceTest` (2); AUD-02 pendiente |
+| CUN-12 Auditar operaciones / CDU-12 | **Parcial** (AUD-01/AUD-02 implementados; faltan más productores, Edson) | `audit`: `AuditService`, `AuditRecorder`, `AuditQueryService`, `AuditController`; `incidents` ya registra evidencia | `audit_events` (`V3002`, modelo §3.7) | Registro y consulta indexada implementados; pagos, fiscal y logística aún no suman sus acciones | EaC-02, EaC-07 | ADR-002, ADR-006, ADR-007 | `AuditIntegrationTest` (4), `AuditQueryIntegrationTest` (5) e `IncidentServiceTest` (2) |
 
 ## 3. Trazabilidad de las tarjetas pendientes de Edson
 
@@ -53,7 +53,7 @@ respaldo documental previo.
 | PAY-02 Timeout/Circuit Breaker/indeterminado | CDU-03 E1 y postcondición "Pago pendiente de confirmación" | `payment_attempts.status = INDETERMINATE` | Adaptadores de salida (timeout + CB), Outbox | EaC-04 | ADR-003, ADR-010 como precedente |
 | PAY-03 Conciliación idempotente ≤ 60 s | CDU-03 E1 ("antes de reintentar debe consultar o conciliar") | `payment_reconciliations` (planificado, §4.2) | Broker, cola de conciliación/reintentos | EaC-04 | ADR-003 |
 | AUD-01 Registro auditable | CDU-12 pasos 2 y 3; postcondición de toda operación relevante | `audit_events` (**implementado**, `V3002`, modelo §3.7) | Registro y lectura de auditoría | EaC-02, EaC-07 | ADR-002, ADR-006, ADR-007 |
-| AUD-02 Consulta indexada < 1 s | CDU-12 paso 5 y 6 (registrar acceso); A1 exportación; E1 búsqueda fallida | `audit_events` con índices por orden y agregado | Registro y lectura de auditoría | EaC-02 | ADR-006 |
+| AUD-02 Consulta indexada < 1 s | CDU-12 paso 5 y 6 (registrar acceso); A1 exportación; E1 búsqueda fallida | `audit_events` con índices por orden, agregado y correlación (**implementado**, `V3002`) | Registro y lectura de auditoría | EaC-02 | ADR-006 |
 | SEC-01 Pruebas 401/403 y fuga | CDU-12 precondición; CDU-03 paso 3 | `audit_events`, `payment_attempts` | Entrada segura, SGO-Logic | EaC-12 | ADR-013 |
 | QA-02 Línea base `T` y carga `8T` | EaC-01, EaC-02, EaC-03 | Datos de prueba controlados | SGO-Logic `N` instancias, Broker | EaC-01, EaC-02, EaC-03 | ADR-001, ADR-006; DEC-02 |
 
@@ -92,12 +92,13 @@ planificación, sección 12).
 
 - `./mvnw clean verify` con Java 25 (`eclipse-temurin:25.0.4_7-jdk-alpine-3.23`)
   y Testcontainers (PostgreSQL 17.11 + RabbitMQ 4.3.5): **BUILD SUCCESS**,
-  24 clases, **91 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
+  25 clases, **97 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
   incluida la regresión `AsyncIntegrationPersistenceTest` (bloqueo optimista
   de flujos asíncronos, ver REV-EDSON §7), las pruebas de Outbox
   (`OutboxEventTest`, `OutboxDispatcherTest` y `OutboxIntegrationTest`), las
   de seguridad (`SecurityAuthorizationTest` y `SensitiveDataSanitizerTest`) y
-  las de auditoría (`AuditIntegrationTest`).
+  las de auditoría (`AuditIntegrationTest` y `AuditQueryIntegrationTest`,
+  esta última con la medida de EaC-02).
 - Migraciones Flyway ejecutadas contra PostgreSQL real durante la suite de
   integración: `V1`, `V2`, `V1001`–`V1004`, `V2001`–`V2003`.
 - El detalle de la revisión cruzada está en

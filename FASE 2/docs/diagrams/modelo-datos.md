@@ -314,7 +314,9 @@ erDiagram
 - Índices por `order_id`, por `(aggregate_type, aggregate_id)` y por
   `correlation_id` para responder en menos de 1 s (EaC-02).
 - CDU-12 exige además registrar el acceso a la evidencia, la búsqueda fallida
-  con alerta y la exportación autorizada; AUD-02 debe cubrir esos pasos.
+  con alerta y la exportación autorizada: AUD-02 lo cubre con
+  `AUDIT_EVIDENCE_ACCESSED`, `AUDIT_SEARCH_FAILED` y `AUDIT_EVIDENCE_EXPORTED`,
+  escritos en transacción independiente para sobrevivir a la búsqueda fallida.
 
 ---
 

@@ -24,6 +24,7 @@
 | BB-04 | Outbox transaccional, dispatcher, reintento y DLQ | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y ratificación de rangos | `V3001`, `integration/outbox`, `OutboxIntegrationTest` y `docs/qa/trazabilidad-cun-mvp.md` |
 | BB-07 | Autenticación, autorización y sanitización | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | ADR-013 y decisión JWT | `security/`, `ADR-013`, `SecurityAuthorizationTest` y `SensitiveDataSanitizerTest` |
 | AUD-01 | Registro auditable transversal | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y correlación | `V3002`, `audit/api`, `AuditIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.7 |
+| AUD-02 | Consulta indexada de evidencia | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | AUD-01 | `AuditController`, `AuditQueryIntegrationTest` y evidencia EaC-02 < 1 s |
 | Resto del backlog | Consultar planificación oficial | Según planificación | Pendiente | Contratos e implementaciones del equipo | Pendiente |
 
 Los estados anteriores describen únicamente los artefactos presentes; no equivalen a tarjetas `Done` ni inventan aceptación del equipo.
@@ -206,6 +207,19 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendiente de registrar por Edson.
 - Persona que quedaría bloqueada y acción temporal: PAY-01 podrá dejar evidencia de cada intento; fiscal, logística y órdenes podrán sumar sus acciones al registro cuando integren `AuditRecorder`.
 
+### Fecha: 2026-09-23 (tercera continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; AUD-01 cerrado.
+- Trabajo realizado hoy:
+  - `[AUD-02]` consulta indexada de evidencia en `audit`: `GET /api/v1/audit/events` por `orderId` o por `aggregateType`+`aggregateId`, y `GET /api/v1/audit/orders/{orderId}/export` en CSV, ambos con rol `FINANCE`.
+  - Cada acceso y exportación se registran como evidencia (`AUDIT_EVIDENCE_ACCESSED`, `AUDIT_EVIDENCE_EXPORTED`); la búsqueda sin resultados responde `404 AUDIT_EVIDENCE_NOT_FOUND`, registra `AUDIT_SEARCH_FAILED` y deja alerta para Finanzas (CDU-12 E1) en una transacción independiente para que sobreviva al fallo.
+  - `SecurityConfig` restringe `/api/v1/audit/**` a `FINANCE`; ADR-013, README y matriz de trazabilidad actualizados.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 97 pruebas, 0 fallos, 0 errores, 0 omitidas. `AuditQueryIntegrationTest` verifica consulta por orden y agregado, acceso registrado, búsqueda fallida, exportación CSV y **EaC-02 < 1 s** sobre 10 000 eventos (1 000 de una orden). Smoke real: consulta en ~63 ms, export CSV correcto, 404 con evidencia de fallo y 403 para `CLIENT`.
+- Hoy y trazabilidad: AUD-02, CDU-12 pasos 5 y 6, A1, E1; EaC-02 cerrado y EaC-07 parcial; ADR-006 y modelo de datos §3.7.
+- Impedimentos: ninguno propio. EaC-07 queda parcial hasta que pagos, fiscal y logística registren sus acciones.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: PAY-01 puede construir su evidencia sobre `AuditRecorder`; SEC-01 puede escanear `audit_events` como parte del barrido de PAN/CVV.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -254,6 +268,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | `./mvnw clean verify` (BB-07) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 85 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/adr/ADR-013-autenticacion-jwt-y-roles.md` | Login JWT, 401/403 por rol y sanitización verificados |
 | 2026-09-23 | Smoke de seguridad en Compose | Backend y frontend `healthy`; login de los cuatro roles | Token válido; 401 sin token; 403 de `CLIENT` en fiscal/despacho; health y frontend públicos | Salida local del 2026-09-23 | Autorización por rol operando en el stack real |
 | 2026-09-23 | `./mvnw clean verify` (AUD-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 91 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/diagrams/modelo-datos.md` §3.7 | Evidencia auditable atómica con actor, cambio, resultado y correlación |
+| 2026-09-23 | `./mvnw clean verify` (AUD-02) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 97 pruebas, 0 fallos, 0 errores, 0 omitidas | `AuditQueryIntegrationTest` y `docs/qa/QA-03-matriz-eac.md` | EaC-02 < 1 s sobre 10 000 eventos; acceso, fallo y exportación registrados |
+| 2026-09-23 | Smoke AUD-02 en Compose | Backend `healthy`; consulta, exportación, búsqueda fallida y 403 de `CLIENT` | Consulta ~63 ms; CSV con `Content-Disposition`; 404 con evidencia `AUDIT_SEARCH_FAILED` | Salida local del 2026-09-23 | Consulta indexada y evidencia de acceso operando en el stack real |
 
 ## 8. Retrospectiva individual
 

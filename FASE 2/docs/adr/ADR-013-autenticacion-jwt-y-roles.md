@@ -39,7 +39,7 @@ llamadas de la UI envían el token.
    | Recurso | Roles autorizados |
    |---|---|
    | `/api/v1/auth/login`, `/actuator/health*`, `/actuator/info`, `/api/v1/platform/**` | público |
-   | `/api/v1/fiscal-documents/**`, `/api/v1/integrations/erp/**`, `/api/v1/simulators/**` | `FINANCE` |
+   | `/api/v1/fiscal-documents/**`, `/api/v1/integrations/erp/**`, `/api/v1/simulators/**`, `/api/v1/audit/**` | `FINANCE` |
    | `GET /api/v1/shipments/**` (seguimiento, CDU-09) | `CLIENT`, `SUPPORT`, `LOGISTICS` |
    | Resto de `/api/v1/shipments/**` y `/api/v1/integrations/pos/**` | `LOGISTICS` |
    | `GET /api/v1/notifications/**` | `CLIENT`, `SUPPORT` |
