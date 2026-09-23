@@ -7,8 +7,12 @@ propio del módulo `inventory` (`inventory_locations`, `inventory_items`,
 `inventory_reservations`), conforme a ADR-011 y CDU-02. No crea tablas de
 `orders`: la migración inicial de `orders` queda pendiente para cuando Jairo
 inicie ORD-01/ORD-02, usando el siguiente número disponible dentro del rango
-reservado abajo. Los datos semilla de las 34 ubicaciones (INV-01) se
-agregarán en una migración `V2` posterior, separada de la creación de tablas.
+reservado abajo.
+
+`V2__inventory_seed_locations_and_stock.sql` (INV-01, Jorge Pumay) carga las
+34 ubicaciones (2 CD + 32 tiendas) y stock de demostración para tres
+productos de identificador fijo, documentados en el propio archivo para que
+Carrito/Órdenes los reutilice en sus datos de prueba.
 
 ## Numeración propuesta por Kevin Girón (pendiente de ratificar con el equipo)
 
