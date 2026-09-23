@@ -1,6 +1,9 @@
 package com.megastore.sgologic.incidents;
 
+import com.megastore.sgologic.audit.api.AuditEntryRequest;
+import com.megastore.sgologic.audit.api.AuditRecorder;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -14,14 +17,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** INC-01 / CDU-10: registro y resolución de devoluciones/incidencias. */
+/** INC-01 / CDU-10: registro, resolución y evidencia auditable (AUD-01). */
 class IncidentServiceTest {
 
     private final IncidentRepository repository = mock(IncidentRepository.class);
+    private final AuditRecorder auditRecorder = mock(AuditRecorder.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-09-18T15:00:00Z"), ZoneOffset.UTC);
-    private final IncidentService service = new IncidentService(repository, clock);
+    private final IncidentService service = new IncidentService(repository, auditRecorder, clock);
 
     @Test
     void registerKeepsRelationToOriginalOrderForAPartialReturn() {
@@ -34,6 +39,13 @@ class IncidentServiceTest {
         assertThat(incident.getOrderId()).isEqualTo(orderId);
         assertThat(incident.isPartial()).isTrue();
         assertThat(incident.getStatus()).isEqualTo(IncidentStatus.REGISTERED);
+
+        ArgumentCaptor<AuditEntryRequest> audit = ArgumentCaptor.forClass(AuditEntryRequest.class);
+        verify(auditRecorder).record(audit.capture());
+        assertThat(audit.getValue().action()).isEqualTo("INCIDENT_REGISTERED");
+        assertThat(audit.getValue().aggregateId()).isEqualTo(incident.getId());
+        assertThat(audit.getValue().orderId()).isEqualTo(orderId);
+        assertThat(audit.getValue().result()).isEqualTo("REGISTERED");
     }
 
     @Test
