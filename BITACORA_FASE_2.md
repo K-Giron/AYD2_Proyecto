@@ -26,6 +26,7 @@
 | AUD-01 | Registro auditable transversal | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y correlación | `V3002`, `audit/api`, `AuditIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.7 |
 | AUD-02 | Consulta indexada de evidencia | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | AUD-01 | `AuditController`, `AuditQueryIntegrationTest` y evidencia EaC-02 < 1 s |
 | PAY-01 | Puerto PayKlik e intentos de pago | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-06 y BB-07 | `V3003`, `payments.api.PaymentPort`, `PaymentIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.8 |
+| PAY-02 | Timeout, circuit breaker y pago indeterminado | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-04 y PAY-01 | `ResilientPayKlikClient`, `PaymentIndeterminateIntegrationTest` y evento `PaymentIndeterminate` |
 | Resto del backlog | Consultar planificación oficial | Según planificación | Pendiente | Contratos e implementaciones del equipo | Pendiente |
 
 Los estados anteriores describen únicamente los artefactos presentes; no equivalen a tarjetas `Done` ni inventan aceptación del equipo.
@@ -234,6 +235,19 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendiente de registrar por Edson.
 - Persona que quedaría bloqueada y acción temporal: Jairo puede consumir `payments.api.PaymentPort` en ORD-03; SEC-01 puede escanear `payment_attempts` como parte del barrido de PAN/CVV.
 
+### Fecha: 2026-09-23 (quinta continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; PAY-01 cerrado.
+- Trabajo realizado hoy:
+  - `[PAY-02]` timeout y circuit breaker con Resilience4j (módulos core, sin starter de plataforma) en `ResilientPayKlikClient`: límite de tiempo configurable, umbral de fallas, ventana deslizante, espera en abierto y llamadas permitidas en semiabierto.
+  - Un timeout, una caída o el circuito abierto dejan el intento `INDETERMINATE` (antes `PENDING` en PAY-01), conservan la orden y publican `PaymentIndeterminate` por Outbox en la misma transacción para la conciliación de PAY-03.
+  - Configuración externalizada `SGO_PAYKLIK_*` en `application.yml`, `.env.example`, Compose y README.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 112 pruebas, 0 fallos, 0 errores, 0 omitidas. Smoke real con PayKlik en modo `TIMEOUT`: dos intentos `INDETERMINATE` con `PAYKLIK_TIMEOUT` y el tercero con `PAYKLIK_CIRCUIT_OPEN` (sin llamar al proveedor), 0 órdenes perdidas, evidencia auditable y evento `PaymentIndeterminate` con payload sin PAN/CVV.
+- Hoy y trazabilidad: PAY-02, CDU-03 E1, EaC-04 y ADR-003; modelo de datos §3.8 y `saga-required-ports.md`.
+- Impedimentos: ninguno propio. PAY-03 (conciliación/reintento idempotente ≤ 60 s) es la siguiente tarjeta.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: ORD-04 (compensaciones) depende de PAY-02 y ya cuenta con el estado indeterminado; QA-05 podrá inyectar timeout y caída con los modos del simulador.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -286,6 +300,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | Smoke AUD-02 en Compose | Backend `healthy`; consulta, exportación, búsqueda fallida y 403 de `CLIENT` | Consulta ~63 ms; CSV con `Content-Disposition`; 404 con evidencia `AUDIT_SEARCH_FAILED` | Salida local del 2026-09-23 | Consulta indexada y evidencia de acceso operando en el stack real |
 | 2026-09-23 | `./mvnw clean verify` (PAY-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 107 pruebas, 0 fallos, 0 errores, 0 omitidas | `PaymentAttemptServiceTest`, `PaymentIntegrationTest` y `docs/qa/QA-03-matriz-eac.md` | Intentos idempotentes, concurrencia y ausencia de PAN/CVV verificados |
 | 2026-09-23 | Smoke PAY-01 en Compose | Backend `healthy`; intento, repetición, consulta, PAN y rol | 201 `APPROVED`; 200 mismo intento; 400 PAN; 403 `FINANCE`; auditoría y BD sin PAN/CVV | Salida local del 2026-09-23 | Puerto PayKlik e intentos operando en el stack real |
+| 2026-09-23 | `./mvnw clean verify` (PAY-02) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 112 pruebas, 0 fallos, 0 errores, 0 omitidas | `ResilientPayKlikClientTest`, `PaymentIndeterminateIntegrationTest` y QA-03 | Timeout, circuito abierto e indeterminado verificados |
+| 2026-09-23 | Smoke PAY-02 en Compose | PayKlik en modo `TIMEOUT`, umbral de 2 fallas; tres intentos | Dos `INDETERMINATE`/`PAYKLIK_TIMEOUT` y uno `PAYKLIK_CIRCUIT_OPEN`; evento `PaymentIndeterminate`; 0 órdenes perdidas | Salida local del 2026-09-23 | Aislamiento de fallas de PayKlik operando en el stack real |
 
 ## 8. Retrospectiva individual
 

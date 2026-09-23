@@ -34,7 +34,7 @@ Este documento describe capacidades, no interfaces Java definitivas. Cada módul
 ## Estado de materialización local
 
 - `FiscalService` implementa la solicitud idempotente, el documento `FISCAL_PENDING`, la autorización/rechazo SAT y la consulta de la compuerta de confirmación. Trabaja contra esta propuesta y ADR-010; no convierte el contrato en aceptado.
-- `PaymentAttemptService` materializa el puerto de Payments (PAY-01) en `payments.api.PaymentPort`: recibe orden, importe, referencia segura, correlación e idempotencia y devuelve intento, estado e instante; persiste `payment_attempts` y deja evidencia auditable. El timeout y la conciliación pertenecen a PAY-02/PAY-03.
+- `PaymentAttemptService` materializa el puerto de Payments (PAY-01/PAY-02) en `payments.api.PaymentPort`: recibe orden, importe, referencia segura, correlación e idempotencia y devuelve intento, estado e instante; persiste `payment_attempts`, deja evidencia auditable y publica `PaymentIndeterminate` por Outbox cuando el timeout, la caída o el circuit breaker dejan el intento indeterminado. La conciliación pertenece a PAY-03.
 - `ShipmentService` materializa el puerto de Logistics según la entrega de Kevin.
 - ORD-03 sigue pendiente: Jairo debe consumir APIs públicas/eventos y no las entidades o repositorios internos.
 - El despacho durable mediante Outbox/Inbox ya cuenta con BB-04; su conexión a cada módulo sigue pendiente.

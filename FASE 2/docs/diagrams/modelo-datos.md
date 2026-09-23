@@ -343,7 +343,11 @@ erDiagram
 
 - Cubre CDU-03 paso 2 (intento con orden, canal y fecha), paso 3 (idempotencia
   sin PAN/CVV), el resultado aprobado/rechazado y la postcondición de registro
-  auditable; un timeout deja `PENDING` y nunca se reporta como aprobación.
+  auditable.
+- PAY-02: el adaptador PayKlik está envuelto con límite de tiempo y circuit
+  breaker; un timeout, una caída o el circuito abierto dejan el intento
+  `INDETERMINATE` (nunca aprobado) y publican `PaymentIndeterminate` por
+  Outbox en la misma transacción para que PAY-03 concilie.
 - `provider_attempt_id` conserva el identificador del intento que devuelve
   PayKlik (BB-06) para trazabilidad, además de `provider_reference`.
 - No almacena PAN completo ni CVV (EaC-12).
