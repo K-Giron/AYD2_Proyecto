@@ -170,7 +170,7 @@ Actuator expone únicamente `health` e `info`.
 
 - `GET /api/v1/inventory/locations` — INV-01, las 34 ubicaciones (2 centros de distribución + 32 tiendas).
 - `GET /api/v1/inventory/stock?productId=&locationId=` (`locationId` opcional) — INV-01, disponibilidad por producto y ubicación (`quantityAvailable = quantityOnHand - quantityReserved`).
-- `POST /api/v1/inventory/reservations` (`Idempotency-Key` requerido), `GET /api/v1/inventory/reservations/{id}` — INV-02, reserva atómica e idempotente (CDU-02). `409 INSUFFICIENT_STOCK` cuando no hay disponibilidad (incluye el caso de dos solicitudes compitiendo por la última unidad); `404 INVENTORY_ITEM_NOT_FOUND` cuando el producto no tiene stock registrado en esa ubicación.
+- `POST /api/v1/inventory/reservations` (`Idempotency-Key` requerido), `GET /api/v1/inventory/reservations/{id}` — INV-02, reserva atómica e idempotente (CDU-02). `locationId` es opcional en el cuerpo: si se omite, INV-04/ADR-014 elige automáticamente la mejor ubicación con stock (centros de distribución antes que tiendas, luego por código). `409 INSUFFICIENT_STOCK` cuando no hay disponibilidad en la ubicación indicada (incluye el caso de dos solicitudes compitiendo por la última unidad); `409 NO_AVAILABLE_ORIGIN` cuando ninguna ubicación candidata tiene stock; `404 INVENTORY_ITEM_NOT_FOUND` cuando el producto no tiene stock registrado en la ubicación indicada.
 - Datos semilla de demostración: tres `productId` fijos documentados en `V2__inventory_seed_locations_and_stock.sql` (SGO-Logic no gestiona catálogo de productos, ver DDA §2.2).
 
 Todos usan el formato común de error de `shared.http.ApiError` y propagan `X-Correlation-Id`.
