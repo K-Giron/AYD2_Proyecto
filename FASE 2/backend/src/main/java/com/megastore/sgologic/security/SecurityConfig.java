@@ -77,6 +77,8 @@ class SecurityConfig {
                             .hasAnyRole("CLIENT", "SUPPORT")
                             .requestMatchers(HttpMethod.PATCH, "/api/v1/incidents/**")
                             .hasRole("SUPPORT")
+                            .requestMatchers("/api/v1/payments/**")
+                            .hasAnyRole("CLIENT", "SUPPORT")
                             .requestMatchers("/api/v1/inventory/**")
                             .hasAnyRole("CLIENT", "SUPPORT", "LOGISTICS")
                             .requestMatchers("/api/v1/query/**")
