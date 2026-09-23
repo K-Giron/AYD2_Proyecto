@@ -27,8 +27,8 @@ Comando, dentro de `FASE 2/backend` con Docker activo:
 |---|---|
 | Build | `BUILD SUCCESS` |
 | JDK | Eclipse Temurin 25.0.4_7 |
-| Clases de prueba | 17 |
-| Pruebas | 60 |
+| Clases de prueba | 18 |
+| Pruebas | 65 |
 | Fallos / errores / omitidas | 0 / 0 / 0 |
 | Infraestructura real | PostgreSQL 17.11 y RabbitMQ 4.3.5 vía Testcontainers |
 | Migraciones ejecutadas | `V1`, `V2`, `V1001`–`V1004`, `V2001`–`V2003` |
@@ -126,3 +126,41 @@ release candidate.
   exigido por la tabla de penalización.
 - `docs/qa/trazabilidad-cun-mvp.md`: mapea los doce CUN/CDU a código, datos,
   despliegue, EaC, ADR y pruebas.
+
+## 7. Hallazgo crítico de la prueba manual y corrección (A8)
+
+La prueba de humo contra el stack real de Docker Compose (no solo la suite
+automatizada) detectó que **todos los flujos asíncronos quedaban atascados**
+en su estado inicial:
+
+| Flujo | Síntoma observado | Estado que nunca alcanzaba |
+|---|---|---|
+| Fiscal SAT | `submissionAttempts = 1`, sin código de falla | `APPROVED` |
+| ERP | lote `PENDING` con `attempts = 1` | `DELIVERED` |
+| POS | entrega `PENDING` con `attempts = 1` | `ACKNOWLEDGED` |
+| Despacho | guía no emitida, reintento programado muerto | `LABEL_ISSUED` |
+| Notificaciones | solicitud `PENDING` con `attempts = 1` | `SENT` |
+
+**Causa raíz:** los servicios guardaban la misma entidad desconectada dos
+veces (marca de intento y resultado). `repository.save` devuelve la copia
+gestionada con la `@Version` incrementada, pero el código ignoraba el retorno
+y el segundo guardado usaba la versión obsoleta, lanzando
+`ObjectOptimisticLockingFailureException` en el hilo asíncrono. El hecho de
+negocio quedaba persistido, pero el flujo nunca terminaba y no se agendaba el
+reintento. Las pruebas unitarias con repositorios en memoria no lo detectaban
+porque no existe `@Version` real.
+
+**Corrección:** reasignar la copia devuelta por `save` en
+`FiscalService`, `ErpIntegrationService`, `PosIntegrationService`,
+`ShipmentService` y `NotificationService`, capturando los identificadores
+antes de programar reintentos. El mock de `NotificationServiceTest` también
+devolvía `null` en `save`, lo que ocultaba el comportamiento real.
+
+**Regresión:** `AsyncIntegrationPersistenceTest` (5 pruebas con PostgreSQL y
+RabbitMQ reales de Testcontainers y ejecutores asíncronos reales) espera el
+estado terminal de los cinco flujos. Sin la corrección, las cinco pruebas
+fallan por tiempo de espera; con ella, `clean verify` queda en 65/65.
+
+**Impacto en EaC:** sin esta corrección, EaC-04 (pago/SAT), EaC-06 (POS),
+EaC-05 (LogiExpress) y EaC-08 (notificaciones) no podían demostrarse en el
+stack real aunque el código pareciera correcto.

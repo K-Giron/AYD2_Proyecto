@@ -96,7 +96,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 60 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin y 16 pruebas de fiscal/SAT, ERP, POS y PayKlik. El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 60/60 en verde (ver `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`).
+La suite actual contiene 65 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, y 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 65/65 en verde (ver `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`).
 
 ## Verificación completa con un comando
 

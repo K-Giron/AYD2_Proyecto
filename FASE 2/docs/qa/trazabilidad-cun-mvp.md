@@ -92,7 +92,9 @@ planificación, sección 12).
 
 - `./mvnw clean verify` con Java 25 (`eclipse-temurin:25.0.4_7-jdk-alpine-3.23`)
   y Testcontainers (PostgreSQL 17.11 + RabbitMQ 4.3.5): **BUILD SUCCESS**,
-  17 clases, **60 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23).
+  18 clases, **65 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
+  incluida la regresión `AsyncIntegrationPersistenceTest` que cubre el
+  bloqueo optimista de los flujos asíncronos (ver REV-EDSON §7).
 - Migraciones Flyway ejecutadas contra PostgreSQL real durante la suite de
   integración: `V1`, `V2`, `V1001`–`V1004`, `V2001`–`V2003`.
 - El detalle de la revisión cruzada está en
