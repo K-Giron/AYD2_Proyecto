@@ -40,8 +40,12 @@ llamadas de la UI envían el token.
    |---|---|
    | `/api/v1/auth/login`, `/actuator/health*`, `/actuator/info`, `/api/v1/platform/**` | público |
    | `/api/v1/fiscal-documents/**`, `/api/v1/integrations/erp/**`, `/api/v1/simulators/**` | `FINANCE` |
-   | `/api/v1/shipments/**`, `/api/v1/integrations/pos/**` | `LOGISTICS` |
-   | `/api/v1/notifications/**`, `/api/v1/incidents/**` | `CLIENT`, `SUPPORT` |
+   | `GET /api/v1/shipments/**` (seguimiento, CDU-09) | `CLIENT`, `SUPPORT`, `LOGISTICS` |
+   | Resto de `/api/v1/shipments/**` y `/api/v1/integrations/pos/**` | `LOGISTICS` |
+   | `GET /api/v1/notifications/**` | `CLIENT`, `SUPPORT` |
+   | `POST /api/v1/notifications` | `SUPPORT` |
+   | `GET` y `POST /api/v1/incidents/**` | `CLIENT`, `SUPPORT` |
+   | `PATCH /api/v1/incidents/**` (resolución) | `SUPPORT` |
    | `/api/v1/inventory/**` | `CLIENT`, `SUPPORT`, `LOGISTICS` |
    | `/api/v1/query/**` | `SUPPORT`, `LOGISTICS` |
    | Resto | cualquier token válido |
@@ -53,9 +57,11 @@ llamadas de la UI envían el token.
    separadores opcionales) y campos CVV/CVC antes de escribir un log; los
    eventos de seguridad registran la ruta enmascarada.
 6. **Cuentas de demostración** configurables por variables `SGO_SECURITY_*`;
-   no son cuentas productivas. `sgo.security.enabled=false` permite a las
-   pruebas de negocio ejecutarse sin token; la prueba de seguridad lo activa
-   explícitamente.
+   no son cuentas productivas. La cuenta de personal interno
+   (`staff@megastore.com`) acumula `SUPPORT` y `LOGISTICS` porque la consola
+   de UI-01 cubre despacho y atención en una sola pantalla.
+   `sgo.security.enabled=false` permite a las pruebas de negocio ejecutarse
+   sin token; la prueba de seguridad lo activa explícitamente.
 7. La UI deja de validar cuentas en el navegador: guarda el JWT y lo envía
    como `Authorization: Bearer`.
 

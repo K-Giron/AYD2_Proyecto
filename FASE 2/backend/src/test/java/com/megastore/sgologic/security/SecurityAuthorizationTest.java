@@ -18,11 +18,14 @@ import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -114,17 +117,51 @@ class SecurityAuthorizationTest {
     }
 
     @Test
-    void logisticsRoleCanAccessShipmentsAndClientCannot() throws Exception {
-        String logisticsToken = login("logistica@megastore.com", "Logistica123").get("accessToken").asText();
+    void staffAccountHasSupportAndLogisticsRoles() throws Exception {
+        JsonNode response = login("staff@megastore.com", "Staff123");
+
+        List<String> roles = new ArrayList<>();
+        response.get("roles").forEach(role -> roles.add(role.asText()));
+        assertThat(roles).contains("SUPPORT", "LOGISTICS");
+    }
+
+    @Test
+    void clientCanReadTrackingButCannotCreateShipments() throws Exception {
         String clientToken = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
 
         mockMvc.perform(get("/api/v1/shipments").param("orderId", UUID.randomUUID().toString())
-                        .header("Authorization", "Bearer " + logisticsToken))
+                        .header("Authorization", "Bearer " + clientToken))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/v1/shipments").param("orderId", UUID.randomUUID().toString())
-                        .header("Authorization", "Bearer " + clientToken))
+        mockMvc.perform(post("/api/v1/shipments")
+                        .header("Authorization", "Bearer " + clientToken)
+                        .header("Idempotency-Key", "sec-test-" + UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "orderId", UUID.randomUUID().toString(),
+                                "origin", "DISTRIBUTION_CENTER",
+                                "destination", "Zona 1"))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void onlySupportCanResolveIncidents() throws Exception {
+        String clientToken = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
+        String staffToken = login("staff@megastore.com", "Staff123").get("accessToken").asText();
+        String body = objectMapper.writeValueAsString(Map.of("resolution", "APPROVED"));
+
+        mockMvc.perform(patch("/api/v1/incidents/" + UUID.randomUUID() + "/resolution")
+                        .header("Authorization", "Bearer " + clientToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isForbidden());
+
+        // Con SUPPORT la autorización pasa; la incidencia no existe -> 404.
+        mockMvc.perform(patch("/api/v1/incidents/" + UUID.randomUUID() + "/resolution")
+                        .header("Authorization", "Bearer " + staffToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNotFound());
     }
 
     @Test

@@ -42,9 +42,12 @@ class AuthController {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+            // Solo se propagan las autoridades de rol; Spring Security 7
+            // agrega FACTOR_PASSWORD como autoridad técnica de autenticación.
             List<String> roles = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
-                    .map(authority -> authority.startsWith("ROLE_") ? authority.substring("ROLE_".length()) : authority)
+                    .filter(authority -> authority.startsWith("ROLE_"))
+                    .map(authority -> authority.substring("ROLE_".length()))
                     .toList();
             String token = tokenService.issueToken(authentication.getName(), roles);
             return ResponseEntity.ok(new LoginResponse(token, "Bearer", tokenService.expiresAt(), roles));

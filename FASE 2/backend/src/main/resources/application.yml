@@ -85,9 +85,11 @@ sgo:
       - username: ${SGO_SECURITY_CLIENT_USER:cliente@megastore.com}
         password: ${SGO_SECURITY_CLIENT_PASSWORD:Cliente123}
         roles: [CLIENT]
+      # La consola de personal interno cubre despacho (LOGISTICS) y atencion
+      # (SUPPORT); por eso la cuenta demo acumula ambos roles.
       - username: ${SGO_SECURITY_SUPPORT_USER:staff@megastore.com}
         password: ${SGO_SECURITY_SUPPORT_PASSWORD:Staff123}
-        roles: [SUPPORT]
+        roles: [SUPPORT, LOGISTICS]
       - username: ${SGO_SECURITY_LOGISTICS_USER:logistica@megastore.com}
         password: ${SGO_SECURITY_LOGISTICS_PASSWORD:Logistica123}
         roles: [LOGISTICS]

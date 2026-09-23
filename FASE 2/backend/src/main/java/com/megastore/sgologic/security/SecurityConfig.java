@@ -3,6 +3,7 @@ package com.megastore.sgologic.security;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -60,10 +61,22 @@ class SecurityConfig {
                             .requestMatchers("/api/v1/fiscal-documents/**", "/api/v1/integrations/erp/**",
                                     "/api/v1/simulators/**")
                             .hasRole("FINANCE")
+                            // El seguimiento es visible para el cliente (CDU-09); solo
+                            // Logística crea despachos, guías y cambios de método.
+                            .requestMatchers(HttpMethod.GET, "/api/v1/shipments/**")
+                            .hasAnyRole("CLIENT", "SUPPORT", "LOGISTICS")
                             .requestMatchers("/api/v1/shipments/**", "/api/v1/integrations/pos/**")
                             .hasRole("LOGISTICS")
-                            .requestMatchers("/api/v1/notifications/**", "/api/v1/incidents/**")
+                            .requestMatchers(HttpMethod.GET, "/api/v1/notifications/**")
                             .hasAnyRole("CLIENT", "SUPPORT")
+                            .requestMatchers(HttpMethod.POST, "/api/v1/notifications")
+                            .hasRole("SUPPORT")
+                            .requestMatchers(HttpMethod.GET, "/api/v1/incidents/**")
+                            .hasAnyRole("CLIENT", "SUPPORT")
+                            .requestMatchers(HttpMethod.POST, "/api/v1/incidents")
+                            .hasAnyRole("CLIENT", "SUPPORT")
+                            .requestMatchers(HttpMethod.PATCH, "/api/v1/incidents/**")
+                            .hasRole("SUPPORT")
                             .requestMatchers("/api/v1/inventory/**")
                             .hasAnyRole("CLIENT", "SUPPORT", "LOGISTICS")
                             .requestMatchers("/api/v1/query/**")
