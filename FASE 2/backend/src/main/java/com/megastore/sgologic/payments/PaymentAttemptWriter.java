@@ -2,6 +2,8 @@ package com.megastore.sgologic.payments;
 
 import com.megastore.sgologic.audit.api.AuditEntryRequest;
 import com.megastore.sgologic.audit.api.AuditRecorder;
+import com.megastore.sgologic.integration.outbox.OutboxEventRequest;
+import com.megastore.sgologic.integration.outbox.PublishEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +25,14 @@ class PaymentAttemptWriter {
 
     private final PaymentAttemptRepository repository;
     private final AuditRecorder auditRecorder;
+    private final PublishEvent publishEvent;
     private final Clock clock;
 
-    PaymentAttemptWriter(PaymentAttemptRepository repository, AuditRecorder auditRecorder, Clock clock) {
+    PaymentAttemptWriter(PaymentAttemptRepository repository, AuditRecorder auditRecorder,
+                         PublishEvent publishEvent, Clock clock) {
         this.repository = repository;
         this.auditRecorder = auditRecorder;
+        this.publishEvent = publishEvent;
         this.clock = clock;
     }
 
@@ -68,13 +73,19 @@ class PaymentAttemptWriter {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    PaymentAttempt markPendingConfirmation(UUID attemptId, String code, String message) {
+    PaymentAttempt markIndeterminate(UUID attemptId, String code, String message) {
         PaymentAttempt attempt = load(attemptId);
-        attempt.markPendingConfirmation(code, message, clock.instant());
+        attempt.markIndeterminate(code, message, clock.instant());
         PaymentAttempt saved = repository.save(attempt);
         auditRecorder.record(new AuditEntryRequest(AGGREGATE_TYPE, attemptId, saved.getOrderId(),
-                "PAYMENT_PENDING_CONFIRMATION", saved.getStatus().name(), state("PENDING", null),
+                "PAYMENT_INDETERMINATE", saved.getStatus().name(), state("PENDING", null),
                 state(saved.getStatus().name(), code), saved.getCorrelationId(), null, null));
+        // El evento sale en la misma transacción del cambio de estado
+        // (ADR-002): la conciliación de PAY-03 no depende de leer la tabla.
+        publishEvent.publish(new OutboxEventRequest(AGGREGATE_TYPE, attemptId, "PaymentIndeterminate", 1,
+                saved.getCorrelationId(), null, new PaymentIndeterminatePayload(saved.getId(), saved.getOrderId(),
+                        saved.getAmount(), saved.getCurrency(), saved.getChannel().name(),
+                        saved.getMethod().name(), code)));
         return saved;
     }
 

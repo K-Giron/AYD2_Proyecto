@@ -113,8 +113,8 @@ public class PaymentAttempt {
         this.updatedAt = now;
     }
 
-    void markPendingConfirmation(String code, String message, Instant now) {
-        this.status = PaymentAttemptStatus.PENDING;
+    void markIndeterminate(String code, String message, Instant now) {
+        this.status = PaymentAttemptStatus.INDETERMINATE;
         this.failureCode = code;
         this.failureMessage = message;
         this.updatedAt = now;

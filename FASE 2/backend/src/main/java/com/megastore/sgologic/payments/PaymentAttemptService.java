@@ -13,15 +13,18 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * PAY-01 / CDU-03: registra el intento con orden, canal, fecha, referencia y
- * resultado usando el puerto PayKlik de BB-06, sin almacenar PAN ni CVV.
+ * PAY-01/PAY-02 / CDU-03: registra el intento con orden, canal, fecha,
+ * referencia y resultado usando el adaptador PayKlik de BB-06, sin
+ * almacenar PAN ni CVV.
  *
  * <p>Idempotente por {@code idempotencyKey}: una repetición devuelve el
  * intento existente sin volver a llamar al proveedor, incluso si dos
- * solicitudes compiten (la restricción única resuelve el empate). Un timeout
- * o una caída dejan el intento {@code PENDING} y nunca se reportan como
- * aprobación; el estado indeterminado, el circuit breaker y la conciliación
- * pertenecen a PAY-02/PAY-03.</p>
+ * solicitudes compiten (la restricción única resuelve el empate). El
+ * adaptador está envuelto con límite de tiempo y circuit breaker
+ * ({@link ResilientPayKlikClient}); un timeout, una caída o el circuito
+ * abierto dejan el intento {@code INDETERMINATE} y publican
+ * {@code PaymentIndeterminate} por Outbox, nunca una aprobación (ADR-003).
+ * La conciliación ≤ 60 s pertenece a PAY-03.</p>
  */
 @Service
 public class PaymentAttemptService implements PaymentPort {
@@ -29,13 +32,13 @@ public class PaymentAttemptService implements PaymentPort {
     private static final Logger log = LoggerFactory.getLogger(PaymentAttemptService.class);
 
     private final PaymentAttemptRepository repository;
-    private final PayKlikGatewayPort payKlikGateway;
+    private final ResilientPayKlikClient payKlikClient;
     private final PaymentAttemptWriter writer;
 
-    public PaymentAttemptService(PaymentAttemptRepository repository, PayKlikGatewayPort payKlikGateway,
+    public PaymentAttemptService(PaymentAttemptRepository repository, ResilientPayKlikClient payKlikClient,
                                  PaymentAttemptWriter writer) {
         this.repository = repository;
-        this.payKlikGateway = payKlikGateway;
+        this.payKlikClient = payKlikClient;
         this.writer = writer;
     }
 
@@ -65,7 +68,7 @@ public class PaymentAttemptService implements PaymentPort {
         }
 
         try {
-            PayKlikGatewayPort.AuthorizationResult result = payKlikGateway.authorize(
+            PayKlikGatewayPort.AuthorizationResult result = payKlikClient.authorize(
                     new PayKlikGatewayPort.AuthorizationRequest(request.orderId(), request.amount(),
                             request.currency(), request.paymentReference(), request.correlationId(),
                             request.idempotencyKey()));
@@ -76,15 +79,11 @@ public class PaymentAttemptService implements PaymentPort {
             return new PaymentAttemptOutcome(writer.markRejected(attempt.getId(),
                     result.rejectionCode(), null, result.paymentAttemptId()), true);
         } catch (PayKlikGatewayPort.PayKlikTimeoutException failure) {
-            log.warn("PayKlik no respondió para orderId={} (intento {}); queda pendiente de confirmación.",
-                    request.orderId(), attempt.getId());
-            return new PaymentAttemptOutcome(writer.markPendingConfirmation(attempt.getId(),
-                    "PAYKLIK_TIMEOUT", failure.getMessage()), true);
+            return indeterminate(attempt, request.orderId(), "PAYKLIK_TIMEOUT", failure.getMessage());
         } catch (PayKlikGatewayPort.PayKlikUnavailableException failure) {
-            log.warn("PayKlik no está disponible para orderId={} (intento {}); queda pendiente de confirmación.",
-                    request.orderId(), attempt.getId());
-            return new PaymentAttemptOutcome(writer.markPendingConfirmation(attempt.getId(),
-                    "PAYKLIK_UNAVAILABLE", failure.getMessage()), true);
+            return indeterminate(attempt, request.orderId(), "PAYKLIK_UNAVAILABLE", failure.getMessage());
+        } catch (PayKlikCircuitOpenException failure) {
+            return indeterminate(attempt, request.orderId(), "PAYKLIK_CIRCUIT_OPEN", failure.getMessage());
         }
     }
 
@@ -94,6 +93,12 @@ public class PaymentAttemptService implements PaymentPort {
 
     public List<PaymentAttempt> getAttemptsForOrder(UUID orderId) {
         return repository.findByOrderIdOrderByCreatedAtDesc(orderId);
+    }
+
+    private PaymentAttemptOutcome indeterminate(PaymentAttempt attempt, UUID orderId, String code, String message) {
+        log.warn("Pago indeterminado para orderId={} (intento {}): {}. La orden no se pierde; "
+                + "la conciliación de PAY-03 lo resolverá.", orderId, attempt.getId(), code);
+        return new PaymentAttemptOutcome(writer.markIndeterminate(attempt.getId(), code, message), true);
     }
 
     private PaymentChannel parseChannel(String value) {
