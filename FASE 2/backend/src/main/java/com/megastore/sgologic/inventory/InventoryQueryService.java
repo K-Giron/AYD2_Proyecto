@@ -28,6 +28,21 @@ public class InventoryQueryService {
         return locationRepository.findAllByOrderByCodeAsc();
     }
 
+    /**
+     * Ubicación por id. Se usa para enriquecer respuestas de otros
+     * servicios (p. ej. {@link InventoryReservationResponse}, que expone
+     * {@code locationType}/{@code locationCode} para que otros módulos
+     * como Logistics no necesiten una segunda llamada a {@code /locations}
+     * para resolver el tipo de origen). No debería fallar en operación
+     * normal: {@code inventory_items.location_id} y
+     * {@code inventory_reservations.location_id} son FK hacia
+     * {@code inventory_locations}.
+     */
+    public InventoryLocation getLocationById(UUID locationId) {
+        return locationRepository.findById(locationId)
+                .orElseThrow(() -> new InventoryLocationNotFoundException(locationId));
+    }
+
     /** Disponibilidad de un producto en todas las ubicaciones donde tiene stock registrado. */
     public List<InventoryStockResponse> getStockByProduct(UUID productId) {
         List<InventoryItem> items = itemRepository.findByProductIdOrderByLocationId(productId);
