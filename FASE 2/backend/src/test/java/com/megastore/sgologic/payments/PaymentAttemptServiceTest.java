@@ -18,15 +18,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** PAY-01 / CDU-03: resultado, idempotencia y frontera con PAY-02. */
+/** PAY-01/PAY-02 / CDU-03: resultado, idempotencia e intento indeterminado. */
 class PaymentAttemptServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-09-23T15:00:00Z");
 
     private final PaymentAttemptRepository repository = mock(PaymentAttemptRepository.class);
-    private final PayKlikGatewayPort gateway = mock(PayKlikGatewayPort.class);
+    private final ResilientPayKlikClient payKlikClient = mock(ResilientPayKlikClient.class);
     private final PaymentAttemptWriter writer = mock(PaymentAttemptWriter.class);
-    private final PaymentAttemptService service = new PaymentAttemptService(repository, gateway, writer);
+    private final PaymentAttemptService service = new PaymentAttemptService(repository, payKlikClient, writer);
 
     @Test
     void approvedAttemptRegistersOrderChannelReferenceAndResult() {
@@ -34,7 +34,7 @@ class PaymentAttemptServiceTest {
         PaymentAttempt attempt = attempt(orderId, "idem-1");
         when(repository.findByIdempotencyKey("idem-1")).thenReturn(Optional.empty());
         when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString())).thenReturn(attempt);
-        when(gateway.authorize(any())).thenReturn(new PayKlikGatewayPort.AuthorizationResult(
+        when(payKlikClient.authorize(any())).thenReturn(new PayKlikGatewayPort.AuthorizationResult(
                 UUID.randomUUID(), true, "PK-123", null, NOW));
         PaymentAttempt approved = attempt(orderId, "idem-1");
         approved.markApproved("PK-123", UUID.randomUUID(), NOW);
@@ -45,7 +45,7 @@ class PaymentAttemptServiceTest {
         assertThat(result.status()).isEqualTo("APPROVED");
         assertThat(result.providerReference()).isEqualTo("PK-123");
         assertThat(result.paymentAttemptId()).isEqualTo(approved.getId());
-        verify(gateway).authorize(any());
+        verify(payKlikClient).authorize(any());
     }
 
     @Test
@@ -58,7 +58,7 @@ class PaymentAttemptServiceTest {
 
         assertThat(result.paymentAttemptId()).isEqualTo(existing.getId());
         assertThat(result.status()).isEqualTo("PENDING");
-        verify(gateway, never()).authorize(any());
+        verify(payKlikClient, never()).authorize(any());
         verify(writer, never()).create(any(), any(), any(), any(), anyString(), any(), anyString());
     }
 
@@ -69,7 +69,7 @@ class PaymentAttemptServiceTest {
         UUID providerAttemptId = UUID.randomUUID();
         when(repository.findByIdempotencyKey("idem-3")).thenReturn(Optional.empty());
         when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString())).thenReturn(attempt);
-        when(gateway.authorize(any())).thenReturn(new PayKlikGatewayPort.AuthorizationResult(
+        when(payKlikClient.authorize(any())).thenReturn(new PayKlikGatewayPort.AuthorizationResult(
                 providerAttemptId, false, null, "INSUFFICIENT_FUNDS", NOW));
         PaymentAttempt rejected = attempt(orderId, "idem-3");
         rejected.markRejected("INSUFFICIENT_FUNDS", null, providerAttemptId, NOW);
@@ -82,19 +82,40 @@ class PaymentAttemptServiceTest {
     }
 
     @Test
-    void timeoutLeavesAttemptPendingAndNeverApproved() {
+    void timeoutLeavesAttemptIndeterminateAndNeverApproved() {
         UUID orderId = UUID.randomUUID();
         PaymentAttempt attempt = attempt(orderId, "idem-4");
         when(repository.findByIdempotencyKey("idem-4")).thenReturn(Optional.empty());
         when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString())).thenReturn(attempt);
-        when(gateway.authorize(any())).thenThrow(new PayKlikGatewayPort.PayKlikTimeoutException("sin respuesta"));
-        when(writer.markPendingConfirmation(any(), anyString(), anyString())).thenReturn(attempt);
+        when(payKlikClient.authorize(any()))
+                .thenThrow(new PayKlikGatewayPort.PayKlikTimeoutException("sin respuesta"));
+        PaymentAttempt indeterminate = attempt(orderId, "idem-4");
+        indeterminate.markIndeterminate("PAYKLIK_TIMEOUT", "sin respuesta", NOW);
+        when(writer.markIndeterminate(any(), anyString(), anyString())).thenReturn(indeterminate);
 
         PaymentResult result = service.requestPayment(request(orderId, "idem-4", "tok_test_999"));
 
-        assertThat(result.status()).isEqualTo("PENDING");
-        verify(writer).markPendingConfirmation(attempt.getId(), "PAYKLIK_TIMEOUT", "sin respuesta");
+        assertThat(result.status()).isEqualTo("INDETERMINATE");
+        verify(writer).markIndeterminate(attempt.getId(), "PAYKLIK_TIMEOUT", "sin respuesta");
         verify(writer, never()).markApproved(any(), anyString(), any());
+    }
+
+    @Test
+    void openCircuitLeavesAttemptIndeterminateWithoutProviderCall() {
+        UUID orderId = UUID.randomUUID();
+        PaymentAttempt attempt = attempt(orderId, "idem-6");
+        when(repository.findByIdempotencyKey("idem-6")).thenReturn(Optional.empty());
+        when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString())).thenReturn(attempt);
+        when(payKlikClient.authorize(any()))
+                .thenThrow(new PayKlikCircuitOpenException("circuito abierto"));
+        PaymentAttempt indeterminate = attempt(orderId, "idem-6");
+        indeterminate.markIndeterminate("PAYKLIK_CIRCUIT_OPEN", "circuito abierto", NOW);
+        when(writer.markIndeterminate(any(), anyString(), anyString())).thenReturn(indeterminate);
+
+        PaymentResult result = service.requestPayment(request(orderId, "idem-6", "tok_test_111"));
+
+        assertThat(result.status()).isEqualTo("INDETERMINATE");
+        verify(writer).markIndeterminate(attempt.getId(), "PAYKLIK_CIRCUIT_OPEN", "circuito abierto");
     }
 
     @Test
@@ -106,7 +127,7 @@ class PaymentAttemptServiceTest {
 
         assertThatThrownBy(() -> service.requestPayment(invalid))
                 .isInstanceOf(InvalidPaymentRequestException.class);
-        verify(gateway, never()).authorize(any());
+        verify(payKlikClient, never()).authorize(any());
     }
 
     private PaymentRequest request(UUID orderId, String idempotencyKey, String reference) {
