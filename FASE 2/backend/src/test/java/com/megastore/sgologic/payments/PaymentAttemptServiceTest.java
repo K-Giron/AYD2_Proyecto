@@ -33,7 +33,8 @@ class PaymentAttemptServiceTest {
         UUID orderId = UUID.randomUUID();
         PaymentAttempt attempt = attempt(orderId, "idem-1");
         when(repository.findByIdempotencyKey("idem-1")).thenReturn(Optional.empty());
-        when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString())).thenReturn(attempt);
+        when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString(), anyString()))
+                .thenReturn(attempt);
         when(payKlikClient.authorize(any())).thenReturn(new PayKlikGatewayPort.AuthorizationResult(
                 UUID.randomUUID(), true, "PK-123", null, NOW));
         PaymentAttempt approved = attempt(orderId, "idem-1");
@@ -59,7 +60,7 @@ class PaymentAttemptServiceTest {
         assertThat(result.paymentAttemptId()).isEqualTo(existing.getId());
         assertThat(result.status()).isEqualTo("PENDING");
         verify(payKlikClient, never()).authorize(any());
-        verify(writer, never()).create(any(), any(), any(), any(), anyString(), any(), anyString());
+        verify(writer, never()).create(any(), any(), any(), any(), anyString(), any(), anyString(), anyString());
     }
 
     @Test
@@ -68,7 +69,8 @@ class PaymentAttemptServiceTest {
         PaymentAttempt attempt = attempt(orderId, "idem-3");
         UUID providerAttemptId = UUID.randomUUID();
         when(repository.findByIdempotencyKey("idem-3")).thenReturn(Optional.empty());
-        when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString())).thenReturn(attempt);
+        when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString(), anyString()))
+                .thenReturn(attempt);
         when(payKlikClient.authorize(any())).thenReturn(new PayKlikGatewayPort.AuthorizationResult(
                 providerAttemptId, false, null, "INSUFFICIENT_FUNDS", NOW));
         PaymentAttempt rejected = attempt(orderId, "idem-3");
@@ -86,7 +88,8 @@ class PaymentAttemptServiceTest {
         UUID orderId = UUID.randomUUID();
         PaymentAttempt attempt = attempt(orderId, "idem-4");
         when(repository.findByIdempotencyKey("idem-4")).thenReturn(Optional.empty());
-        when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString())).thenReturn(attempt);
+        when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString(), anyString()))
+                .thenReturn(attempt);
         when(payKlikClient.authorize(any()))
                 .thenThrow(new PayKlikGatewayPort.PayKlikTimeoutException("sin respuesta"));
         PaymentAttempt indeterminate = attempt(orderId, "idem-4");
@@ -105,7 +108,8 @@ class PaymentAttemptServiceTest {
         UUID orderId = UUID.randomUUID();
         PaymentAttempt attempt = attempt(orderId, "idem-6");
         when(repository.findByIdempotencyKey("idem-6")).thenReturn(Optional.empty());
-        when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString())).thenReturn(attempt);
+        when(writer.create(any(), any(), any(), any(), anyString(), any(), anyString(), anyString()))
+                .thenReturn(attempt);
         when(payKlikClient.authorize(any()))
                 .thenThrow(new PayKlikCircuitOpenException("circuito abierto"));
         PaymentAttempt indeterminate = attempt(orderId, "idem-6");
@@ -137,6 +141,6 @@ class PaymentAttemptServiceTest {
 
     private PaymentAttempt attempt(UUID orderId, String idempotencyKey) {
         return PaymentAttempt.create(UUID.randomUUID(), orderId, PaymentChannel.MOBILE, PaymentMethod.CARD,
-                new BigDecimal("150.00"), "GTQ", UUID.randomUUID(), idempotencyKey, NOW);
+                new BigDecimal("150.00"), "GTQ", UUID.randomUUID(), idempotencyKey, "tok_test_123", NOW);
     }
 }

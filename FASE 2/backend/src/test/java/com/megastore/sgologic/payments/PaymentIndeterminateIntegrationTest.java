@@ -18,6 +18,7 @@ import org.testcontainers.rabbitmq.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,6 +94,13 @@ class PaymentIndeterminateIntegrationTest {
                 "SELECT payload FROM outbox_event WHERE aggregate_id = ?", String.class, firstAttempt.getId());
         assertThat(eventType).isEqualTo("PaymentIndeterminate");
         assertThat(payload).contains(firstOrder.toString()).doesNotContainPattern("\\d{13,}");
+
+        // PAY-03: la conciliación queda programada dentro de los 60 s.
+        Map<String, Object> reconciliation = jdbcTemplate.queryForMap(
+                "SELECT status, EXTRACT(EPOCH FROM (scheduled_at - created_at)) AS delay_seconds "
+                        + "FROM payment_reconciliations WHERE payment_attempt_id = ?", firstAttempt.getId());
+        assertThat(reconciliation.get("status")).isEqualTo("PENDING");
+        assertThat(((Number) reconciliation.get("delay_seconds")).longValue()).isBetween(0L, 60L);
 
         PaymentResult second = paymentPort.requestPayment(request(UUID.randomUUID(), "it-ind-2"));
         assertThat(second.status()).isEqualTo("INDETERMINATE");
