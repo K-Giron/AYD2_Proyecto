@@ -29,6 +29,7 @@ Esta tabla permite trabajar contra una línea base visible sin presentar como ap
 | Inventario, reservas y origen de despacho | Implementado y **revisado por Edson el 2026-09-23** | Externalizar configuración (J2); registrar riesgo J1 para ORD-04 |
 | Outbox/Inbox transversal (BB-04) | Implementado y probado por Edson contra el sobre v1 `PROPOSED` (`V3001`, `integration.outbox`) | Revisión de Jairo de la API pública; ratificación del sobre; conexión con ORD-03 |
 | Autenticación JWT, roles y sanitización (BB-07) | Implementado y probado por Edson: login, 401/403 por rol y `SensitiveDataSanitizer` | Revisión de la matriz de autorización por Jairo/Andy/Kevin; ratificar ADR-013 |
+| Intentos de pago y puerto PayKlik (PAY-01) | Implementado y probado por Edson contra el puerto de BB-06 y el contrato `PROPOSED` de la Saga (`payment_attempts`, `V3003`) | Ratificación del puerto Payments en `saga-required-ports.md` por Jairo; PAY-02/PAY-03 |
 
 La revisión cruzada completa, con fortalezas, hallazgos y evidencia, está en
 `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md`. Ninguna

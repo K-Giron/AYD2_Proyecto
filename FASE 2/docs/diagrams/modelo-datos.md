@@ -40,7 +40,7 @@ Reglas de lectura:
 | `query` | `query` | Kevin Girón | CUN-09 / CDU-09 | EaC-01, EaC-07 | `V1003` |
 | `incidents` | `incidents` | Kevin Girón | CUN-10 / CDU-10 | EaC-02, EaC-07 | `V1004` |
 | `orders` | `orders` | Jairo Gómez | CUN-01 / CDU-01 | EaC-01, EaC-09 | **PLANIFICADO** (ORD-01/ORD-02) |
-| `payments` | `payments` | Edson Sosa | CUN-03 / CDU-03 | EaC-04, EaC-12 | **PLANIFICADO** (PAY-01) |
+| `payments` | `payments` | Edson Sosa | CUN-03 / CDU-03 | EaC-04, EaC-12 | `V3003` (PAY-01) |
 | `audit` | `audit` | Edson Sosa | CUN-12 / CDU-12 | EaC-02, EaC-07 | `V3002` (AUD-01) |
 
 La instancia PostgreSQL es una sola; la separación es lógica y verificable por
@@ -318,12 +318,44 @@ erDiagram
   `AUDIT_EVIDENCE_ACCESSED`, `AUDIT_SEARCH_FAILED` y `AUDIT_EVIDENCE_EXPORTED`,
   escritos en transacción independiente para sobrevivir a la búsqueda fallida.
 
+### 3.8 `payments` — CUN-03 (PAY-01)
+
+```mermaid
+erDiagram
+    payment_attempts {
+        uuid id PK
+        uuid order_id "sin FK a orders"
+        varchar channel "WEB | MOBILE | STORE | CONTACT_CENTER"
+        varchar method "CARD | TRANSFER | DIGITAL_WALLET"
+        numeric amount "CHECK > 0"
+        varchar currency
+        varchar status "PENDING | APPROVED | REJECTED | INDETERMINATE"
+        varchar provider_reference
+        uuid provider_attempt_id
+        varchar failure_code
+        varchar failure_message
+        varchar idempotency_key UK
+        uuid correlation_id
+        timestamptz created_at
+        bigint version
+    }
+```
+
+- Cubre CDU-03 paso 2 (intento con orden, canal y fecha), paso 3 (idempotencia
+  sin PAN/CVV), el resultado aprobado/rechazado y la postcondición de registro
+  auditable; un timeout deja `PENDING` y nunca se reporta como aprobación.
+- `provider_attempt_id` conserva el identificador del intento que devuelve
+  PayKlik (BB-06) para trazabilidad, además de `provider_reference`.
+- No almacena PAN completo ni CVV (EaC-12).
+- La conciliación (`payment_reconciliations`) pertenece a PAY-03 y no existe
+  todavía.
+
 ---
 
 ## 4. Esquemas planificados
 
 > Estas tablas **no existen todavía**. Se documentan para que la
-> implementación de Edson (PAY-01 a PAY-03) y de Jairo (ORD-01/ORD-02) no se
+> implementación de Jairo (ORD-01/ORD-02) y de Edson (PAY-02/PAY-03) no se
 > convierta en código huérfano. Su forma final se ratifica en el ADR o
 > contrato correspondiente antes de la migración.
 
@@ -367,25 +399,11 @@ erDiagram
 
 Estados según `docs/contracts/orders/order-states.md` (propuesta `PROPOSED`).
 
-### 4.2 `payments` — CUN-03 (PAY-01 a PAY-03, Edson Sosa)
+### 4.2 `payments` conciliación — CUN-03 (PAY-03, Edson Sosa)
 
 ```mermaid
 erDiagram
     payment_attempts ||--o{ payment_reconciliations : "se concilia"
-    payment_attempts {
-        uuid id PK
-        uuid order_id "sin FK a orders"
-        varchar channel
-        varchar method
-        numeric amount
-        varchar currency
-        varchar status "PENDING | APPROVED | REJECTED | INDETERMINATE"
-        varchar provider_reference
-        varchar idempotency_key UK
-        uuid correlation_id
-        timestamptz created_at
-        bigint version
-    }
     payment_reconciliations {
         uuid id PK
         uuid payment_attempt_id FK
@@ -396,9 +414,9 @@ erDiagram
     }
 ```
 
-Cubre CDU-03 paso 2 (intento con orden, canal y fecha), paso 3 (idempotencia
-sin PAN/CVV), E1 (resultado indeterminado y conciliación antes de reintentar) y
-la postcondición de registro auditable. No almacena PAN ni CVV (EaC-12).
+Cubre CDU-03 E1 (conciliación antes de reintentar) y el criterio de PAY-03
+(primer trabajo ≤ 60 s sin doble cobro). `payment_attempts` ya existe en
+`V3003` (§3.8); esta tabla se creará en PAY-03.
 
 ---
 

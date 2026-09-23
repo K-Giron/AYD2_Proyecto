@@ -100,7 +100,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 97 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`), 9 de Outbox/Inbox, 12 de seguridad (login JWT, 401/403 por rol, auditoría y sanitización) y 9 de auditoría (evidencia atómica, actor, registro desde incidencias, consulta, búsqueda fallida, exportación y la medida < 1 s). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 97/97 en verde.
+La suite actual contiene 107 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario (reserva, concurrencia, expiración y consulta), los módulos de Kevin, 16 pruebas de fiscal/SAT, ERP, POS y PayKlik, 5 pruebas de regresión de persistencia de los flujos asíncronos (`AsyncIntegrationPersistenceTest`), 9 de Outbox/Inbox, 12 de seguridad (login JWT, 401/403 por rol, auditoría y sanitización), 9 de auditoría (evidencia atómica, actor, registro desde incidencias, consulta, búsqueda fallida, exportación y la medida < 1 s) y 10 de pagos (intentos, idempotencia concurrente y ausencia de PAN/CVV). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 107/107 en verde.
 
 ## Verificación completa con un comando
 
@@ -213,7 +213,7 @@ La API está protegida con JWT HMAC-SHA256 según ADR-013:
 
 - `POST /api/v1/auth/login` recibe `{"username","password"}` y devuelve `accessToken`, `tokenType`, `expiresAt` y `roles`. Es el único endpoint de negocio público, junto con Actuator y el estado técnico de plataforma.
 - El resto de endpoints requiere `Authorization: Bearer <token>`: sin token responden `401 UNAUTHENTICATED` y con rol insuficiente `403 FORBIDDEN`, ambos con `ApiError` y correlation ID.
-- Autorización: `FINANCE` para fiscal/ERP/simuladores y para la consulta/exportación de auditoría; `LOGISTICS` para crear despachos, guías y eventos POS, mientras que `GET /shipments/**` (seguimiento, CDU-09) también lo ven `CLIENT` y `SUPPORT`; `CLIENT`/`SUPPORT` leen y crean incidencias y solo `SUPPORT` las resuelve; `CLIENT`/`SUPPORT` leen notificaciones y solo `SUPPORT` las emite; `CLIENT`/`SUPPORT`/`LOGISTICS` para inventario; `SUPPORT`/`LOGISTICS` para la ingesta de query. Detalle en `docs/adr/ADR-013-autenticacion-jwt-y-roles.md`.
+- Autorización: `FINANCE` para fiscal/ERP/simuladores y para la consulta/exportación de auditoría; `CLIENT`/`SUPPORT` para pagos; `LOGISTICS` para crear despachos, guías y eventos POS, mientras que `GET /shipments/**` (seguimiento, CDU-09) también lo ven `CLIENT` y `SUPPORT`; `CLIENT`/`SUPPORT` leen y crean incidencias y solo `SUPPORT` las resuelve; `CLIENT`/`SUPPORT` leen notificaciones y solo `SUPPORT` las emite; `CLIENT`/`SUPPORT`/`LOGISTICS` para inventario; `SUPPORT`/`LOGISTICS` para la ingesta de query. Detalle en `docs/adr/ADR-013-autenticacion-jwt-y-roles.md`.
 - Cuentas de demostración locales, configurables por `SGO_SECURITY_*`: `cliente@megastore.com` / `Cliente123` (`CLIENT`), `staff@megastore.com` / `Staff123` (`SUPPORT` + `LOGISTICS`, la consola interna completa), `logistica@megastore.com` / `Logistica123` (`LOGISTICS`), `finanzas@megastore.com` / `Finanzas123` (`FINANCE`).
 - `SensitiveDataSanitizer` enmascara PAN (13–19 dígitos) y campos CVV antes de cualquier log; `RestSecurityErrorWriter` registra la ruta enmascarada de los 401/403.
 - `sgo.security.enabled=false` permite que las pruebas de negocio corran sin token; `SecurityAuthorizationTest` lo habilita para validar login, 401, 403 y sanitización.
@@ -228,6 +228,16 @@ El registro auditable transversal (CDU-12) está implementado y protegido con ro
 - Cada acceso y cada exportación quedan registrados como evidencia (`AUDIT_EVIDENCE_ACCESSED`, `AUDIT_EVIDENCE_EXPORTED`); una búsqueda sin resultados responde `404 AUDIT_EVIDENCE_NOT_FOUND`, registra `AUDIT_SEARCH_FAILED` y deja una alerta para Finanzas sin inventar información (CDU-12 E1).
 - Medida EaC-02: `AuditQueryIntegrationTest` verifica < 1 s sobre el conjunto declarado de 10 000 eventos (1 000 de una misma orden); en el smoke real la consulta respondió en ~63 ms.
 - `AuditRecorder` (AUD-01) escribe la evidencia en la misma transacción del cambio de negocio; `incidents` ya lo usa.
+
+## Pagos (Edson Sosa, PAY-01)
+
+El módulo `payments` materializa la capacidad "autorización de pago" de `docs/contracts/orders/saga-required-ports.md`:
+
+- `POST /api/v1/payments/attempts` con `Idempotency-Key` registra el intento con orden, canal (`WEB`/`MOBILE`/`STORE`/`CONTACT_CENTER`), método (`CARD`/`TRANSFER`/`DIGITAL_WALLET`), importe, moneda y referencia segura. Responde `201` si el resultado es aprobado/rechazado, `202` si un timeout lo deja `PENDING` y `200` si la llave ya existía.
+- `GET /api/v1/payments/attempts/{id}` y `GET /api/v1/payments/attempts?orderId=` consultan los intentos; solo `CLIENT` y `SUPPORT`.
+- Rechaza referencias con PAN (13–19 dígitos) o CVV antes de llamar a PayKlik (`400 INVALID_PAYMENT_REQUEST`) y no almacena PAN/CVV.
+- Cada intento y su resultado dejan evidencia auditable (`PAYMENT_ATTEMPT_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_REJECTED`, `PAYMENT_PENDING_CONFIRMATION`).
+- `payments.api.PaymentPort` es la API pública para ORD-03. PAY-02 (timeout, circuit breaker, indeterminado) y PAY-03 (conciliación ≤ 60 s) siguen pendientes.
 
 ## Integración continua — QA-01
 
@@ -272,7 +282,7 @@ Andy Sánchez agregó `fiscal` (XML, CUI/serie, estado `FISCAL_PENDING`, SAT as�
 
 Edson Sosa agregó el Outbox/Inbox transversal (BB-04: `V3001`, `PublishEvent`, dispatcher con reintentos y DLQ, `IdempotentConsumer`) y la seguridad del MVP (BB-07/ADR-013: login JWT, autorización por roles, respuestas 401/403 con `ApiError` y sanitización de PAN/CVV).
 
-Continúan pendientes: esquema y migraciones de `orders` (Jairo), carrito, estados ejecutables, Saga, compensaciones, E2E funcional, pagos de Edson (PAY-01 a PAY-03), la consulta indexada de auditoría (AUD-02) y que los flujos de negocio consuman el Outbox. El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
+Continúan pendientes: esquema y migraciones de `orders` (Jairo), carrito, estados ejecutables, Saga, compensaciones, E2E funcional, resiliencia de pagos (PAY-02) y su conciliación (PAY-03), y que los flujos de negocio consuman el Outbox. El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
 
 BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanece parcial hasta integrar frontend y componentes compartidos pendientes. Los contratos de estados, eventos y API son propuestas sujetas a aprobación del equipo.
 
@@ -282,7 +292,8 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 - Existen entidades y migraciones de Logistics, Notifications, Query, Incidents, Fiscal, ERP, POS, Outbox e Inbox; Orders, Payments y Saga continúan pendientes o incompletos.
 - El Outbox transversal (BB-04) está operativo, pero fiscal, ERP, POS y notificaciones todavía no publican sus hechos a través de él; usan sus adaptadores y colas locales hasta que se conecten.
 - La autenticación JWT y la autorización por roles están implementadas (BB-07/ADR-013); las cuentas son de demostración local y no hay refresh token, revocación ni límite de intentos.
-- `audit` registra evidencia transversal atómica (AUD-01, `V3002`) y expone consulta indexada y exportación (AUD-02); `incidents` es su primer consumidor. Pagos, fiscal y logística aún deben sumar sus acciones al registro para completar la reconstrucción de CDU-12.
+- `audit` registra evidencia transversal atómica (AUD-01, `V3002`) y expone consulta indexada y exportación (AUD-02); `incidents` y `payments` son sus consumidores. Fiscal y logística aún deben sumar sus acciones al registro para completar la reconstrucción de CDU-12.
+- `payments` registra intentos idempotentes con orden, canal, fecha, referencia y resultado (PAY-01); un timeout queda `PENDING` y no hay todavía circuit breaker, reintento programado ni conciliación (PAY-02/PAY-03).
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
 - `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.

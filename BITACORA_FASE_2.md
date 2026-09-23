@@ -25,6 +25,7 @@
 | BB-07 | Autenticación, autorización y sanitización | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | ADR-013 y decisión JWT | `security/`, `ADR-013`, `SecurityAuthorizationTest` y `SensitiveDataSanitizerTest` |
 | AUD-01 | Registro auditable transversal | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y correlación | `V3002`, `audit/api`, `AuditIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.7 |
 | AUD-02 | Consulta indexada de evidencia | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | AUD-01 | `AuditController`, `AuditQueryIntegrationTest` y evidencia EaC-02 < 1 s |
+| PAY-01 | Puerto PayKlik e intentos de pago | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-06 y BB-07 | `V3003`, `payments.api.PaymentPort`, `PaymentIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.8 |
 | Resto del backlog | Consultar planificación oficial | Según planificación | Pendiente | Contratos e implementaciones del equipo | Pendiente |
 
 Los estados anteriores describen únicamente los artefactos presentes; no equivalen a tarjetas `Done` ni inventan aceptación del equipo.
@@ -220,6 +221,19 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendiente de registrar por Edson.
 - Persona que quedaría bloqueada y acción temporal: PAY-01 puede construir su evidencia sobre `AuditRecorder`; SEC-01 puede escanear `audit_events` como parte del barrido de PAN/CVV.
 
+### Fecha: 2026-09-23 (cuarta continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; AUD-02 cerrado.
+- Trabajo realizado hoy:
+  - `[PAY-01]` intentos de pago con migración `V3003` (`payment_attempts`) y `payments.api.PaymentPort` para la Saga: orden, canal, método, importe, moneda, referencia segura, correlación e idempotencia; estados `PENDING`, `APPROVED`, `REJECTED` e `INDETERMINATE`.
+  - `PaymentAttemptService` usa el `PayKlikGatewayPort` de BB-06 y persiste cada paso en transacción propia con evidencia auditable (`PAYMENT_ATTEMPT_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_REJECTED`, `PAYMENT_PENDING_CONFIRMATION`). Idempotencia por llave única, incluida la concurrencia; un timeout deja `PENDING` y nunca se reporta como aprobación (frontera con PAY-02).
+  - `PaymentController`: `POST /api/v1/payments/attempts` con `Idempotency-Key` (201/202/200), `GET` por id y por orden; PAN/CVV se rechazan con 400 antes de llamar a PayKlik; `/api/v1/payments/**` queda para `CLIENT`/`SUPPORT`.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 107 pruebas, 0 fallos, 0 errores, 0 omitidas. Smoke real: intento `APPROVED` con referencia del proveedor, repetición con la misma llave devuelve el mismo intento (200), PAN rechazado (400), `FINANCE` recibe 403 y la BD no contiene PAN/CVV; dos eventos de auditoría con el actor autenticado.
+- Hoy y trazabilidad: PAY-01, CDU-03 pasos 2 y 3, postcondición auditable; EaC-04 parcial y EaC-12 parcial; ADR-003, ADR-012 y `saga-required-ports.md`.
+- Impedimentos: ninguno propio. PAY-02 (timeout, circuit breaker, indeterminado) y PAY-03 (conciliación ≤ 60 s) son las siguientes tarjetas.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: Jairo puede consumir `payments.api.PaymentPort` en ORD-03; SEC-01 puede escanear `payment_attempts` como parte del barrido de PAN/CVV.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -270,6 +284,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | `./mvnw clean verify` (AUD-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 91 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/diagrams/modelo-datos.md` §3.7 | Evidencia auditable atómica con actor, cambio, resultado y correlación |
 | 2026-09-23 | `./mvnw clean verify` (AUD-02) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 97 pruebas, 0 fallos, 0 errores, 0 omitidas | `AuditQueryIntegrationTest` y `docs/qa/QA-03-matriz-eac.md` | EaC-02 < 1 s sobre 10 000 eventos; acceso, fallo y exportación registrados |
 | 2026-09-23 | Smoke AUD-02 en Compose | Backend `healthy`; consulta, exportación, búsqueda fallida y 403 de `CLIENT` | Consulta ~63 ms; CSV con `Content-Disposition`; 404 con evidencia `AUDIT_SEARCH_FAILED` | Salida local del 2026-09-23 | Consulta indexada y evidencia de acceso operando en el stack real |
+| 2026-09-23 | `./mvnw clean verify` (PAY-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 107 pruebas, 0 fallos, 0 errores, 0 omitidas | `PaymentAttemptServiceTest`, `PaymentIntegrationTest` y `docs/qa/QA-03-matriz-eac.md` | Intentos idempotentes, concurrencia y ausencia de PAN/CVV verificados |
+| 2026-09-23 | Smoke PAY-01 en Compose | Backend `healthy`; intento, repetición, consulta, PAN y rol | 201 `APPROVED`; 200 mismo intento; 400 PAN; 403 `FINANCE`; auditoría y BD sin PAN/CVV | Salida local del 2026-09-23 | Puerto PayKlik e intentos operando en el stack real |
 
 ## 8. Retrospectiva individual
 
