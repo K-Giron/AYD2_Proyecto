@@ -7,9 +7,14 @@ package com.megastore.sgologic.payments.api;
  *
  * <p>Es idempotente por {@code idempotencyKey}: una repetición devuelve el
  * intento existente sin volver a llamar al proveedor. Un timeout o una caída
- * dejan el intento en {@code PENDING} y nunca se interpretan como aprobación
- * (ADR-003); el estado indeterminado y la conciliación pertenecen a PAY-02 y
- * PAY-03.</p>
+ * dejan el intento en {@code INDETERMINATE} y nunca se interpretan como
+ * aprobación (ADR-003); la conciliación de PAY-03 lo resuelve.</p>
+ *
+ * <p><b>Concurrencia:</b> si dos solicitudes simultáneas usan la misma
+ * {@code idempotencyKey}, la segunda puede recibir el intento todavía en
+ * {@code PENDING} mientras la primera sigue en vuelo. El consumidor (Saga)
+ * debe consultar el estado o esperar su resolución; la conciliación lo
+ * corrige si el proceso cae.</p>
  */
 public interface PaymentPort {
 

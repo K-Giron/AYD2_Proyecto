@@ -292,6 +292,24 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendiente de registrar por Edson.
 - Persona que quedaría bloqueada y acción temporal: el equipo puede citar EaC-01/02/03 con evidencia; Jairo debe integrar Orders/Saga para completar EaC-03.
 
+### Fecha: 2026-09-23 (novena continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; QA-02 cerrado.
+- Trabajo realizado hoy: inspección de la implementación y corrección de los bugs propios detectados.
+  - `[A1]` `PaymentRequest` ahora normaliza separadores (espacio, guion, punto) y rechaza PAN de 13 o más dígitos y variantes `cvv|cvv2|cvc|cvc2|securityCode`; `SensitiveDataSanitizer` y el escaneo de SEC-01 se alinearon para detectar PAN con separadores, y se agregaron pruebas con PAN con guiones/espacios/puntos y `cvc2`.
+  - `[A4]` `ResilientPayKlikClient` usa un pool acotado (`SGO_PAYKLIK_CALL_POOL_SIZE`) y `FutureTask`, de modo que el timeout interrumpe de verdad la llamada al proveedor.
+  - `[A5]` el barrido de conciliación recupera intentos `PENDING` más antiguos que `SGO_PAYMENT_RECONCILIATION_STALE_PENDING_AFTER` y los pasa a `INDETERMINATE` con código `STALE_PENDING`.
+  - `[A6]` el seed de carga es idempotente (event_id determinista); verificado con dos corridas consecutivas.
+  - `[A7]` el arranque del Outbox ya no falla si RabbitMQ no está disponible; la topología se declara al establecer conexión.
+  - `[A8]` `InvalidPaymentRequestException` pasó a la API pública y el handler de pagos ya no captura `IllegalArgumentException` genérico.
+  - `[A9/A10]` documentadas la idempotencia concurrente (segunda solicitud puede ver `PENDING`) y la ausencia de retención de eventos de acceso de auditoría.
+  - Hallazgos de otros dueños (pendientes de coordinar): parámetros/headers faltantes devuelven 500 (handler compartido de Jairo) y scheduler de un solo hilo (config de Andy).
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 127 pruebas, 0 fallos, 0 errores, 0 omitidas.
+- Hoy y trazabilidad: correcciones A1, A4 a A8 sobre BB-04, PAY-01 a PAY-03, SEC-01 y QA-02; EaC-12 sigue cubierto con evidencia más estricta.
+- Impedimentos: los dos hallazgos restantes pertenecen a `shared` (Jairo) y `integration` (Andy); se documentan para su revisión.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: Jairo debe corregir el handler de parámetros/headers para que el contrato 400 sea consistente; Andy puede subir el pool del scheduler o permitir un scheduler propio en pagos.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -353,6 +371,10 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | k6 `T` y `8T` — evidencia | 10 y 80 VUs, 1 min, 10 000 eventos | `T` 1 180 iter / p95 17.2 ms; `8T` 9 540 iter / p95 7.23 ms; 0 % errores | `docs/evidence/performance/QA-02-linea-base-y-8T.md` | EaC-02 con evidencia de carga; `8T` ≈ 8.04× `T` |
 | 2026-09-23 | Corrección por QA-02 | 10 VUs sobre auditoría antes/después | Antes: p95 30 s y 95 % errores; después: p95 17.2 ms y 0 % | `AuditQueryIntegrationTest.concurrentQueriesDoNotExhaustTheConnectionPool` | Pool de conexiones liberado; acceso separado de la evidencia |
 | 2026-09-23 | `./mvnw clean verify` (QA-02) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 119 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y QA-03 | Suite completa tras las correcciones de DEC-02/QA-02 |
+| 2026-09-23 | `./mvnw clean verify` (inspección A1/A4–A8) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 127 pruebas, 0 fallos, 0 errores, 0 omitidas | `PaymentRequestTest`, `ResilientPayKlikClientTest` y `PaymentReconciliation*Test` | Validación endurecida, timeout interrumpible y recuperación de PENDING |
+| 2026-09-23 | Smoke A1 en Compose | Referencias `4111-1111-1111-1111`, `4111 1111 1111 1111`, `4111.1111.1111.1111`, `cvc2=123`, `securityCode=123` y `tok_test_123` | Las cinco inseguras → `400 INVALID_PAYMENT_REQUEST`; la segura → `201 APPROVED`; 0 referencias inseguras en BD | Salida local del 2026-09-23 | El borde rechaza PAN con separadores y variantes de CVV |
+| 2026-09-23 | Smoke A5 en Compose | Intento `PENDING` con 5 minutos de antigüedad | Pasa a `INDETERMINATE`/`STALE_PENDING`; se programa conciliación `PENDING` y evidencia auditable | Salida local del 2026-09-23 | El barrido recupera intentos huérfanos |
+| 2026-09-23 | Seed A6 (idempotencia) | Dos corridas consecutivas de `tests/data/seed-load.sql` | 10 000 filas nuevas en la primera; la segunda no agrega ninguna | Conteo `actor='load-seed'` en PostgreSQL | El seed ya es idempotente |
 
 ## 8. Retrospectiva individual
 

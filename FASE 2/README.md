@@ -87,8 +87,8 @@ Copie manualmente `.env.example` como `.env` solo si desea personalizar el entor
 - `SGO_OUTBOX_EXCHANGE`, `SGO_OUTBOX_DLX`, `SGO_OUTBOX_DLQ`
 - `SGO_SECURITY_ENABLED`, `SGO_SECURITY_JWT_SECRET`, `SGO_SECURITY_JWT_ISSUER`, `SGO_SECURITY_JWT_TTL`
 - `SGO_SECURITY_{CLIENT,SUPPORT,LOGISTICS,FINANCE}_{USER,PASSWORD}`
-- `SGO_PAYKLIK_TIMEOUT_MS`, `SGO_PAYKLIK_FAILURE_RATE_THRESHOLD`, `SGO_PAYKLIK_SLIDING_WINDOW_SIZE`, `SGO_PAYKLIK_MINIMUM_CALLS`, `SGO_PAYKLIK_OPEN_STATE_WAIT`, `SGO_PAYKLIK_HALF_OPEN_CALLS`
-- `SGO_PAYMENT_RECONCILIATION_ENABLED`, `SGO_PAYMENT_RECONCILIATION_POLL_INTERVAL_MS`, `SGO_PAYMENT_RECONCILIATION_BATCH_SIZE`, `SGO_PAYMENT_RECONCILIATION_MAX_ATTEMPTS`, `SGO_PAYMENT_RECONCILIATION_FIRST_DELAY`, `SGO_PAYMENT_RECONCILIATION_RETRY_DELAYS`, `SGO_PAYMENT_RECONCILIATION_ALERT_AFTER`
+- `SGO_PAYKLIK_TIMEOUT_MS`, `SGO_PAYKLIK_CALL_POOL_SIZE`, `SGO_PAYKLIK_FAILURE_RATE_THRESHOLD`, `SGO_PAYKLIK_SLIDING_WINDOW_SIZE`, `SGO_PAYKLIK_MINIMUM_CALLS`, `SGO_PAYKLIK_OPEN_STATE_WAIT`, `SGO_PAYKLIK_HALF_OPEN_CALLS`
+- `SGO_PAYMENT_RECONCILIATION_ENABLED`, `SGO_PAYMENT_RECONCILIATION_POLL_INTERVAL_MS`, `SGO_PAYMENT_RECONCILIATION_BATCH_SIZE`, `SGO_PAYMENT_RECONCILIATION_MAX_ATTEMPTS`, `SGO_PAYMENT_RECONCILIATION_FIRST_DELAY`, `SGO_PAYMENT_RECONCILIATION_STALE_PENDING_AFTER`, `SGO_PAYMENT_RECONCILIATION_RETRY_DELAYS`, `SGO_PAYMENT_RECONCILIATION_ALERT_AFTER`
 
 Los valores predeterminados son exclusivamente locales y ficticios.
 
@@ -102,7 +102,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 119 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario, los módulos de Kevin, fiscal/SAT/ERP/POS, Outbox/Inbox, seguridad (JWT, 401/403, sanitización y escaneo de fuga de PAN/CVV), auditoría (registro, consulta, concurrencia y EaC-02) y pagos (intentos idempotentes, timeout, circuit breaker, indeterminado y conciliación sin doble cobro). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 119/119 en verde.
+La suite actual contiene 127 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario, los módulos de Kevin, fiscal/SAT/ERP/POS, Outbox/Inbox, seguridad (JWT, 401/403, sanitización y escaneo de fuga de PAN/CVV), auditoría (registro, consulta, concurrencia y EaC-02) y pagos (intentos idempotentes, validación de referencias, timeout, circuit breaker, indeterminado, conciliación sin doble cobro y recuperación de `PENDING` huérfanos). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 127/127 en verde.
 
 ## Verificación completa con un comando
 
@@ -238,9 +238,11 @@ El módulo `payments` materializa la capacidad "autorización de pago" de `docs/
 
 - `POST /api/v1/payments/attempts` con `Idempotency-Key` registra el intento con orden, canal (`WEB`/`MOBILE`/`STORE`/`CONTACT_CENTER`), método (`CARD`/`TRANSFER`/`DIGITAL_WALLET`), importe, moneda y referencia segura. Responde `201` con el resultado (aprobado, rechazado o indeterminado) y `200` si la llave ya existía.
 - `GET /api/v1/payments/attempts/{id}` y `GET /api/v1/payments/attempts?orderId=` consultan los intentos; solo `CLIENT` y `SUPPORT`.
-- Rechaza referencias con PAN (13–19 dígitos) o CVV antes de llamar a PayKlik (`400 INVALID_PAYMENT_REQUEST`) y no almacena PAN/CVV.
-- PAY-02: el adaptador está envuelto con límite de tiempo y circuit breaker (Resilience4j). Un timeout, una caída o el circuito abierto dejan el intento `INDETERMINATE` (nunca aprobado), conservan la orden y publican `PaymentIndeterminate` por Outbox en la misma transacción.
+- Rechaza referencias inseguras antes de llamar a PayKlik (`400 INVALID_PAYMENT_REQUEST`): PAN de 13 o más dígitos incluso con separadores (`4111-1111-1111-1111`, `4111 1111 1111 1111`, `4111.1111.1111.1111`) y variantes CVV/CVC (`cvv`, `cvv2`, `cvc`, `cvc2`, `securityCode`). No almacena PAN/CVV.
+- PAY-02: el adaptador está envuelto con límite de tiempo y circuit breaker (Resilience4j). Un timeout, una caída o el circuito abierto dejan el intento `INDETERMINATE` (nunca aprobado), conservan la orden y publican `PaymentIndeterminate` por Outbox en la misma transacción. Al expirar el límite, la llamada al proveedor se interrumpe y el pool de llamadas está acotado (`SGO_PAYKLIK_CALL_POOL_SIZE`).
+- Una segunda solicitud simultánea con la misma `Idempotency-Key` puede recibir el intento en `PENDING` mientras la primera sigue en vuelo; la conciliación lo resuelve y la Saga debe consultar o esperar el resultado.
 - PAY-03: al quedar indeterminado se programa una conciliación dentro de los 60 s (`SGO_PAYMENT_RECONCILIATION_FIRST_DELAY`, por defecto 30 s). Reutiliza la misma `Idempotency-Key` y la referencia segura del intento, por lo que **nunca genera un segundo cobro**; reintenta con backoff y, si sigue sin resolver tras 5 min o agota los intentos, queda `DEAD_LETTER` con alerta auditable (`PAYMENT_RECONCILIATION_ALERT`). Al resolver publica `PaymentApproved`/`PaymentRejected`.
+- Un intento que quedó `PENDING` más allá de `SGO_PAYMENT_RECONCILIATION_STALE_PENDING_AFTER` (caída del proceso o excepción entre la creación y el resultado) se recupera como `INDETERMINATE` con código `STALE_PENDING` y entra al circuito de conciliación.
 - Cada intento y su resultado dejan evidencia auditable (`PAYMENT_ATTEMPT_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_REJECTED`, `PAYMENT_INDETERMINATE`, `PAYMENT_RECONCILIATION_ALERT`).
 - `payments.api.PaymentPort` es la API pública para ORD-03.
 
@@ -313,6 +315,7 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 - `audit` registra evidencia transversal atómica (AUD-01, `V3002`) y expone consulta indexada y exportación (AUD-02); `incidents` y `payments` son sus consumidores. Fiscal y logística aún deben sumar sus acciones al registro para completar la reconstrucción de CDU-12.
 - `payments` registra intentos idempotentes con orden, canal, fecha, referencia y resultado, aplica timeout y circuit breaker (PAY-01/PAY-02) y concilia los indeterminados sin segundo cobro (PAY-03); la alerta operativa es un log y un registro auditable, sin canal externo de notificaciones.
 - El escaneo de PAN/CVV de SEC-01 cubre la base de pruebas, los payloads persistidos del Outbox y los logs del proceso; no inspecciona colas en vuelo ni un agregador externo de logs.
+- Cada consulta o exportación de auditoría agrega un evento `AuditEvidence`; no hay política de retención o purga en el MVP, así que la tabla crece con el uso (≈ 9 500 filas/min en la prueba `8T`).
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - Las mediciones de QA-02 son de una sola instancia y host de desarrollo; EaC-03 queda parcial hasta contar con Orders/Saga (ORD-01 a ORD-05) y un ambiente con balanceo.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.

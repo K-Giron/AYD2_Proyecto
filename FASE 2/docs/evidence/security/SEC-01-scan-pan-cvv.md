@@ -18,8 +18,10 @@ Demostrar con evidencia automatizada que:
 `SensitiveDataLeakScanTest` genera actividad real contra el stack de pruebas
 (PostgreSQL 17 y RabbitMQ 4.3 reales mediante Testcontainers):
 
-- Pago aprobado con referencia segura y dos intentos con PAN (`4111111111111111`)
-  y CVV (`cvv=123`) que deben rechazarse con `400`.
+- Pago aprobado con referencia segura y cinco intentos inseguros que deben
+  rechazarse con `400`: PAN sin separadores (`4111111111111111`), con guiones
+  (`4111-1111-1111-1111`), con espacios (`4111 1111 1111 1111`), `cvv=123` y
+  `cvc2=123`.
 - Incidencia registrada y resuelta, despacho con guía y tracking, notificación
   no bloqueante, documento fiscal asíncrono, consulta de auditoría y un `401`
   sin token.
@@ -29,7 +31,8 @@ Después escanea:
 - **Base de datos:** todas las columnas de texto/JSON del esquema `public`
   (incluye `outbox_event.payload`, `audit_events.before_state/after_state`,
   `payment_attempts`, `payment_reconciliations`, etc.) con las expresiones
-  `[0-9]{13,19}` y `(?i)\y(cvv|cvc)\y`.
+  `(?<![0-9.\-])[0-9]([ .\-]?[0-9]){12,}(?![0-9.\-])` (PAN de 13+ dígitos
+  con separadores) y `(?i)\y(cvv2?|cvc2?|securitycode)\y`.
 - **Logs:** captura el appender raíz de Logback durante la actividad y aplica
   los mismos patrones.
 - **No vacuidad:** exige más de 20 columnas escaneadas, logs no vacíos, un

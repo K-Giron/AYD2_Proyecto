@@ -317,6 +317,8 @@ erDiagram
   con alerta y la exportación autorizada: AUD-02 lo cubre con
   `AUDIT_EVIDENCE_ACCESSED`, `AUDIT_SEARCH_FAILED` y `AUDIT_EVIDENCE_EXPORTED`,
   escritos en transacción independiente para sobrevivir a la búsqueda fallida.
+- Los eventos de acceso/exportación (`AuditEvidence`) crecen con cada consulta
+  (≈ 9 500 filas/min en la prueba `8T`); el MVP no define retención ni purga.
 
 ### 3.8 `payments` — CUN-03 (PAY-01 a PAY-03)
 
