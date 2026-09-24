@@ -102,7 +102,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 116 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario, los módulos de Kevin, fiscal/SAT/ERP/POS, Outbox/Inbox, seguridad (JWT, 401/403 y sanitización), auditoría (registro, consulta y EaC-02) y pagos (intentos idempotentes, ausencia de PAN/CVV, timeout, circuit breaker, indeterminado y conciliación sin doble cobro). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 116/116 en verde.
+La suite actual contiene 118 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario, los módulos de Kevin, fiscal/SAT/ERP/POS, Outbox/Inbox, seguridad (JWT, 401/403, sanitización y escaneo de fuga de PAN/CVV), auditoría (registro, consulta y EaC-02) y pagos (intentos idempotentes, timeout, circuit breaker, indeterminado y conciliación sin doble cobro). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 118/118 en verde.
 
 ## Verificación completa con un comando
 
@@ -219,6 +219,7 @@ La API está protegida con JWT HMAC-SHA256 según ADR-013:
 - Cuentas de demostración locales, configurables por `SGO_SECURITY_*`: `cliente@megastore.com` / `Cliente123` (`CLIENT`), `staff@megastore.com` / `Staff123` (`SUPPORT` + `LOGISTICS`, la consola interna completa), `logistica@megastore.com` / `Logistica123` (`LOGISTICS`), `finanzas@megastore.com` / `Finanzas123` (`FINANCE`).
 - `SensitiveDataSanitizer` enmascara PAN (13–19 dígitos) y campos CVV antes de cualquier log; `RestSecurityErrorWriter` registra la ruta enmascarada de los 401/403.
 - `sgo.security.enabled=false` permite que las pruebas de negocio corran sin token; `SecurityAuthorizationTest` lo habilita para validar login, 401, 403 y sanitización.
+- SEC-01: `SensitiveDataLeakScanTest` genera actividad real, rechaza PAN/CVV con `400` y escanea base de datos, payloads del Outbox, auditoría y logs: 0 apariciones. Evidencia en `docs/evidence/security/SEC-01-scan-pan-cvv.md`.
 - La UI (`frontend/`) usa el login real: guarda el JWT y lo envía en cada llamada.
 
 ## Auditoría (Edson Sosa, AUD-01/AUD-02)
@@ -298,6 +299,7 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 - La autenticación JWT y la autorización por roles están implementadas (BB-07/ADR-013); las cuentas son de demostración local y no hay refresh token, revocación ni límite de intentos.
 - `audit` registra evidencia transversal atómica (AUD-01, `V3002`) y expone consulta indexada y exportación (AUD-02); `incidents` y `payments` son sus consumidores. Fiscal y logística aún deben sumar sus acciones al registro para completar la reconstrucción de CDU-12.
 - `payments` registra intentos idempotentes con orden, canal, fecha, referencia y resultado, aplica timeout y circuit breaker (PAY-01/PAY-02) y concilia los indeterminados sin segundo cobro (PAY-03); la alerta operativa es un log y un registro auditable, sin canal externo de notificaciones.
+- El escaneo de PAN/CVV de SEC-01 cubre la base de pruebas, los payloads persistidos del Outbox y los logs del proceso; no inspecciona colas en vuelo ni un agregador externo de logs.
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
 - `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.
