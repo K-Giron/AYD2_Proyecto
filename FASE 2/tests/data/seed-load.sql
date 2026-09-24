@@ -13,11 +13,13 @@ SELECT ('00000000-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
 FROM generate_series(1, 500) AS i
 ON CONFLICT (order_id) DO NOTHING;
 
+-- event_id determinista por (i, j) para que una segunda ejecución no
+-- duplique la evidencia de carga.
 INSERT INTO audit_events
     (id, event_id, aggregate_type, aggregate_id, order_id, actor, action, result,
      before_state, after_state, correlation_id, causation_id, occurred_at)
 SELECT gen_random_uuid(),
-       gen_random_uuid(),
+       ('00000000-0000-0000-0000-' || lpad(((i * 100 + j)::text), 12, '0'))::uuid,
        'Order',
        ('00000000-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
        ('00000000-0000-0000-0000-' || lpad(i::text, 12, '0'))::uuid,
