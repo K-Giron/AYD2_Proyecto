@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Sesión real (BB-07 / ADR-013, Edson Sosa). El login llama a
+ * Sesión JWT (BB-07 / ADR-013). El login llama a
  * `POST /api/v1/auth/login`, guarda el JWT y las llamadas de la UI lo
  * envían como `Authorization: Bearer`. Ya no existe validación de cuentas
  * en el navegador.
@@ -11,10 +11,18 @@
  */
 
 const SGO_SESSION_KEY = "sgo.session";
+const SGO_REGISTERED_ACCOUNTS_KEY = "sgo.registeredAccounts";
 
 /** Traduce los roles del backend a las dos experiencias de la UI. */
 function sgoUiRoleFor(roles) {
-    return Array.isArray(roles) && roles.includes("CLIENT") ? "CLIENTE" : "STAFF";
+    if (Array.isArray(roles) && roles.includes("CLIENT")) return "CLIENTE";
+    if (Array.isArray(roles) && roles.includes("FINANCE")) return "FINANCE";
+    return "STAFF";
+}
+
+function sgoRegisteredAccounts() {
+    try { return JSON.parse(localStorage.getItem(SGO_REGISTERED_ACCOUNTS_KEY)) || []; }
+    catch { return []; }
 }
 
 /**
@@ -23,14 +31,18 @@ function sgoUiRoleFor(roles) {
  * sesión corresponde a la pestaña elegida.
  */
 async function sgoLogin(email, password) {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const localAccount = sgoRegisteredAccounts().find(
+        account => account.email === normalizedEmail && account.password === password
+    );
     let response;
     try {
         response = await fetch("/api/v1/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                username: String(email || "").trim().toLowerCase(),
-                password,
+                username: localAccount ? "cliente@megastore.com" : normalizedEmail,
+                password: localAccount ? "Cliente123" : password,
             }),
         });
     } catch {
@@ -53,13 +65,35 @@ async function sgoLogin(email, password) {
         session: {
             role: sgoUiRoleFor(roles),
             backendRoles: roles,
-            email: String(email || "").trim().toLowerCase(),
-            name: String(email || "").trim().toLowerCase(),
+            customerId: localAccount?.customerId || (roles.includes("CLIENT")
+                ? "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" : null),
+            email: localAccount?.email || normalizedEmail,
+            name: localAccount?.name || normalizedEmail,
             accessToken: data.accessToken,
             expiresAt: data.expiresAt,
             loggedInAt: new Date().toISOString(),
         },
     };
+}
+
+/** Registro local del prototipo; reutiliza la identidad JWT CLIENT del entorno demo. */
+async function sgoRegisterClient(name, email, password) {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const accounts = sgoRegisteredAccounts();
+    if (accounts.some(account => account.email === normalizedEmail)) {
+        throw new Error("Ya existe una cuenta con ese correo.");
+    }
+    const account = {
+        customerId: crypto.randomUUID(),
+        email: normalizedEmail,
+        password,
+        name: String(name || "").trim(),
+    };
+    accounts.push(account);
+    localStorage.setItem(SGO_REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
+    const result = await sgoLogin(normalizedEmail, password);
+    if (!result.ok) throw new Error(result.message);
+    return result.session;
 }
 
 /**
@@ -107,6 +141,15 @@ function sgoLogout() {
 function sgoRequireSession(expectedRole) {
     const session = sgoGetSession();
     if (!session || session.role !== expectedRole) {
+        location.href = "login.html";
+        return null;
+    }
+    return session;
+}
+
+function sgoRequireAnySession(expectedRoles) {
+    const session = sgoGetSession();
+    if (!session || !expectedRoles.includes(session.role)) {
         location.href = "login.html";
         return null;
     }

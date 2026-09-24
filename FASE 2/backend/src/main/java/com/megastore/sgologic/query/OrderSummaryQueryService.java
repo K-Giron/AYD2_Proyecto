@@ -23,9 +23,9 @@ public class OrderSummaryQueryService {
     }
 
     /**
-     * Punto de ingesta temporal (ver {@code POST /api/v1/query/order-summary}
-     * en {@link OrderSummaryController}) mientras no existe un consumidor de
-     * eventos del Outbox transversal.
+     * Actualiza una fuente de la proyección. Orders invoca este contrato desde
+     * su consumidor RabbitMQ; el endpoint manual sigue disponible para las
+     * fuentes cuyos productores de eventos aún están pendientes.
      */
     public OrderSummaryProjection upsert(UUID orderId, ProjectionSource source, String status, Instant asOf) {
         Instant now = clock.instant();

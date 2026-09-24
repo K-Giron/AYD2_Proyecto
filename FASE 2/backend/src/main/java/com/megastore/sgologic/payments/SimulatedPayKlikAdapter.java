@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Clock;
 import java.util.UUID;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,6 +39,11 @@ public class SimulatedPayKlikAdapter implements PayKlikGatewayPort {
     public AuthorizationResult authorize(AuthorizationRequest request) {
         requireSafeRequest(request);
         return completedRequests.computeIfAbsent(request.idempotencyKey(), ignored -> simulateAuthorization());
+    }
+
+    @Override
+    public Optional<AuthorizationResult> findByIdempotencyKey(String idempotencyKey) {
+        return Optional.ofNullable(completedRequests.get(idempotencyKey));
     }
 
     private AuthorizationResult simulateAuthorization() {

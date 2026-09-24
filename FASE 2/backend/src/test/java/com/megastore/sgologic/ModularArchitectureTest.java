@@ -21,6 +21,7 @@ class ModularArchitectureTest {
             "query",
             "audit",
             "security",
+            "messaging",
             "integration",
             "shared"
     );
@@ -55,11 +56,6 @@ class ModularArchitectureTest {
      * anotados con {@code @NamedInterface}.</p>
      */
     private static final String SHARED_MODULE = "shared";
-    private static final String INTEGRATION_MODULE = "integration";
-    private static final String AUDIT_MODULE = "audit";
-    private static final Set<String> APPROVED_DEPENDENCIES =
-            Set.of(SHARED_MODULE, INTEGRATION_MODULE, AUDIT_MODULE);
-
     @Test
     void hasNoUnapprovedDependenciesBetweenModules() {
         ApplicationModules modules = ApplicationModules.of(SgoLogicApplication.class);
@@ -74,12 +70,17 @@ class ModularArchitectureTest {
             Set<String> dependencyIds = module.getDirectDependencies(modules).stream()
                     .map(dependency -> dependency.getTargetModule().getIdentifier().toString())
                     .collect(Collectors.toSet());
+            Set<String> allowed = switch (module.getIdentifier().toString()) {
+                case "orders" -> Set.of(SHARED_MODULE, "inventory", "payments", "fiscal", "integration", "audit");
+                case "query" -> Set.of(SHARED_MODULE, "messaging");
+                case "notifications" -> Set.of(SHARED_MODULE, "messaging");
+                case "payments", "logistics" -> Set.of(SHARED_MODULE, "integration", "audit");
+                case "incidents" -> Set.of(SHARED_MODULE, "audit");
+                default -> Set.of(SHARED_MODULE);
+            };
             assertThat(dependencyIds)
-                    .as("El módulo %s solo puede depender de shared o de las APIs públicas de "
-                            + "integration.outbox (BB-04) y audit.api (AUD-01); cualquier otro "
-                            + "contrato requiere aprobación",
-                            module.getIdentifier())
-                    .isSubsetOf(APPROVED_DEPENDENCIES);
+                    .as("El módulo %s solo puede depender de contratos aprobados", module.getIdentifier())
+                    .isSubsetOf(allowed);
         });
     }
 }

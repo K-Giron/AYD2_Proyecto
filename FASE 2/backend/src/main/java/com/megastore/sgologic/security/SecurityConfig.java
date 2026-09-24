@@ -58,6 +58,8 @@ class SecurityConfig {
                             .requestMatchers("/api/v1/auth/login", "/actuator/health", "/actuator/health/**",
                                     "/actuator/info", "/api/v1/platform/**")
                             .permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/inventory/stock")
+                            .permitAll()
                             .requestMatchers("/api/v1/fiscal-documents/**", "/api/v1/integrations/erp/**",
                                     "/api/v1/simulators/**", "/api/v1/audit/**")
                             .hasRole("FINANCE")

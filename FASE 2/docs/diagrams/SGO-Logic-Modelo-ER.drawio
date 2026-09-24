@@ -1,0 +1,582 @@
+<mxfile host="app.diagrams.net" agent="Codex" pages="3">
+  <diagram id="sgo-er-dda" name="01 - Modelo ER objetivo DDA">
+    <mxGraphModel dx="4378" dy="3127" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3200" pageHeight="2500" math="0" shadow="0">
+      <root>
+        <mxCell id="d0" />
+        <mxCell id="d1" parent="d0" />
+        <mxCell id="dbg" parent="d1" style="rounded=0;whiteSpace=wrap;html=1;fontSize=13;labelBackgroundColor=none;swimlaneFillColor=light-dark(transparent,#000000);fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="2500" width="4000" x="-370" as="geometry" />
+        </mxCell>
+        <mxCell id="dtitle" parent="d1" style="text;html=1;align=center;verticalAlign=middle;fontSize=25;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;MODELO ER&amp;nbsp; - SGO-LOGIC / MEGASTORE&lt;/b&gt;" vertex="1">
+          <mxGeometry height="70" width="4000" x="-370" y="-100" as="geometry" />
+        </mxCell>
+        <mxCell id="d-customer" parent="d1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=10;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;CUSTOMER_ACCOUNT&lt;/b&gt; · CUN-01/09/11&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; external_subject_id&lt;br&gt;display_name · status&lt;br&gt;created_at · updated_at" vertex="1">
+          <mxGeometry height="160" width="270" x="130" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="d-contact" parent="d1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=10;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;CUSTOMER_CONTACT&lt;/b&gt; · CUN-11&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; customer_id&lt;br&gt;channel · destination_token&lt;br&gt;enabled · preference_rank&lt;br&gt;verified_at" vertex="1">
+          <mxGeometry height="170" width="270" x="-240" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="d-orders-mod" parent="d1" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;swimlaneFillColor=light-dark(transparent,#000000);fontStyle=1;fontSize=13;labelBackgroundColor=none;fontColor=default;" value="ÓRDENES Y SAGA · CUN-01 · ADR-005" vertex="1">
+          <mxGeometry height="750" width="1080" x="560" y="125" as="geometry" />
+        </mxCell>
+        <mxCell id="d-cart" parent="d-orders-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;CART&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; customer_id&lt;br&gt;origin_channel · last_channel&lt;br&gt;status · idempotency_key&lt;br&gt;correlation_id · version" vertex="1">
+          <mxGeometry height="180" width="270" x="150" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d-cart-item" parent="d-orders-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;CART_ITEM&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK/FK&lt;/b&gt; cart_id&lt;br&gt;&lt;b&gt;PK&lt;/b&gt; product_id&lt;br&gt;product_name_snapshot&lt;br&gt;unit_price · quantity&lt;br&gt;availability_status · checked_at" vertex="1">
+          <mxGeometry height="180" width="270" x="200" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="d-order" parent="d-orders-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;ORDER&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK/AK&lt;/b&gt; cart_id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; customer_id&lt;br&gt;channel · status · total&lt;br&gt;checkout_key · correlation_id&lt;br&gt;created_at · version" vertex="1">
+          <mxGeometry height="205" width="290" x="750" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="d-order-item" parent="d-orders-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;ORDER_ITEM&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK/FK&lt;/b&gt; order_id&lt;br&gt;&lt;b&gt;PK&lt;/b&gt; product_id&lt;br&gt;product_name_snapshot&lt;br&gt;unit_price · quantity · line_total" vertex="1">
+          <mxGeometry height="175" width="270" x="40" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="d-order-history" parent="d-orders-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;ORDER_STATUS_HISTORY&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;FK&lt;/b&gt; order_id&lt;br&gt;previous_status · new_status&lt;br&gt;actor_subject_id · reason&lt;br&gt;correlation_id · occurred_at" vertex="1">
+          <mxGeometry height="175" width="270" x="330" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="d-saga-step" parent="d-orders-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;ORDER_PROCESS_STEP&lt;/b&gt; · ADR-005&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;FK&lt;/b&gt; order_id&lt;br&gt;step_type · status · attempt&lt;br&gt;compensation_type/status&lt;br&gt;idempotency_key · correlation_id&lt;br&gt;started_at · completed_at" vertex="1">
+          <mxGeometry height="205" width="290" x="770" y="505" as="geometry" />
+        </mxCell>
+        <mxCell id="de-cart-items" edge="1" parent="d-orders-mod" source="d-cart" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-cart-item" value="contiene 1 : 0..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="120" y="415" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-cart-order" edge="1" parent="d-orders-mod" source="d-cart" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToOne;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-order" value="origina 1 : 0..1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="670" y="145" />
+              <mxPoint x="670" y="145" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-order-items" edge="1" parent="d-orders-mod" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;fontColor=default;fontSize=13;labelBackgroundColor=none;exitX=0.001;exitY=0.669;exitDx=0;exitDy=0;exitPerimeter=0;" target="d-order-item" value="1 : 1..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="690" y="212.14" />
+              <mxPoint x="690" y="275" />
+              <mxPoint x="155" y="275" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-order-history" edge="1" parent="d-orders-mod" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-order-history" value="1 : 1..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="630" y="165" />
+              <mxPoint x="630" y="632.43" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-order-saga" edge="1" parent="d-orders-mod" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-saga-step" value="1 : 1..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="325" />
+              <mxPoint x="900" y="325" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d-invpay-mod" parent="d1" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;swimlaneFillColor=light-dark(default, #070e18);fontStyle=1;fontSize=13;labelBackgroundColor=none;fontColor=default;gradientColor=none;" value="INVENTARIO Y PAGO · CUN-02/03 · ADR-003" vertex="1">
+          <mxGeometry height="750" width="1470" x="2060" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="d-location" parent="d-invpay-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;LOCATION&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;AK&lt;/b&gt; code&lt;br&gt;name · country&lt;br&gt;type: STORE | DC" vertex="1">
+          <mxGeometry height="145" width="250" x="20" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d-stock" parent="d-invpay-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;INVENTORY_ITEM&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; location_id · product_id&lt;br&gt;on_hand · reserved · version&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; product + location" vertex="1">
+          <mxGeometry height="165" width="270" x="450" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d-reservation" parent="d-invpay-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;INVENTORY_RESERVATION&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; cart_id / order_id [uno requerido]&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; location_id · product_id&lt;br&gt;quantity · status&lt;br&gt;expires_at · released_at&lt;br&gt;idempotency_key · correlation_id · version" vertex="1">
+          <mxGeometry height="215" width="285" x="770" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="d-stock-movement" parent="d-invpay-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;INVENTORY_MOVEMENT&lt;/b&gt; · CUN-02/10&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; inventory_item_id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; reservation_id / return_request_id [opc.]&lt;br&gt;type: RESERVE | RELEASE | SALE | RETURN | ADJUST&lt;br&gt;quantity · before_qty · after_qty&lt;br&gt;actor_subject_id · correlation_id · occurred_at" vertex="1">
+          <mxGeometry height="210" width="400" x="160" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="d-payment" parent="d-invpay-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;PAYMENT_ATTEMPT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;FK&lt;/b&gt; order_id&lt;br&gt;method · amount · currency&lt;br&gt;secure_token_reference&lt;br&gt;status · provider_reference&lt;br&gt;idempotency_key · correlation_id&lt;br&gt;processed_at · version" vertex="1">
+          <mxGeometry height="205" width="300" x="1117.5" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="d-reconciliation" parent="d-invpay-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;PAYMENT_RECONCILIATION&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; payment_attempt_id&lt;br&gt;attempt_no · request_key&lt;br&gt;result · provider_status&lt;br&gt;scheduled_at · completed_at&lt;br&gt;failure_detail" vertex="1">
+          <mxGeometry height="200" width="275" x="1142.5" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="de-location-stock" edge="1" parent="d-invpay-mod" source="d-location" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-stock" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de-location-res" edge="1" parent="d-invpay-mod" source="d-location" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-reservation" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="310" y="140" />
+              <mxPoint x="310" y="240" />
+              <mxPoint x="912.57" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-stock-movement" edge="1" parent="d-invpay-mod" source="d-stock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-stock-movement" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de-res-movement" edge="1" parent="d-invpay-mod" source="d-reservation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-stock-movement" value="origina 1 : 0..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="665" y="430" />
+              <mxPoint x="665" y="465" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-pay-recon" edge="1" parent="d-invpay-mod" source="d-payment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-reconciliation" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d-fiscal-mod" parent="d1" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;swimlaneFillColor=light-dark(transparent,#000000);dashed=1;fontStyle=1;fontSize=13;labelBackgroundColor=none;fontColor=default;" value="FISCAL · CUN-04 · ADR-007" vertex="1">
+          <mxGeometry height="370" width="790" x="-280" y="1030" as="geometry" />
+        </mxCell>
+        <mxCell id="d-fiscal-doc" parent="d-fiscal-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;FISCAL_DOCUMENT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; order_id · payment_attempt_id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; return_request_id [opcional]&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; original_document_id [opcional]&lt;br&gt;type: INVOICE | CREDIT_NOTE&lt;br&gt;tax_identifier · customer_name&lt;br&gt;CUI · series · XML · status&lt;br&gt;idempotency_key · correlation_id" vertex="1">
+          <mxGeometry height="265" width="280" x="20" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d-fiscal-attempt" parent="d-fiscal-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;FISCAL_SUBMISSION_ATTEMPT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; fiscal_document_id&lt;br&gt;attempt_no · request_hash&lt;br&gt;result · SAT code/message&lt;br&gt;requested_at · responded_at&lt;br&gt;evidence_reference" vertex="1">
+          <mxGeometry height="220" width="270" x="430" y="82.5" as="geometry" />
+        </mxCell>
+        <mxCell id="de-fiscal-attempt" edge="1" parent="d-fiscal-mod" source="d-fiscal-doc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-fiscal-attempt" value="1 : 1..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d-log-mod" parent="d1" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;swimlaneFillColor=light-dark(transparent,#000000);fontStyle=1;fontSize=13;labelBackgroundColor=none;fontColor=default;" value="DESPACHO Y ENTREGA · CUN-07/08" vertex="1">
+          <mxGeometry height="550" width="780" x="790" y="1050" as="geometry" />
+        </mxCell>
+        <mxCell id="d-shipment" parent="d-log-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;SHIPMENT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;FK&lt;/b&gt; order_id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; origin_location_id&lt;br&gt;delivery_method · destination&lt;br&gt;status · tracking_number&lt;br&gt;idempotency_key · correlation_id" vertex="1">
+          <mxGeometry height="205" width="260" x="20" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d-delivery-change" parent="d-log-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;DELIVERY_METHOD_HISTORY&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;FK&lt;/b&gt; shipment_id&lt;br&gt;previous_method · new_method&lt;br&gt;previous/new origin&lt;br&gt;actor_subject_id · reason&lt;br&gt;changed_at" vertex="1">
+          <mxGeometry height="195" width="250" x="25" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="d-tracking" parent="d-log-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;SHIPMENT_TRACKING_EVENT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; shipment_id&lt;br&gt;external_event_id&lt;br&gt;status · source&lt;br&gt;occurred_at · received_at" vertex="1">
+          <mxGeometry height="185" width="240" x="490" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="de-ship-change" edge="1" parent="d-log-mod" source="d-shipment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-delivery-change" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de-ship-track" edge="1" parent="d-log-mod" source="d-shipment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-tracking" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d-return-mod" parent="d1" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;swimlaneFillColor=light-dark(transparent,#000000);fontStyle=1;fontSize=13;labelBackgroundColor=none;fontColor=default;" value="POSTVENTA · CUN-10" vertex="1">
+          <mxGeometry height="810" width="1000" x="1650" y="1660" as="geometry" />
+        </mxCell>
+        <mxCell id="d-return" parent="d-return-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;RETURN_REQUEST&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;FK&lt;/b&gt; order_id&lt;br&gt;type: RETURN | EXCHANGE&lt;br&gt;reason · partial · status&lt;br&gt;requested_by_subject_id&lt;br&gt;correlation_id · timestamps" vertex="1">
+          <mxGeometry height="200" width="270" x="20" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="d-return-item" parent="d-return-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;RETURN_ITEM&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; return_request_id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; order_id + product_id&lt;br&gt;quantity · resolution&lt;br&gt;condition · amount" vertex="1">
+          <mxGeometry height="195" width="270" x="660" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="d-refund" parent="d-return-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;REFUND&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; return_request_id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; original_payment_attempt_id&lt;br&gt;amount · currency · method&lt;br&gt;status · provider_reference&lt;br&gt;idempotency_key · processed_at" vertex="1">
+          <mxGeometry height="215" width="270" x="660" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="d-incident" parent="d-return-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;SERVICE_INCIDENT&lt;/b&gt; · CUN-09/10&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;FK&lt;/b&gt; order_id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; return_request_id [opcional]&lt;br&gt;type · severity · reason · status&lt;br&gt;assigned_subject_id · resolution&lt;br&gt;correlation_id · timestamps" vertex="1">
+          <mxGeometry height="185" width="270" x="150" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="de-return-item" edge="1" parent="d-return-mod" source="d-return" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-return-item" value="1 : 1..N">
+          <mxGeometry relative="1" x="-0.4634" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="435" y="230" />
+              <mxPoint x="435" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-return-refund" edge="1" parent="d-return-mod" source="d-return" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-refund" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="510" y="160" />
+              <mxPoint x="510" y="517.6" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-return-incident" edge="1" parent="d-return-mod" source="d-return" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-incident" value="abre 1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d-query-mod" parent="d1" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;swimlaneFillColor=light-dark(#FFFFFF,#000000);fontStyle=1;fontSize=13;labelBackgroundColor=none;fontColor=default;" value="CONSULTA Y NOTIFICACIÓN · CUN-09/11 · ADR-008" vertex="1">
+          <mxGeometry height="610" width="590" x="2180" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="d-summary" parent="d-query-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;ORDER_SUMMARY_PROJECTION&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK/FK&lt;/b&gt; order_id&lt;br&gt;order/payment/fiscal status&lt;br&gt;dispatch/delivery status&lt;br&gt;return/incident status&lt;br&gt;each_status_as_of · updated_at" vertex="1">
+          <mxGeometry height="195" width="270" x="20" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d-notification" parent="d-query-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;NOTIFICATION_REQUEST&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; customer_contact_id&lt;br&gt;event_type · aggregate_id&lt;br&gt;channel · status&lt;br&gt;correlation_id · created_at" vertex="1">
+          <mxGeometry height="190" width="250" x="320" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d-notification-attempt" parent="d-query-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;NOTIFICATION_ATTEMPT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; notification_request_id&lt;br&gt;attempt_no · provider_reference&lt;br&gt;result · failure_detail&lt;br&gt;attempted_at · next_retry_at" vertex="1">
+          <mxGeometry height="190" width="270" x="160" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="de-not-attempt" edge="1" parent="d-query-mod" source="d-notification" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-notification-attempt" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d-integration-mod" parent="d1" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;swimlaneFillColor=light-dark(#FFFFFF,#000000);fontStyle=1;fontSize=13;labelBackgroundColor=none;fontColor=default;" value="INTEGRACIÓN CONFIABLE · CUN-05/06/08/11 · ADR-002/004" vertex="1">
+          <mxGeometry height="810" width="1860" x="-290" y="1660" as="geometry" />
+        </mxCell>
+        <mxCell id="d-outbox" parent="d-integration-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;OUTBOX_MESSAGE&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;aggregate_type · aggregate_id&lt;br&gt;event_type · payload&lt;br&gt;correlation_id · idempotency_key&lt;br&gt;status · attempts · available_at&lt;br&gt;published_at · last_error" vertex="1">
+          <mxGeometry height="220" width="290" x="20" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d-delivery" parent="d-integration-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;INTEGRATION_DELIVERY&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;FK&lt;/b&gt; outbox_message_id&lt;br&gt;destination: POS | ERP | LOGI | SAT | NOTIFIER&lt;br&gt;destination_ref: tienda/endpoint&lt;br&gt;idempotency_key · status&lt;br&gt;attempts · acknowledgement&lt;br&gt;next_retry_at · delivered_at" vertex="1">
+          <mxGeometry height="220" width="305" x="400" y="242.5" as="geometry" />
+        </mxCell>
+        <mxCell id="d-delivery-attempt" parent="d-integration-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;INTEGRATION_DELIVERY_ATTEMPT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; integration_delivery_id&lt;br&gt;attempt_no · request_hash&lt;br&gt;result · response_code&lt;br&gt;failure_detail · attempted_at" vertex="1">
+          <mxGeometry height="200" width="300" x="1070" y="365" as="geometry" />
+        </mxCell>
+        <mxCell id="d-dlq" parent="d-integration-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;DEAD_LETTER_MESSAGE&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; integration_delivery_id&lt;br&gt;reason · payload_snapshot&lt;br&gt;failed_at · resolved_at&lt;br&gt;resolution · resolved_by" vertex="1">
+          <mxGeometry height="190" width="280" x="1080" y="67.5" as="geometry" />
+        </mxCell>
+        <mxCell id="d-erp-sale" parent="d-integration-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;ERP_SALE&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id · &lt;b&gt;FK/AK&lt;/b&gt; order_id&lt;br&gt;net · tax · grand_total&lt;br&gt;currency · confirmed_at&lt;br&gt;status · batch_id" vertex="1">
+          <mxGeometry height="175" width="250" x="1450" y="67.5" as="geometry" />
+        </mxCell>
+        <mxCell id="d-erp-batch" parent="d-integration-mod" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;ERP_EXPORT_BATCH&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;format · payload_reference&lt;br&gt;sale_count · status&lt;br&gt;acknowledgement · timestamps" vertex="1">
+          <mxGeometry height="170" width="250" x="1450" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="d-inbox" parent="d-integration-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;CONSUMER_INBOX&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; message_id&lt;br&gt;consumer_name&lt;br&gt;aggregate_id · status&lt;br&gt;received_at · processed_at&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; message + consumer" vertex="1">
+          <mxGeometry height="180" width="305" x="70" y="555" as="geometry" />
+        </mxCell>
+        <mxCell id="de-out-delivery" edge="1" parent="d-integration-mod" source="d-outbox" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-delivery" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de-del-attempt" edge="1" parent="d-integration-mod" source="d-delivery" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-delivery-attempt" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="850" y="352.43" />
+              <mxPoint x="850" y="465" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-del-dlq" edge="1" parent="d-integration-mod" source="d-delivery" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToOne;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-dlq" value="1 : 0..1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="810" y="325.06" />
+              <mxPoint x="810" y="165.06" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-erp-batch" edge="1" parent="d-integration-mod" source="d-erp-batch" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;endArrow=ERzeroToMany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-erp-sale" value="0..1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="d-audit-mod" parent="d1" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;swimlaneFillColor=light-dark(#FFFFFF,#000000);fontStyle=1;fontSize=13;labelBackgroundColor=none;fontColor=default;" value="AUDITORÍA · CUN-12 · EaC-07" vertex="1">
+          <mxGeometry height="800" width="890" x="2700" y="1660" as="geometry" />
+        </mxCell>
+        <mxCell id="d-audit" parent="d-audit-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;AUDIT_EVENT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;actor_subject_id · actor_type&lt;br&gt;action · aggregate_type/id&lt;br&gt;order_id · transaction_id&lt;br&gt;previous/new_state · result&lt;br&gt;correlation_id · occurred_at&lt;br&gt;metadata · evidence_hash" vertex="1">
+          <mxGeometry height="240" width="310" x="100" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="d-audit-access" parent="d-audit-mod" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fontSize=13;align=left;verticalAlign=top;spacing=9;labelBackgroundColor=none;fontColor=default;" value="&lt;b&gt;AUDIT_EVIDENCE_ACCESS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id&lt;br&gt;requester_subject_id · role&lt;br&gt;action: SEARCH | VIEW | EXPORT&lt;br&gt;search_criteria_hash · result&lt;br&gt;evidence_reference/hash&lt;br&gt;requested_at · completed_at" vertex="1">
+          <mxGeometry height="220" width="310" x="510" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="de-audit-access" edge="1" parent="d-audit-mod" source="d-audit" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-audit-access" value="consulta/exporta 1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de-customer-contact" edge="1" parent="d1" source="d-customer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-contact" value="1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de-customer-cart" edge="1" parent="d1" source="d-customer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-cart" value="posee 1 : 0..N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="de-order-res" edge="1" parent="d1" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-reservation" value="reserva">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2215" y="300" />
+              <mxPoint x="2215" y="472.43" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-cart-res" edge="1" parent="d1" source="d-cart" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" value="reserva antes del checkout">
+          <mxGeometry relative="1" x="-0.122" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1130" y="250" />
+              <mxPoint x="1130" y="170" />
+              <mxPoint x="2010" y="170" />
+              <mxPoint x="2010" y="400" />
+              <mxPoint x="2770" y="400" />
+              <mxPoint x="2770" y="450" />
+            </Array>
+            <mxPoint x="2830" y="450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-order-pay" edge="1" parent="d1" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;dashed=1;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-payment" value="paga 1 : 0..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1700" y="270" />
+              <mxPoint x="1700" y="50" />
+              <mxPoint x="3060" y="50" />
+              <mxPoint x="3060" y="262.43" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-order-fiscal" edge="1" parent="d1" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-fiscal-doc" value="documenta">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1440" y="430" />
+              <mxPoint x="100" y="430" />
+              <mxPoint x="100" y="1200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-order-ship" edge="1" parent="d1" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-shipment" value="despacha">
+          <mxGeometry relative="1" x="0.2369" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1280" y="310" />
+              <mxPoint x="1280" y="980" />
+              <mxPoint x="860" y="980" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-order-return" edge="1" parent="d1" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-return" value="venta original">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1805" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-order-incident" edge="1" parent="d1" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-incident" value="incidencias">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2110" y="330" />
+              <mxPoint x="2110" y="2202.57" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-return-stock" edge="1" parent="d1" source="d-return" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-stock-movement" value="repone cuando aplica">
+          <mxGeometry relative="1" x="0.1261" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="2010" y="1860" />
+              <mxPoint x="2010" y="565" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-order-summary" edge="1" parent="d1" source="d-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-summary" value="proyecta">
+          <mxGeometry relative="1" x="0.4393" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="1700" y="282.57" />
+              <mxPoint x="1700" y="1072.57" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-domain-outbox" edge="1" parent="d1" source="d-saga-step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-outbox" value="publica hechos">
+          <mxGeometry relative="1" x="0.2796" as="geometry">
+            <mxPoint y="-1" as="offset" />
+            <Array as="points">
+              <mxPoint x="1250" y="722.43" />
+              <mxPoint x="1250" y="920" />
+              <mxPoint x="560" y="920" />
+              <mxPoint x="560" y="1800" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="de-domain-audit" edge="1" parent="d1" source="d-saga-step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;fontColor=default;fontSize=13;labelBackgroundColor=none;" target="d-audit" value="registra cambios">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="sgo-er-current" name="02 - Modelo físico implementado">
+    <mxGraphModel dx="3000" dy="2200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3000" pageHeight="2200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="3000" height="2200" as="geometry" />
+        </mxCell>
+        <mxCell id="title" value="&lt;b&gt;MODELO ER IMPLEMENTADO · SGO-LOGIC / MEGASTORE&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#a6a6a6&quot;&gt;PostgreSQL · Monolito modular · Corte 2026-09-23&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=28;fontColor=#f2f2f2;" vertex="1" parent="1">
+          <mxGeometry x="50" y="25" width="1700" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="&lt;b&gt;LEYENDA&lt;/b&gt;  PK primaria · FK foránea física · AK única · IX índice · CK validación&lt;br&gt;Línea continua: FK física dentro del módulo · Línea discontinua: correlación lógica por UUID entre módulos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=13;align=left;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="1830" y="25" width="1110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-orders" value="ORDERS · CUN-01 / ciclo de orden" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;fillColor=#111111;swimlaneFillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="800" height="930" as="geometry" />
+        </mxCell>
+        <mxCell id="carts" value="&lt;b&gt;CARTS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;customer_id : UUID [IX, activo único]&lt;br&gt;status : ACTIVE | CHECKED_OUT | ABANDONED&lt;br&gt;origin_channel, last_channel : canal&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; idempotency_key&lt;br&gt;correlation_id : UUID&lt;br&gt;created_at, updated_at : timestamptz&lt;br&gt;version : bigint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-orders">
+          <mxGeometry x="25" y="60" width="345" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="cart_items" value="&lt;b&gt;CART_ITEMS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK/FK&lt;/b&gt; cart_id : UUID&lt;br&gt;&lt;b&gt;PK&lt;/b&gt; product_id : UUID&lt;br&gt;product_name : varchar(180)&lt;br&gt;unit_price : numeric(12,2) [CK ≥ 0]&lt;br&gt;quantity : integer [CK &gt; 0]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-orders">
+          <mxGeometry x="420" y="60" width="345" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="customer_orders" value="&lt;b&gt;CUSTOMER_ORDERS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; cart_id : UUID [relación lógica 1:1]&lt;br&gt;customer_id : UUID [IX]&lt;br&gt;channel : WEB | MOBILE | STORE | CALL_CENTER&lt;br&gt;status : estado de la Saga [IX]&lt;br&gt;total : numeric(12,2)&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; checkout_key&lt;br&gt;correlation_id : UUID&lt;br&gt;created_at, updated_at : timestamptz&lt;br&gt;version : bigint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-orders">
+          <mxGeometry x="25" y="350" width="365" height="285" as="geometry" />
+        </mxCell>
+        <mxCell id="customer_order_items" value="&lt;b&gt;CUSTOMER_ORDER_ITEMS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK/FK&lt;/b&gt; order_id : UUID&lt;br&gt;&lt;b&gt;PK&lt;/b&gt; product_id : UUID&lt;br&gt;product_name : varchar(180)&lt;br&gt;unit_price : numeric(12,2)&lt;br&gt;quantity : integer [CK &gt; 0]&lt;br&gt;line_total : numeric(12,2)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-orders">
+          <mxGeometry x="430" y="350" width="335" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="order_status_history" value="&lt;b&gt;ORDER_STATUS_HISTORY&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; order_id : UUID [IX]&lt;br&gt;previous_status, new_status&lt;br&gt;actor : varchar(120)&lt;br&gt;reason : varchar(500)&lt;br&gt;correlation_id : UUID&lt;br&gt;occurred_at : timestamptz&lt;br&gt;&lt;font color=&quot;#f2f2f2&quot;&gt;Evidencia actual de transiciones de orden&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;dashed=1;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-orders">
+          <mxGeometry x="25" y="690" width="365" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-inventory" value="INVENTORY · CUN-02" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;fillColor=#111111;swimlaneFillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="880" y="120" width="670" height="930" as="geometry" />
+        </mxCell>
+        <mxCell id="inventory_locations" value="&lt;b&gt;INVENTORY_LOCATIONS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; code : varchar(16)&lt;br&gt;name : varchar(120)&lt;br&gt;type : DISTRIBUTION_CENTER | STORE&lt;br&gt;created_at : timestamptz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-inventory">
+          <mxGeometry x="25" y="60" width="300" height="175" as="geometry" />
+        </mxCell>
+        <mxCell id="inventory_items" value="&lt;b&gt;INVENTORY_ITEMS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;product_id : UUID [IX]&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; location_id : UUID [IX]&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; (product_id, location_id)&lt;br&gt;quantity_on_hand, quantity_reserved : integer&lt;br&gt;updated_at : timestamptz&lt;br&gt;version : bigint&lt;br&gt;CK: 0 ≤ reserved ≤ on_hand" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-inventory">
+          <mxGeometry x="350" y="60" width="295" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="inventory_reservations" value="&lt;b&gt;INVENTORY_RESERVATIONS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;order_id, product_id : UUID [IX lógico]&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; location_id : UUID&lt;br&gt;quantity : integer [CK &gt; 0]&lt;br&gt;status : ACTIVE | CONFIRMED | RELEASED | EXPIRED&lt;br&gt;correlation_id : UUID&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; idempotency_key&lt;br&gt;expires_at, created_at, updated_at&lt;br&gt;version : bigint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-inventory">
+          <mxGeometry x="155" y="390" width="365" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-payment-fiscal" value="PAGOS Y FISCAL · CUN-03 / CUN-04" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;fillColor=#111111;swimlaneFillColor=#111111;strokeColor=#f2f2f2;dashed=1;fontColor=#f2f2f2;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1590" y="120" width="650" height="930" as="geometry" />
+        </mxCell>
+        <mxCell id="payment_attempts" value="&lt;b&gt;PAYMENT_ATTEMPTS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;order_id : UUID [IX lógico]&lt;br&gt;channel, method&lt;br&gt;amount : numeric(12,2) · currency : ISO-4217&lt;br&gt;payment_reference : token seguro&lt;br&gt;status : PENDING | APPROVED | REJECTED | INDETERMINATE&lt;br&gt;provider_reference, result_code, result_message&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; idempotency_key&lt;br&gt;correlation_id : UUID&lt;br&gt;created_at, processed_at, reconciliation_at&lt;br&gt;version : bigint&lt;br&gt;&lt;font color=&quot;#f2f2f2&quot;&gt;No almacena PAN ni CVV&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;dashed=1;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-payment-fiscal">
+          <mxGeometry x="25" y="60" width="600" height="290" as="geometry" />
+        </mxCell>
+        <mxCell id="fiscal_documents" value="&lt;b&gt;FISCAL_DOCUMENTS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;order_id, payment_attempt_id : UUID [correlación lógica]&lt;br&gt;document_type · &lt;b&gt;FK&lt;/b&gt; original_document_id : UUID opcional&lt;br&gt;tax_identifier, customer_name&lt;br&gt;total : numeric(14,2) · currency&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; cui · series · xml_payload&lt;br&gt;status · sat_authorization&lt;br&gt;failure_code, failure_message&lt;br&gt;correlation_id · &lt;b&gt;AK&lt;/b&gt; idempotency_key&lt;br&gt;submission_attempts · timestamps · version" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-payment-fiscal">
+          <mxGeometry x="25" y="430" width="600" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-logistics" value="LOGISTICS · CUN-07 / CUN-08" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;fillColor=#111111;swimlaneFillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="2280" y="120" width="670" height="930" as="geometry" />
+        </mxCell>
+        <mxCell id="shipments" value="&lt;b&gt;SHIPMENTS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;order_id : UUID [IX lógico]&lt;br&gt;origin, destination, status&lt;br&gt;tracking_number&lt;br&gt;correlation_id&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; idempotency_key&lt;br&gt;label_attempts&lt;br&gt;created_at, updated_at · version" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-logistics">
+          <mxGeometry x="25" y="60" width="310" height="235" as="geometry" />
+        </mxCell>
+        <mxCell id="shipment_tracking_events" value="&lt;b&gt;SHIPMENT_TRACKING_EVENTS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; shipment_id : UUID [IX]&lt;br&gt;status, source&lt;br&gt;occurred_at : timestamptz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-logistics">
+          <mxGeometry x="365" y="60" width="280" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="shipment_dead_letters" value="&lt;b&gt;SHIPMENT_DEAD_LETTERS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; shipment_id : UUID&lt;br&gt;reason, attempts&lt;br&gt;registered_at : timestamptz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-logistics">
+          <mxGeometry x="365" y="270" width="280" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-service" value="ATENCIÓN Y LECTURA · CUN-09 / CUN-10 / CUN-11" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;fillColor=#111111;swimlaneFillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1090" width="1280" height="1020" as="geometry" />
+        </mxCell>
+        <mxCell id="order_summary" value="&lt;b&gt;ORDER_SUMMARY_PROJECTIONS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; order_id : UUID [correlación lógica]&lt;br&gt;order_status + as_of&lt;br&gt;payment_status + as_of&lt;br&gt;dispatch_status + as_of&lt;br&gt;delivery_status + as_of&lt;br&gt;incident_status + as_of&lt;br&gt;updated_at : timestamptz&lt;br&gt;&lt;font color=&quot;#f2f2f2&quot;&gt;Proyección; alimentación automática por Outbox pendiente&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-service">
+          <mxGeometry x="25" y="60" width="370" height="245" as="geometry" />
+        </mxCell>
+        <mxCell id="notification_requests" value="&lt;b&gt;NOTIFICATION_REQUESTS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;event_type, channel, recipient&lt;br&gt;source_aggregate_id : UUID [IX lógico]&lt;br&gt;correlation_id&lt;br&gt;status, attempts, last_error&lt;br&gt;created_at, sent_at, updated_at" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-service">
+          <mxGeometry x="435" y="60" width="365" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="incidents" value="&lt;b&gt;INCIDENTS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;order_id : UUID [IX lógico]&lt;br&gt;type, reason, partial, status&lt;br&gt;refund_amount : numeric(12,2)&lt;br&gt;correlation_id&lt;br&gt;created_at, resolved_at, updated_at" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-service">
+          <mxGeometry x="840" y="60" width="385" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="incident_items" value="&lt;b&gt;INCIDENT_ITEMS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;FK&lt;/b&gt; incident_id : UUID [IX]&lt;br&gt;sku : varchar(64)&lt;br&gt;quantity : integer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-service">
+          <mxGeometry x="840" y="340" width="300" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="mod-integration" value="INTEGRACIÓN CON LEGADOS · CUN-05 / CUN-06" style="swimlane;horizontal=1;startSize=34;rounded=1;html=1;fillColor=#111111;swimlaneFillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="1090" width="1590" height="1020" as="geometry" />
+        </mxCell>
+        <mxCell id="erp_batches" value="&lt;b&gt;ERP_BATCHES&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;format : CSV | XML&lt;br&gt;payload, status, sale_count&lt;br&gt;attempts, acknowledgement, failure_message&lt;br&gt;created_at, updated_at, delivered_at&lt;br&gt;version : bigint" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-integration">
+          <mxGeometry x="25" y="60" width="390" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="erp_sales" value="&lt;b&gt;ERP_SALES&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; order_id : UUID [correlación lógica]&lt;br&gt;net_total, tax_total, grand_total&lt;br&gt;currency, confirmed_at, status&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; batch_id : UUID opcional&lt;br&gt;created_at, updated_at" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-integration">
+          <mxGeometry x="465" y="60" width="390" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="pos_deliveries" value="&lt;b&gt;POS_DELIVERIES&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;event_id, event_type, order_id : UUID&lt;br&gt;store_number : 1..32&lt;br&gt;payload, status, attempts&lt;br&gt;acknowledgement, failure_message&lt;br&gt;correlation_id&lt;br&gt;created_at, updated_at, acknowledged_at&lt;br&gt;version : bigint&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; (event_id, store_number)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=12;align=left;verticalAlign=top;spacing=10;" vertex="1" parent="mod-integration">
+          <mxGeometry x="905" y="60" width="440" height="250" as="geometry" />
+        </mxCell>
+        <mxCell id="note-boundary" value="&lt;b&gt;FRONTERAS DEL MODELO IMPLEMENTADO&lt;/b&gt;&lt;br&gt;• Esta página refleja únicamente el corte físico actual de las migraciones.&lt;br&gt;• Los módulos no crean FK hacia tablas privadas de otro módulo; correlacionan por UUID.&lt;br&gt;• La ausencia de FK intermodular es intencional y preserva ADR-001, no una omisión del modelo.&lt;br&gt;• La página 01 es el modelo fuente completo del DDA; la página 03 detalla controles de trazabilidad pendientes." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;dashed=1;fontColor=#f2f2f2;fontSize=13;align=left;verticalAlign=top;spacing=14;" vertex="1" parent="mod-integration">
+          <mxGeometry x="25" y="390" width="1320" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="e-cart-items" value="contiene 1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="carts" target="cart_items">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-cart-order" value="origina 1 : 0..1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;startArrow=ERone;endArrow=ERzeroToOne;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="carts" target="customer_orders">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-items" value="contiene 1 : 1..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="customer_order_items">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-history" value="registra 1 : 1..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="order_status_history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-location-items" value="almacena 1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="inventory_locations" target="inventory_items">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-location-res" value="asigna 1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="inventory_locations" target="inventory_reservations">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-fiscal-self" value="nota de crédito 0..1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;loopStyle=orthogonalLoopStyle;startArrow=ERzeroToOne;endArrow=ERzeroToMany;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="fiscal_documents" target="fiscal_documents">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2210" y="940" />
+              <mxPoint x="1560" y="940" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-shipment-track" value="produce 1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToMany;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="shipments" target="shipment_tracking_events">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-shipment-dead" value="falla 1 : 0..1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERzeroToOne;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="shipments" target="shipment_dead_letters">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-incident-items" value="incluye 1 : 1..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;endArrow=ERmany;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="incidents" target="incident_items">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-batch-sales" value="agrupa 0..1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;endArrow=ERzeroToMany;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="erp_batches" target="erp_sales">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-res" value="reserva" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="inventory_reservations">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-pay" value="intentos 1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;dashed=1;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="payment_attempts">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-fiscal" value="documentos 1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="fiscal_documents">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-pay-fiscal" value="respalda" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;dashed=1;fontColor=#f2f2f2;" edge="1" parent="1" source="payment_attempts" target="fiscal_documents">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-ship" value="despachos 1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="shipments">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-summary" value="proyecta 1 : 0..1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="order_summary">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-inc" value="incidencias 1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="incidents">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-not" value="origina eventos" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="notification_requests">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-erp" value="venta 1 : 0..1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="erp_sales">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-order-pos" value="eventos 1 : 0..N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=open;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="1" source="customer_orders" target="pos_deliveries">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="sgo-er-target" name="03 - Controles de trazabilidad pendientes">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="t0" />
+        <mxCell id="t1" parent="t0" />
+        <mxCell id="tbg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=none;" vertex="1" parent="t1">
+          <mxGeometry x="0" y="0" width="1800" height="1200" as="geometry" />
+        </mxCell>
+        <mxCell id="ttitle" value="&lt;b&gt;TRAZABILIDAD OBJETIVO · ESTRUCTURAS PENDIENTES&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#f2f2f2&quot;&gt;Diseño requerido por ADR-002 / CUN-12. No presentar como implementado hasta crear migración, código y pruebas.&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=26;fontColor=#f2f2f2;" vertex="1" parent="t1">
+          <mxGeometry x="50" y="30" width="1600" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="outbox" value="&lt;b&gt;&amp;laquo;PENDIENTE&amp;raquo; OUTBOX_MESSAGES&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;aggregate_type : varchar(80)&lt;br&gt;aggregate_id : UUID [IX]&lt;br&gt;event_type : varchar(120)&lt;br&gt;payload : JSONB&lt;br&gt;correlation_id : UUID [IX]&lt;br&gt;status : PENDING | PUBLISHED | DEAD_LETTER&lt;br&gt;attempts : integer&lt;br&gt;available_at, created_at, published_at&lt;br&gt;last_error : varchar(500)&lt;br&gt;&lt;b&gt;AK&lt;/b&gt; (aggregate_id, event_type, idempotency_key)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;dashed=1;fontColor=#f2f2f2;fontSize=14;align=left;verticalAlign=top;spacing=14;" vertex="1" parent="t1">
+          <mxGeometry x="100" y="180" width="620" height="360" as="geometry" />
+        </mxCell>
+        <mxCell id="audit_events" value="&lt;b&gt;&amp;laquo;PENDIENTE&amp;raquo; AUDIT_EVENTS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : UUID&lt;br&gt;actor_id, actor_type&lt;br&gt;action : varchar(120)&lt;br&gt;aggregate_type, aggregate_id : UUID [IX]&lt;br&gt;transaction_id : UUID [IX]&lt;br&gt;correlation_id : UUID [IX]&lt;br&gt;previous_state, new_state : JSONB&lt;br&gt;result : SUCCESS | REJECTED | FAILED&lt;br&gt;occurred_at : timestamptz [IX]&lt;br&gt;metadata : JSONB · evidence_hash : varchar(128)&lt;br&gt;&lt;font color=&quot;#f2f2f2&quot;&gt;Append-only; registrar también consulta/exportación&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;dashed=1;fontColor=#f2f2f2;fontSize=14;align=left;verticalAlign=top;spacing=14;" vertex="1" parent="t1">
+          <mxGeometry x="1030" y="180" width="660" height="385" as="geometry" />
+        </mxCell>
+        <mxCell id="broker" value="&lt;b&gt;RABBITMQ / TRABAJADOR OUTBOX&lt;/b&gt;&lt;br&gt;Publica después del commit · reintenta · deduplica · deriva a DLQ · registra métricas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=15;align=center;verticalAlign=middle;spacing=12;" vertex="1" parent="t1">
+          <mxGeometry x="755" y="300" width="240" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="sources" value="&lt;b&gt;PRODUCTORES TRANSACCIONALES&lt;/b&gt;&lt;br&gt;Orders · Payments · Fiscal · Inventory · Logistics · Incidents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=15;align=center;verticalAlign=middle;spacing=12;" vertex="1" parent="t1">
+          <mxGeometry x="560" y="700" width="630" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers" value="&lt;b&gt;CONSUMIDORES&lt;/b&gt;&lt;br&gt;Query projection · ERP · POS · Notifications · Audit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=15;align=center;verticalAlign=middle;spacing=12;" vertex="1" parent="t1">
+          <mxGeometry x="560" y="920" width="630" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="te1" value="misma transacción" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="t1" source="sources" target="outbox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="te2" value="publica" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="t1" source="outbox" target="broker">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="te3" value="entrega eventual" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#f2f2f2;fontColor=#f2f2f2;" edge="1" parent="t1" source="broker" target="consumers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="te4" value="evidencia inmutable" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;strokeColor=#f2f2f2;dashed=1;fontColor=#f2f2f2;" edge="1" parent="t1" source="broker" target="audit_events">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tnote" value="&lt;b&gt;GATE DE IMPLEMENTACIÓN&lt;/b&gt;&lt;br&gt;Una estructura deja de estar &amp;laquo;PENDIENTE&amp;raquo; únicamente cuando existan: migración Flyway + entidad/repositorio + servicio/controlador o consumidor + prueba automatizada + actualización del despliegue y QA-06." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111111;strokeColor=#f2f2f2;fontColor=#f2f2f2;fontSize=14;align=left;verticalAlign=middle;spacing=16;" vertex="1" parent="t1">
+          <mxGeometry x="100" y="1080" width="1590" height="80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

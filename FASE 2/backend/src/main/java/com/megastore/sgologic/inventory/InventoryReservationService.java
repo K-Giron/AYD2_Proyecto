@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * INV-02.</p>
  */
 @Service
-public class InventoryReservationService {
+public class InventoryReservationService implements InventoryReservationPort {
 
     /**
      * ADR-014: centros de distribución antes que tiendas; dentro del mismo
@@ -135,5 +135,30 @@ public class InventoryReservationService {
     public InventoryReservation getReservation(UUID reservationId) {
         return reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new InventoryReservationNotFoundException(reservationId));
+    }
+
+    /**
+     * Reserva todas las líneas dentro de una sola transacción. Si alguna no
+     * tiene origen disponible, PostgreSQL revierte también las reservas
+     * anteriores y la orden permanece en CREATED, evitando compromiso parcial.
+     */
+    @Override
+    @Transactional
+    public List<InventoryReservationAllocation> reserveOrder(
+            UUID orderId,
+            List<InventoryReservationLine> lines,
+            UUID correlationId,
+            String idempotencyKey) {
+        return lines.stream().map(line -> {
+            String lineKey = idempotencyKey + ":" + line.productId();
+            InventoryReservation reservation = reserveAtBestOrigin(
+                    orderId, line.productId(), line.quantity(), correlationId, lineKey);
+            InventoryLocation location = locationRepository.findById(reservation.getLocationId())
+                    .orElseThrow(() -> new InventoryLocationNotFoundException(reservation.getLocationId()));
+            return new InventoryReservationAllocation(
+                    reservation.getId(), reservation.getProductId(), reservation.getQuantity(),
+                    reservation.getLocationId(), location.getType(), location.getCode(),
+                    reservation.getExpiresAt());
+        }).toList();
     }
 }

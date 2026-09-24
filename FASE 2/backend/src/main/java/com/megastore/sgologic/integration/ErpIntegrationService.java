@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -60,6 +63,7 @@ public class ErpIntegrationService {
         return saleRepository.save(sale);
     }
 
+    @Transactional
     public ErpBatch runBatch(ErpExportFormat requestedFormat) {
         ErpExportFormat format = requestedFormat == null ? defaultFormat : requestedFormat;
         List<ErpSale> sales = saleRepository.findByStatusOrderByConfirmedAtAsc(ErpSaleStatus.PENDING);
@@ -71,8 +75,20 @@ public class ErpIntegrationService {
         }
         sales.forEach(sale -> sale.includeIn(batch.getId(), clock.instant()));
         saleRepository.saveAll(sales);
-        dispatchExecutor.execute(() -> deliverBatch(batch.getId()));
+        dispatchAfterCommit(batch.getId());
         return batch;
+    }
+
+    private void dispatchAfterCommit(UUID batchId) {
+        Runnable dispatch = () -> dispatchExecutor.execute(() -> deliverBatch(batchId));
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { dispatch.run(); }
+            });
+        } else {
+            dispatch.run();
+        }
     }
 
     @Scheduled(fixedDelayString = "${sgo.integrations.erp.interval-ms:1800000}",

@@ -4,7 +4,7 @@ function goToRoleHome(role) {
     location.href = sgoLandingPageFor(role);
 }
 
-// Si ya hay una sesión simulada activa, no pedir login de nuevo.
+// Si ya hay una sesión activa, no pedir login de nuevo.
 const existingSession = sgoGetSession();
 if (existingSession) {
     goToRoleHome(existingSession.role);
@@ -41,7 +41,9 @@ document.getElementById("login-form").addEventListener("submit", async (event) =
         errorEl.classList.remove("hidden");
         return;
     }
-    if (result.session.role !== selectedRole) {
+    const selectedInternal = selectedRole === "STAFF";
+    const accountIsInternal = ["STAFF", "FINANCE", "SAT_AUDITOR"].includes(result.session.role);
+    if ((selectedInternal && !accountIsInternal) || (!selectedInternal && result.session.role !== "CLIENTE")) {
         const otherLabel = result.session.role === "CLIENTE" ? "Cliente" : "Personal interno";
         errorEl.textContent = `Esa cuenta pertenece al perfil "${otherLabel}". Cambia la pestaña de arriba.`;
         errorEl.classList.remove("hidden");

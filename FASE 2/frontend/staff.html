@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SGO-Logic — Consola operativa</title>
+    <title>MegaStore | Centro de operaciones</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="stylesheet" href="styles.css" />
 </head>
@@ -12,45 +12,54 @@
 
     <header class="app-bar">
         <div class="app-bar-brand">
-            <a href="index.html" class="brand-mark" title="Volver al inicio">SGO</a>
+            <a href="index.html" class="brand-mark" title="Volver al inicio">MS</a>
             <div>
-                <h1>Consola operativa</h1>
-                <p class="app-bar-subtitle">Personal de logística y atención al cliente</p>
+                <h1>Centro de operaciones</h1>
+                <p class="app-bar-subtitle">Ventas, cumplimiento y atención de MegaStore</p>
             </div>
         </div>
         <div class="app-bar-actions">
             <a href="login.html" class="btn btn-ghost btn-sm">Ver como cliente</a>
             <div class="app-bar-status">
                 <span id="backend-status-dot" class="status-dot unknown"></span>
-                <span id="backend-status-text">Verificando backend…</span>
+                <span id="backend-status-text">Verificando servicios...</span>
             </div>
             <div class="session-chip">
-                <span id="session-name">—</span>
+                <span id="session-name">Sesión interna</span>
                 <button id="logout-btn" class="btn btn-ghost btn-sm">Cerrar sesión</button>
             </div>
         </div>
     </header>
 
-    <div class="scope-note">
-        Cubre los módulos propiedad de Kevin Girón: <strong>Despacho</strong> (LOG-01/02/03),
-        <strong>Notificaciones</strong> (NOT-01), <strong>Consulta consolidada</strong> (QRY-01) y
-        <strong>Devoluciones</strong> (INC-01) — CDU-07 a CDU-11, con Personal de logística y Personal de
-        atención al cliente como actores. El checkout de cliente no se gestiona desde aquí: depende de
-        ORD-01 (Jairo Gómez), que todavía no existe.
-    </div>
-
     <main class="workbench">
-        <section class="order-picker">
-            <label for="order-id-input">Orden de trabajo</label>
-            <div class="order-picker-row">
-                <input type="text" id="order-id-input" placeholder="UUID de la orden (pega uno existente o genera uno nuevo)" />
-                <button id="load-order-btn" class="btn btn-primary">Cargar</button>
-                <button id="new-order-btn" class="btn btn-ghost">Orden nueva (demo)</button>
+        <section class="operations-heading">
+            <div>
+                <p class="section-kicker">Visión ejecutiva</p>
+                <h2>Operación comercial de hoy</h2>
+                <p>Información consolidada desde órdenes, pagos, facturación, despacho e incidencias.</p>
             </div>
-            <p class="hint">
-                Todas las áreas de abajo se filtran por este Order ID, igual que lo hace CDU-09
-                ("vista consolidada... sin que el solicitante deba consultar cada área por separado").
-            </p>
+            <button id="refresh-operations-btn" class="btn btn-ghost">Actualizar operación</button>
+        </section>
+
+        <section class="operations-metrics" aria-label="Indicadores operativos">
+            <article><span>Órdenes registradas</span><strong id="metric-orders">0</strong><small>todos los canales</small></article>
+            <article><span>Confirmadas</span><strong id="metric-confirmed">0</strong><small>listas para cumplimiento</small></article>
+            <article><span>Requieren atención</span><strong id="metric-attention">0</strong><small>rechazos o conciliación</small></article>
+            <article><span>Valor procesado</span><strong id="metric-revenue">Q0.00</strong><small>órdenes registradas</small></article>
+        </section>
+
+        <section class="operations-table-panel">
+            <header><div><h2>Órdenes recientes</h2><p>Selecciona una orden para operar su ciclo completo.</p></div><span class="environment-badge">Ambiente simulado controlado</span></header>
+            <div id="operations-orders" class="operations-orders"><p class="empty-state">Cargando órdenes...</p></div>
+        </section>
+
+        <section class="order-picker">
+            <label for="order-id-input">Consultar una orden por identificador</label>
+            <div class="order-picker-row">
+                <input type="text" id="order-id-input" placeholder="UUID de la orden" />
+                <button id="load-order-btn" class="btn btn-primary">Cargar</button>
+            </div>
+            <p class="hint">El detalle reúne el estado comercial, despacho, comunicaciones e incidencias sin cambiar de pantalla.</p>
         </section>
 
         <section id="dashboard" class="dashboard hidden">
@@ -71,20 +80,6 @@
                 <div id="summary-body" class="card-body">
                     <p class="empty-state">Carga una orden para ver su resumen.</p>
                 </div>
-                <details class="dev-tools">
-                    <summary>Alimentar resumen manualmente (temporal, mientras no exista el Outbox de BB-04)</summary>
-                    <form id="summary-ingest-form" class="form-inline compact">
-                        <select name="source" required>
-                            <option value="ORDER">Compra</option>
-                            <option value="PAYMENT">Pago</option>
-                            <option value="DISPATCH">Despacho</option>
-                            <option value="DELIVERY">Entrega</option>
-                            <option value="INCIDENT">Incidencia</option>
-                        </select>
-                        <input type="text" name="status" placeholder="Estado, ej. CONFIRMED" required />
-                        <button type="submit" class="btn btn-ghost btn-sm">Aplicar</button>
-                    </form>
-                </details>
             </article>
 
             <!-- Despacho — LOG-01/02/03 -->
@@ -210,28 +205,49 @@
                 </details>
             </article>
 
-            <!-- Checkout: no se gestiona desde la consola operativa -->
-            <article class="card card-wide card-blocked" data-area="checkout">
+            <article class="card" data-area="legacy">
+                <header class="card-header">
+                    <div class="card-title"><span class="card-icon">32</span><div><h2>ERP y puntos de venta</h2><p class="card-subtitle">Sincronización con sistemas legados sin modificarlos</p></div></div>
+                </header>
+                <div class="card-body">
+                    <p class="integration-help">Registra la venta confirmada en la ventana de ERP-Core o publica el cambio a una de las 32 tiendas.</p>
+                    <div class="legacy-actions">
+                        <button id="erp-sync-btn" class="btn btn-primary btn-sm">Registrar en ERP</button>
+                        <label>Tienda POS<input id="pos-store-number" type="number" min="1" max="32" value="1" /></label>
+                        <button id="pos-publish-btn" class="btn btn-ghost btn-sm">Publicar a POS</button>
+                    </div>
+                    <div id="legacy-result" class="integration-result"><p class="empty-state">Selecciona una orden para operar las integraciones.</p></div>
+                </div>
+            </article>
+
+            <article class="card" data-area="audit">
+                <header class="card-header">
+                    <div class="card-title"><span class="card-icon">ID</span><div><h2>Evidencia de auditoría</h2><p class="card-subtitle">CUN-12 · consulta y exportación restringidas a Finanzas/Auditor SAT</p></div></div>
+                    <button id="export-audit-btn" class="btn btn-ghost btn-sm">Exportar JSON</button>
+                </header>
+                <div id="audit-list" class="card-body list-body"><p class="empty-state">Carga una orden para reconstruir su historia.</p></div>
+            </article>
+
+            <article class="card card-wide integrations-card" data-area="integrations">
                 <header class="card-header">
                     <div class="card-title">
-                        <span class="card-icon icon-blocked">
+                        <span class="card-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                         </span>
                         <div>
-                            <h2>Checkout</h2>
-                            <p class="card-subtitle">CUN-01/CUN-02/CUN-03 — es una pantalla de cliente, no de esta consola</p>
+                            <h2>Cadena de integración</h2>
+                            <p class="card-subtitle">Servicios externos representados con simuladores configurables y trazables</p>
                         </div>
                     </div>
-                    <span class="badge badge-soon">Próximamente</span>
+                    <span class="badge badge-warn">Entorno académico</span>
                 </header>
                 <div class="card-body">
-                    <p>
-                        El checkout lo inicia el cliente (ver <a href="cliente.html">vista de cliente</a>), no
-                        el personal interno. Además depende de <code>ORD-01</code> (carrito recuperable entre
-                        canales), propiedad de Jairo Gómez, que todavía no existe en el backend
-                        (<code>docs/contracts/orders/ord-01-cart-proposal.md</code>, estado
-                        <code>PROPOSED</code>).
-                    </p>
+                    <div class="integration-strip">
+                        <div><strong>PayKlik</strong><span>Autorización e idempotencia</span><i class="status-dot unknown"></i></div>
+                        <div><strong>SAT</strong><span>Documento fiscal y CUI</span><i class="status-dot unknown"></i></div>
+                        <div><strong>LogiExpress</strong><span>Guía y seguimiento</span><i class="status-dot unknown"></i></div>
+                        <div><strong>Mensajería</strong><span>Correo, SMS y push</span><i class="status-dot unknown"></i></div>
+                    </div>
                 </div>
             </article>
         </section>
