@@ -3,7 +3,6 @@ package com.megastore.sgologic.audit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -13,12 +12,18 @@ import java.util.UUID;
  * orden o por agregado/transacción, registra cada acceso y la búsqueda
  * fallida, y exporta la evidencia en CSV.
  *
- * <p>La evidencia sobre la consulta se escribe en una transacción
- * independiente ({@link AuditEvidenceWriter}) para que sobreviva a la
- * búsqueda fallida exigida por CDU-12 E1.</p>
+ * <p>Los métodos no abren una transacción propia: cada lectura usa la
+ * transacción corta del repositorio y la evidencia se escribe con
+ * {@link AuditEvidenceWriter} ({@code REQUIRES_NEW}). Así una consulta
+ * concurrente nunca retiene una conexión mientras espera otra, y el
+ * registro de la búsqueda fallida sobrevive al error (CDU-12 E1). Las
+ * consultas por orden devuelven la evidencia de negocio; los eventos de
+ * acceso/exportación se consultan por el agregado {@code AuditEvidence}.</p>
  */
 @Service
 public class AuditQueryService {
+
+    private static final String ACCESS_AGGREGATE = "AuditEvidence";
 
     private static final Logger log = LoggerFactory.getLogger(AuditQueryService.class);
 
@@ -30,9 +35,9 @@ public class AuditQueryService {
         this.evidenceWriter = evidenceWriter;
     }
 
-    @Transactional
     public List<AuditEvent> findByOrder(UUID orderId, UUID correlationId) {
-        List<AuditEvent> events = repository.findByOrderIdOrderByOccurredAtAsc(orderId);
+        List<AuditEvent> events = repository.findByOrderIdAndAggregateTypeNotOrderByOccurredAtAsc(
+                orderId, ACCESS_AGGREGATE);
         if (events.isEmpty()) {
             recordSearchFailed("orderId=" + orderId, orderId, orderId, correlationId);
             throw new AuditEvidenceNotFoundException("orderId=" + orderId);
@@ -41,7 +46,6 @@ public class AuditQueryService {
         return events;
     }
 
-    @Transactional
     public List<AuditEvent> findByAggregate(String aggregateType, UUID aggregateId, UUID correlationId) {
         List<AuditEvent> events = repository
                 .findByAggregateTypeAndAggregateIdOrderByOccurredAtAsc(aggregateType, aggregateId);
@@ -54,9 +58,9 @@ public class AuditQueryService {
         return events;
     }
 
-    @Transactional
     public String exportOrderEvidence(UUID orderId, UUID correlationId) {
-        List<AuditEvent> events = repository.findByOrderIdOrderByOccurredAtAsc(orderId);
+        List<AuditEvent> events = repository.findByOrderIdAndAggregateTypeNotOrderByOccurredAtAsc(
+                orderId, ACCESS_AGGREGATE);
         if (events.isEmpty()) {
             recordSearchFailed("orderId=" + orderId, orderId, orderId, correlationId);
             throw new AuditEvidenceNotFoundException("orderId=" + orderId);

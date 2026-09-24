@@ -20,8 +20,14 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -131,6 +137,30 @@ class AuditQueryIntegrationTest {
         assertThat(repository.findByAggregateTypeAndAggregateIdOrderByOccurredAtAsc("AuditEvidence", orderId))
                 .singleElement()
                 .satisfies(export -> assertThat(export.getAction()).isEqualTo("AUDIT_EVIDENCE_EXPORTED"));
+    }
+
+    @Test
+    void concurrentQueriesDoNotExhaustTheConnectionPool() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        seed(orderId, "Order", UUID.randomUUID(), "ORDER_CONFIRMED", Instant.parse("2026-09-23T10:00:00Z"));
+        int concurrency = 16;
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(concurrency);
+        try {
+            List<Future<Integer>> futures = new ArrayList<>();
+            for (int i = 0; i < concurrency; i++) {
+                futures.add(pool.submit(() -> {
+                    start.await();
+                    return queryService.findByOrder(orderId, UUID.randomUUID()).size();
+                }));
+            }
+            start.countDown();
+            for (Future<Integer> future : futures) {
+                assertThat(future.get(20, TimeUnit.SECONDS)).isEqualTo(1);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     @Test

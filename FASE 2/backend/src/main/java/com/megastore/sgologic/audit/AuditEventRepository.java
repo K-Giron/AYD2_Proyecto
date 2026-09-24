@@ -17,6 +17,12 @@ interface AuditEventRepository extends Repository<AuditEvent, UUID> {
 
     List<AuditEvent> findByOrderIdOrderByOccurredAtAsc(UUID orderId);
 
+    /**
+     * Evidencia de negocio de una orden, sin los eventos de acceso/exportación
+     * ({@code AuditEvidence}) que genera la propia consulta.
+     */
+    List<AuditEvent> findByOrderIdAndAggregateTypeNotOrderByOccurredAtAsc(UUID orderId, String aggregateType);
+
     List<AuditEvent> findByAggregateTypeAndAggregateIdOrderByOccurredAtAsc(String aggregateType, UUID aggregateId);
 
     long countByAggregateId(UUID aggregateId);
