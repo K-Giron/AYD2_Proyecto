@@ -220,6 +220,58 @@ class SecurityAuthorizationTest {
     }
 
     @Test
+    void roleMatrixRestrictsEndpoints() throws Exception {
+        String client = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
+        String logistics = login("logistica@megastore.com", "Logistica123").get("accessToken").asText();
+        String finance = login("finanzas@megastore.com", "Finanzas123").get("accessToken").asText();
+        String staff = login("staff@megastore.com", "Staff123").get("accessToken").asText();
+        String orderId = UUID.randomUUID().toString();
+
+        // Sin token: 401 en los grupos protegidos.
+        mockMvc.perform(get("/api/v1/payments/attempts").param("orderId", orderId))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/fiscal-documents/orders/" + orderId))
+                .andExpect(status().isUnauthorized());
+
+        // CLIENT no puede ingerir proyecciones, emitir notificaciones ni ver fiscal.
+        mockMvc.perform(post("/api/v1/query/order-summary")
+                        .header("Authorization", "Bearer " + client)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderId\":\"" + orderId + "\",\"source\":\"ORDER\",\"status\":\"CONFIRMED\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/notifications")
+                        .header("Authorization", "Bearer " + client)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"eventType\":\"ORDER_CONFIRMED\",\"channel\":\"EMAIL\","
+                                + "\"recipient\":\"c@example.com\",\"sourceAggregateId\":\"" + orderId + "\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/fiscal-documents/orders/" + orderId)
+                        .header("Authorization", "Bearer " + client))
+                .andExpect(status().isForbidden());
+
+        // LOGISTICS no puede ver pagos ni auditoría.
+        mockMvc.perform(get("/api/v1/payments/attempts").param("orderId", orderId)
+                        .header("Authorization", "Bearer " + logistics))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/audit/events").param("orderId", orderId)
+                        .header("Authorization", "Bearer " + logistics))
+                .andExpect(status().isForbidden());
+
+        // FINANCE no puede operar despachos ni pagos.
+        mockMvc.perform(get("/api/v1/shipments").param("orderId", orderId)
+                        .header("Authorization", "Bearer " + finance))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/payments/attempts").param("orderId", orderId)
+                        .header("Authorization", "Bearer " + finance))
+                .andExpect(status().isForbidden());
+
+        // SUPPORT (staff) no puede ver fiscal.
+        mockMvc.perform(get("/api/v1/fiscal-documents/orders/" + orderId)
+                        .header("Authorization", "Bearer " + staff))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void clientRoleCanReadInventoryAndPublicHealthStaysOpen() throws Exception {
         String token = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
 
