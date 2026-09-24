@@ -29,11 +29,14 @@ public class InventoryController {
 
     private final InventoryQueryService queryService;
     private final InventoryReservationService reservationService;
+    private final InventoryMovementService movementService;
 
     public InventoryController(InventoryQueryService queryService,
-                                InventoryReservationService reservationService) {
+                                InventoryReservationService reservationService,
+                                InventoryMovementService movementService) {
         this.queryService = queryService;
         this.reservationService = reservationService;
+        this.movementService = movementService;
     }
 
     @GetMapping("/locations")
@@ -90,6 +93,24 @@ public class InventoryController {
         InventoryReservation reservation = reservationService.getReservation(reservationId);
         InventoryLocation location = queryService.getLocationById(reservation.getLocationId());
         return InventoryReservationResponse.from(reservation, location);
+    }
+
+    /**
+     * Entrada o salida de inventario fuera del flujo de reserva de venta en
+     * línea: recepción de mercadería, merma o ajuste de tienda/POS.
+     */
+    @PostMapping("/stock-movements")
+    public ResponseEntity<InventoryStockMovementResponse> registerStockMovement(
+            @Valid @RequestBody RegisterStockMovementRequest request, HttpServletRequest httpRequest) {
+        UUID correlationId = correlationId(httpRequest);
+        InventoryStockMovement movement = movementService.registerMovement(
+                request.productId(), request.locationId(), request.type(), request.quantity(),
+                request.reason(), correlationId);
+        InventoryStockResponse stock = queryService.getStockByProductAndLocation(
+                movement.getProductId(), movement.getLocationId());
+        InventoryLocation location = queryService.getLocationById(movement.getLocationId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(InventoryStockMovementResponse.from(movement, location, stock.quantityOnHand()));
     }
 
     private UUID correlationId(HttpServletRequest request) {

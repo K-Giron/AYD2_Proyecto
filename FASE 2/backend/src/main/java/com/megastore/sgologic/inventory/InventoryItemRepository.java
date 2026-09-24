@@ -58,4 +58,30 @@ interface InventoryItemRepository extends JpaRepository<InventoryItem, UUID> {
             + "AND i.quantityOnHand >= :quantity AND i.quantityReserved >= :quantity")
     int tryConfirm(@Param("productId") UUID productId, @Param("locationId") UUID locationId,
                    @Param("quantity") int quantity, @Param("now") Instant now);
+
+    /**
+     * Entrada de mercadería (recepción, reabastecimiento de tienda/POS):
+     * suma unidades a la existencia sin afectar lo reservado. Requiere que
+     * ya exista una fila para ese producto/ubicación (INV-01/V2 la crea).
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE InventoryItem i SET i.quantityOnHand = i.quantityOnHand + :quantity, "
+            + "i.updatedAt = :now, i.version = i.version + 1 "
+            + "WHERE i.productId = :productId AND i.locationId = :locationId")
+    int tryIncreaseOnHand(@Param("productId") UUID productId, @Param("locationId") UUID locationId,
+                          @Param("quantity") int quantity, @Param("now") Instant now);
+
+    /**
+     * Salida de mercadería fuera del flujo de venta en línea (merma, ajuste
+     * de tienda/POS): descuenta existencia sin tocar lo reservado. Atómica
+     * igual que {@link #tryReserve}; solo afecta unidades disponibles
+     * (no reservadas), reforzado por el mismo CHECK de la migración V1.
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE InventoryItem i SET i.quantityOnHand = i.quantityOnHand - :quantity, "
+            + "i.updatedAt = :now, i.version = i.version + 1 "
+            + "WHERE i.productId = :productId AND i.locationId = :locationId "
+            + "AND (i.quantityOnHand - i.quantityReserved) >= :quantity")
+    int tryDecreaseOnHand(@Param("productId") UUID productId, @Param("locationId") UUID locationId,
+                          @Param("quantity") int quantity, @Param("now") Instant now);
 }

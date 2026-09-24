@@ -12,6 +12,7 @@ spring:
     validate-on-migrate: true
     baseline-on-migrate: false
     clean-disabled: true
+    out-of-order: true
   jpa:
     hibernate:
       ddl-auto: validate

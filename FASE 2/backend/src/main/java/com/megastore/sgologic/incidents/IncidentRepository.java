@@ -8,4 +8,7 @@ import java.util.UUID;
 interface IncidentRepository extends JpaRepository<Incident, UUID> {
 
     List<Incident> findByOrderIdOrderByCreatedAtAsc(UUID orderId);
+
+    /** Historial de atenciones del cliente a través de todas sus órdenes, sin leer tablas de Orders. */
+    List<Incident> findByCustomerIdOrderByCreatedAtDesc(UUID customerId);
 }

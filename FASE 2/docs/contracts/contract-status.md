@@ -16,8 +16,9 @@ Esta tabla permite trabajar contra una línea base visible sin presentar como ap
 | Puertos requeridos por la Saga | Borrador / `PROPOSED` | Jairo, Jorge, Edson, Andy y Kevin | ORD-03 |
 | ADR-009 | `Proposed` | Al menos tres integrantes | Cierre BB-02 y BB-05 |
 | ADR-010, confirmación fiscal asíncrona | `Proposed`; aprobación de Edson registrada (2026-09-23); faltan Jairo | Andy, Edson y Jairo | Integración FIS-02 con ORD-03 |
-| ADR-012, contratos de simuladores | `Proposed`; aprobación de Edson registrada (2026-09-23); faltan Kevin y Jairo | Andy, Edson, Kevin y Jairo | Ratificación de BB-06 |
-| ADR-013, autenticación JWT, roles y sanitización | `Proposed`; decisión JWT del equipo registrada (2026-09-23) | Edson, Jairo, Andy y Kevin | Implementación BB-07 y SEC-01 |
+| ADR-012, contratos de simuladores | `Proposed`; aprobación de Edson (2026-09-23) y Kevin (2026-09-24) registradas; falta Jairo | Andy, Edson, Kevin y Jairo | Ratificación de BB-06 |
+| ADR-013, autenticación JWT, roles y sanitización | `Proposed`; decisión JWT del equipo (2026-09-23) y aprobación de Kevin (2026-09-24) registradas; faltan Jairo y Andy | Edson, Jairo, Andy y Kevin | Implementación BB-07 y SEC-01 |
+| ADR-014, algoritmo explicable de origen de despacho | `Proposed`; aprobación de Kevin (2026-09-24) registrada; faltan Jairo, Edson y Andy | Jairo, Edson, Andy y Kevin | INV-04 y el puerto de despacho de LOG-01 |
 
 ## Implementaciones locales contra contratos propuestos
 
@@ -50,4 +51,8 @@ fila de esta tabla convierte un contrato `PROPOSED` en `ACCEPTED`.
 | ADR-009 | Edson Sosa | Aprobar (revisión de stack y topología) | 2026-09-23 | `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md` |
 | ADR-010 | Edson Sosa | Aprobar (resiliencia y compuerta fiscal) | 2026-09-23 | `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md` |
 | ADR-012 | Edson Sosa | Aprobar (contratos de simuladores y protección de datos) | 2026-09-23 | `docs/evidence/functional/REV-EDSON-2026-09-23-revision-cruzada.md` |
-| ADR-009 | Jairo, Jorge, Andy y Kevin | Pendiente | — | — |
+| ADR-009 | Kevin Girón | Aprobar (stack/topología; sin objeciones desde logistics/notifications/query/incidents/frontend) | 2026-09-24 | `BITACORA_FASE_2.md`, entrada de Kevin del 2026-09-24 |
+| ADR-012 | Kevin Girón | Aprobar (revisé `SimulatedLogiExpressAdapter`/`SimulatedNotificationProviderAdapter` migrados a `SimulatorMode`: preservan la semántica TIMEOUT/OUTAGE que LOG-03/NOT-01 necesitan) | 2026-09-24 | `logistics/SimulatedLogiExpressAdapter.java`, `notifications/SimulatedNotificationProviderAdapter.java` |
+| ADR-013 | Kevin Girón | Aprobar (matriz de roles verificada contra `SecurityConfig`: `/api/v1/shipments`, `/api/v1/notifications` e `/api/v1/incidents` quedan correctos para CLIENT/SUPPORT/LOGISTICS; `login.html`/`session.js` ya envían el JWT real) | 2026-09-24 | `security/SecurityConfig.java`, `frontend/session.js` |
+| ADR-014 | Kevin Girón | Aprobar (el puerto de despacho de `saga-required-ports.md` que soy dueño de proveer ya recibe `origin`/`originCode` calculados por este algoritmo; no exige nada adicional de Logistics) | 2026-09-24 | `logistics/api/DispatchRequest.java`, `orders/OrderSagaService.java` |
+| ADR-009 | Jairo, Jorge y Andy | Pendiente | — | — |

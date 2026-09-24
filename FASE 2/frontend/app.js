@@ -580,11 +580,54 @@ el("pos-publish-btn").addEventListener("click", async () => {
 });
 
 // ---------------------------------------------------------------------
+// Inventario — entradas y salidas (independiente de una orden)
+// ---------------------------------------------------------------------
+
+async function loadInventoryPanelOptions() {
+    const productSelect = el("inventory-product-select");
+    const locationSelect = el("inventory-location-select");
+    try {
+        const [catalogResponse, locations] = await Promise.all([
+            fetch("catalog.json", { cache: "no-store" }).then(response => response.json()),
+            apiCall("GET", "/api/v1/inventory/locations"),
+        ]);
+        productSelect.innerHTML = catalogResponse
+            .map(product => `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)}</option>`).join("");
+        locationSelect.innerHTML = locations
+            .map(location => `<option value="${escapeHtml(location.locationId)}">${escapeHtml(location.code)} — ${escapeHtml(location.name)} (${location.type === "STORE" ? "Tienda" : "Centro de distribución"})</option>`)
+            .join("");
+    } catch (error) {
+        el("inventory-movement-result").innerHTML = `<p class="empty-state">No se pudieron cargar productos/ubicaciones: ${escapeHtml(error.message)}</p>`;
+    }
+}
+
+el("inventory-movement-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const values = formToObject(event.currentTarget);
+    try {
+        const movement = await apiCall("POST", "/api/v1/inventory/stock-movements", {
+            productId: values.productId,
+            locationId: values.locationId,
+            type: values.type,
+            quantity: Number(values.quantity),
+            reason: values.reason || undefined,
+        });
+        el("inventory-movement-result").innerHTML = `<div class="integration-success"><strong>${movement.type === "INBOUND" ? "Entrada" : "Salida"} registrada en ${escapeHtml(movement.locationCode)}</strong><span>Existencia actual: ${movement.quantityOnHandAfter} unidad(es)</span></div>`;
+        toast("Movimiento de inventario registrado.", "ok");
+        event.currentTarget.reset();
+    } catch (error) {
+        el("inventory-movement-result").innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
+        toast(error.message, "error");
+    }
+});
+
+// ---------------------------------------------------------------------
 // Arranque
 // ---------------------------------------------------------------------
 
 checkBackendStatus();
 loadOperationsOverview();
+loadInventoryPanelOptions();
 
 const savedOrderId = localStorage.getItem(ORDER_ID_STORAGE_KEY);
 if (savedOrderId) {

@@ -5,11 +5,17 @@ import com.megastore.sgologic.messaging.InboxService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.Clock;
 import java.util.UUID;
 
-/** Convierte una confirmación de orden en una notificación no bloqueante. */
+/**
+ * Convierte una confirmación de orden en una notificación no bloqueante y
+ * recuerda {@code orderId -> customerId} para que los eventos de despacho
+ * (Logistics) e incidencia (Incidents), que no conocen al cliente, también
+ * puedan resolver el contacto.
+ */
 @Component
 @ConditionalOnProperty(name = "sgo.messaging.consumers.enabled", havingValue = "true", matchIfMissing = true)
 class OrderStatusNotificationConsumer {
@@ -18,14 +24,20 @@ class OrderStatusNotificationConsumer {
 
     private final InboxService inboxService;
     private final NotificationService notificationService;
-    private final CustomerContactRepository contactRepository;
+    private final CustomerLookupService customerLookup;
+    private final OrderCustomerLinkRepository customerLinkRepository;
+    private final Clock clock;
 
     OrderStatusNotificationConsumer(InboxService inboxService,
                                     NotificationService notificationService,
-                                    CustomerContactRepository contactRepository) {
+                                    CustomerLookupService customerLookup,
+                                    OrderCustomerLinkRepository customerLinkRepository,
+                                    Clock clock) {
         this.inboxService = inboxService;
         this.notificationService = notificationService;
-        this.contactRepository = contactRepository;
+        this.customerLookup = customerLookup;
+        this.customerLinkRepository = customerLinkRepository;
+        this.clock = clock;
     }
 
     @RabbitListener(queues = NotificationConsumerConfig.QUEUE)
@@ -34,21 +46,19 @@ class OrderStatusNotificationConsumer {
         inboxService.processOnce(CONSUMER_NAME, event, () -> process(event));
     }
 
-    private void process(BusinessEventEnvelope event) {
-        if (!"CONFIRMED".equals(event.payload().get("newStatus").toString())) return;
-
+    @Transactional
+    void process(BusinessEventEnvelope event) {
         Object rawCustomerId = event.payload().get("customerId");
-        if (rawCustomerId == null) return;
+        UUID customerId = rawCustomerId == null ? null : UUID.fromString(rawCustomerId.toString());
+        if (customerId != null) {
+            customerLinkRepository.save(OrderCustomerLink.of(event.aggregateId(), customerId, clock.instant()));
+        }
 
-        List<CustomerContact> contacts = contactRepository
-                .findByCustomerIdAndEnabledTrueAndVerifiedAtIsNotNullOrderByPreferenceRankAsc(
-                        UUID.fromString(rawCustomerId.toString()));
-        if (contacts.isEmpty()) return;
-
-        CustomerContact preferred = contacts.getFirst();
-        notificationService.requestNotification(NotificationEventType.ORDER_CONFIRMED,
-                preferred.getChannel(), preferred.getDestinationToken(), event.aggregateId(),
-                event.correlationId());
+        if (!"CONFIRMED".equals(event.payload().get("newStatus").toString()) || customerId == null) return;
+        customerLookup.resolvePreferredContact(customerId).ifPresent(contact ->
+                notificationService.requestNotification(NotificationEventType.ORDER_CONFIRMED,
+                        contact.getChannel(), contact.getDestinationToken(), event.aggregateId(),
+                        event.correlationId()));
     }
 
     private void validateEnvelope(BusinessEventEnvelope event) {

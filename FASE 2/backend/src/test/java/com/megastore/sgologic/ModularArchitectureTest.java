@@ -76,7 +76,8 @@ class ModularArchitectureTest {
                 case "query" -> Set.of(SHARED_MODULE, "messaging");
                 case "notifications" -> Set.of(SHARED_MODULE, "messaging");
                 case "payments", "logistics" -> Set.of(SHARED_MODULE, "integration", "audit");
-                case "incidents" -> Set.of(SHARED_MODULE, "audit");
+                case "incidents" -> Set.of(SHARED_MODULE, "audit", "integration");
+                case "inventory" -> Set.of(SHARED_MODULE, "integration");
                 default -> Set.of(SHARED_MODULE);
             };
             assertThat(dependencyIds)

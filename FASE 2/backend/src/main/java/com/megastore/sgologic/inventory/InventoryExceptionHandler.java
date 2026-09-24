@@ -51,6 +51,13 @@ class InventoryExceptionHandler {
         return errorResponse(HttpStatus.CONFLICT, "NO_AVAILABLE_ORIGIN", exception, request);
     }
 
+    /** Salida de inventario que excede la existencia disponible (no reservada). */
+    @ExceptionHandler(InsufficientOnHandStockException.class)
+    public ResponseEntity<ApiError> handleInsufficientOnHandStock(InsufficientOnHandStockException exception,
+                                                                     HttpServletRequest request) {
+        return errorResponse(HttpStatus.CONFLICT, "INSUFFICIENT_ON_HAND_STOCK", exception, request);
+    }
+
     private ResponseEntity<ApiError> errorResponse(HttpStatus status, String code, RuntimeException exception,
                                                      HttpServletRequest request) {
         Object correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME);

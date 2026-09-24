@@ -62,6 +62,32 @@
             <p class="hint">El detalle reúne el estado comercial, despacho, comunicaciones e incidencias sin cambiar de pantalla.</p>
         </section>
 
+        <section class="operations-table-panel" id="inventory-panel">
+            <header><div><h2>Inventario — entradas y salidas</h2><p>Recepción de mercadería, mermas y ajustes de tienda/POS, independientes de una orden.</p></div></header>
+            <form id="inventory-movement-form" class="form-grid compact">
+                <label>Producto
+                    <select name="productId" id="inventory-product-select" required></select>
+                </label>
+                <label>Ubicación
+                    <select name="locationId" id="inventory-location-select" required></select>
+                </label>
+                <label>Tipo
+                    <select name="type" required>
+                        <option value="INBOUND">Entrada</option>
+                        <option value="OUTBOUND">Salida</option>
+                    </select>
+                </label>
+                <label>Cantidad
+                    <input type="number" name="quantity" min="1" value="1" required />
+                </label>
+                <label class="full-field">Motivo
+                    <input type="text" name="reason" placeholder="Ej. recepción de proveedor, merma, ajuste POS" />
+                </label>
+                <button type="submit" class="btn btn-primary btn-sm">Registrar movimiento</button>
+            </form>
+            <div id="inventory-movement-result" class="integration-result"><p class="empty-state">Registra un movimiento para ver el saldo actualizado.</p></div>
+        </section>
+
         <section id="dashboard" class="dashboard hidden">
             <!-- Resumen consolidado — QRY-01 -->
             <article class="card card-wide card-summary" data-area="summary">

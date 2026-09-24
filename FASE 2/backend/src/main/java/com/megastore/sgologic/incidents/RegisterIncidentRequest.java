@@ -10,6 +10,8 @@ import java.util.UUID;
 
 public record RegisterIncidentRequest(
         @NotNull UUID orderId,
+        /** Opcional: el cliente autenticado ya conoce su propio identificador. */
+        UUID customerId,
         @NotNull IncidentType type,
         @NotBlank String reason,
         boolean partial,

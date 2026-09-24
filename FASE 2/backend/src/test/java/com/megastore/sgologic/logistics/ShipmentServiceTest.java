@@ -1,5 +1,6 @@
 package com.megastore.sgologic.logistics;
 
+import com.megastore.sgologic.integration.outbox.PublishEvent;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.scheduling.TaskScheduler;
@@ -38,10 +39,11 @@ class ShipmentServiceTest {
     private final ShipmentDeadLetterRepository deadLetterRepository = mock(ShipmentDeadLetterRepository.class);
     private final LogiExpressGatewayPort gateway = mock(LogiExpressGatewayPort.class);
     private final TaskScheduler retryScheduler = new ImmediateTaskScheduler();
+    private final PublishEvent eventPublisher = mock(PublishEvent.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-09-15T10:00:00Z"), ZoneOffset.UTC);
 
-    private final ShipmentService service = new ShipmentService(
-            shipmentRepository, trackingEventRepository, deadLetterRepository, gateway, retryScheduler, clock);
+    private final ShipmentService service = new ShipmentService(shipmentRepository, trackingEventRepository,
+            deadLetterRepository, gateway, retryScheduler, eventPublisher, clock);
 
     ShipmentServiceTest() {
         when(shipmentRepository.save(any())).thenAnswer(invocation -> {
@@ -76,6 +78,34 @@ class ShipmentServiceTest {
 
         assertThat(result).isSameAs(existing);
         verify(shipmentRepository, never()).save(any());
+    }
+
+    @Test
+    void createDispatchPublishesPreparingEventForNotifications() {
+        UUID orderId = UUID.randomUUID();
+        when(shipmentRepository.findByIdempotencyKey("idem-6")).thenReturn(Optional.empty());
+
+        service.createDispatch(orderId, DispatchOrigin.CUSTOMER_PICKUP, "Tienda Zona 10", UUID.randomUUID(), "idem-6");
+
+        ArgumentCaptor<com.megastore.sgologic.integration.outbox.OutboxEventRequest> captor =
+                ArgumentCaptor.forClass(com.megastore.sgologic.integration.outbox.OutboxEventRequest.class);
+        verify(eventPublisher).publish(captor.capture());
+        assertThat(captor.getValue().eventType()).isEqualTo(ShipmentService.SHIPMENT_STATUS_CHANGED);
+        assertThat(captor.getValue().aggregateType()).isEqualTo("SHIPMENT");
+    }
+
+    @Test
+    void recordTrackingEventPublishesInTransitAndDeliveredEvents() {
+        UUID orderId = UUID.randomUUID();
+        when(shipmentRepository.findByIdempotencyKey("idem-7")).thenReturn(Optional.empty());
+        Shipment created = service.createDispatch(orderId, DispatchOrigin.CUSTOMER_PICKUP, "Tienda Zona 10",
+                UUID.randomUUID(), "idem-7");
+
+        service.recordTrackingEvent(created.getId(), ShipmentStatus.IN_TRANSIT, "LOGIEXPRESS");
+        service.recordTrackingEvent(created.getId(), ShipmentStatus.DELIVERED, "LOGIEXPRESS");
+
+        // 1 al crear (PREPARING) + 1 en tránsito + 1 entregado = 3 publicaciones.
+        verify(eventPublisher, times(3)).publish(any());
     }
 
     @Test

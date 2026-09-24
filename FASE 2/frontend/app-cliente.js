@@ -254,16 +254,29 @@ async function submitReturn(event) {
     event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form).entries());
     if (!isValidUuid(values.orderId)) { toast("Ingresa un identificador de orden válido.", "error"); return; }
     try {
-        await apiCall("POST", "/api/v1/incidents", { orderId: values.orderId, type: values.type, reason: values.reason, partial: form.elements.partial.checked, items: [{ sku: values.sku, quantity: Number(values.quantity) }] });
+        await apiCall("POST", "/api/v1/incidents", { orderId: values.orderId, customerId: CUSTOMER_ID, type: values.type, reason: values.reason, partial: form.elements.partial.checked, items: [{ sku: values.sku, quantity: Number(values.quantity) }] });
         toast("Solicitud registrada.", "ok"); el("returns-order-input").value = values.orderId; form.reset(); await loadReturns(values.orderId);
     } catch (error) { toast(error.message, "error"); }
+}
+
+function renderReturns(incidents, emptyMessage) {
+    el("returns-list").innerHTML = incidents.length
+        ? incidents.map(item => `<div class="track-event"><span>${escapeHtml(item.reason)} · ${formatDate(item.createdAt)}</span>${badge(item.status)}</div>`).join("")
+        : `<p class="empty-state">${emptyMessage}</p>`;
 }
 
 async function loadReturns(orderId) {
     if (!isValidUuid(orderId)) { toast("Ingresa un identificador de orden válido.", "error"); return; }
     try {
         const incidents = await apiCall("GET", `/api/v1/incidents?orderId=${orderId}`);
-        el("returns-list").innerHTML = incidents.length ? incidents.map(item => `<div class="track-event"><span>${escapeHtml(item.reason)} · ${formatDate(item.createdAt)}</span>${badge(item.status)}</div>`).join("") : `<p class="empty-state">No hay solicitudes para esta orden.</p>`;
+        renderReturns(incidents, "No hay solicitudes para esta orden.");
+    } catch (error) { el("returns-list").innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; }
+}
+
+async function loadReturnsHistory() {
+    try {
+        const incidents = await apiCall("GET", `/api/v1/incidents?customerId=${CUSTOMER_ID}`);
+        renderReturns(incidents, "Todavía no tienes devoluciones ni incidencias registradas.");
     } catch (error) { el("returns-list").innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; }
 }
 
@@ -291,6 +304,7 @@ function bindEvents() {
     el("recent-orders").addEventListener("click", event => { const button = event.target.closest("[data-order]"); if (button) { el("tracking-order-input").value = button.dataset.order; loadTracking(button.dataset.order); } });
     el("return-form").addEventListener("submit", submitReturn);
     el("returns-load-btn").addEventListener("click", () => loadReturns(el("returns-order-input").value));
+    el("returns-history-btn").addEventListener("click", loadReturnsHistory);
 }
 
 async function initialize() {
