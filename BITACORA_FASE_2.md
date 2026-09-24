@@ -16,11 +16,14 @@
 
 | ID | Descripción | Dueño | Estado | Dependencias | Evidencia |
 |---|---|---|---|---|---|
-| BB-01 | Crear estructura FASE 2, README, bitácora y plantillas ADR | Jairo | `Ready for Testing` en captura | Ninguna | `FASE 2/README.md`, estructura del backend y tarjeta [DzYqM3ew](https://trello.com/c/DzYqM3ew) |
-| BB-02 | Registrar ADR-009 de stack y arquitectura ejecutable | Jairo | `Blocked` en captura; borrador `Proposed` | Gate 0 y aprobación de al menos tres integrantes | `FASE 2/docs/adr/ADR-009-stack-y-topologia-ejecutable.md` y tarjeta [FRHUOgHv](https://trello.com/c/FRHUOgHv) |
-| BB-05 | Docker Compose y configuración por ambiente | Jairo | `Ready for Testing` en captura | ADR-009 y componentes compartidos | `FASE 2/docker-compose.yml`, `.env.example` y tarjeta [eu881SUz](https://trello.com/c/eu881SUz) |
-| QA-01 | Contrato e integración continua | Jairo | Implementación local preparada; ejecución GitHub pendiente | Repositorio, secretos y stack | `.github/workflows/qa-integracion-base.yml` y `FASE 2/docs/integration/qa-01-ci-contract.md` |
-| DOC-03 | Bitácora, capturas Kanban y burndown | Jairo | `In Progress` en captura | Registro diario de todos | Esta bitácora y tarjeta [MnIkXzvZ](https://trello.com/c/MnIkXzvZ) |
+| BB-01 | Crear estructura FASE 2, README, bitácora y plantillas ADR | Jairo | Implementado; validación cruzada pendiente | Ninguna | `FASE 2/README.md`, estructura del backend y tarjeta [DzYqM3ew](https://trello.com/c/DzYqM3ew) |
+| BB-02 | Registrar ADR-009 de stack y arquitectura ejecutable | Jairo | Redacción implementada; cierre formal bloqueado por aprobaciones | Gate 0 y aprobación de al menos tres integrantes | `FASE 2/docs/adr/ADR-009-stack-y-topologia-ejecutable.md` y tarjeta [FRHUOgHv](https://trello.com/c/FRHUOgHv) |
+| BB-05 | Docker Compose y configuración por ambiente | Jairo | Implementado y validado localmente; prueba por no autor pendiente | ADR-009 y componentes compartidos | `FASE 2/docker-compose.yml`, `.env.example` y tarjeta [eu881SUz](https://trello.com/c/eu881SUz) |
+| ORD-01 a ORD-05 | Carrito, orden, Saga, compensación y datos/E2E | Jairo | Implementados en `develop`; 5 recorridos E2E verdes | Puertos de Inventory, Payments, Fiscal y Logistics | `OrderSagaService`, `OrderJourneysE2ETest` y evidencia ORD-05/QA-04 |
+| QA-01 | Contrato e integración continua | Jairo | Implementado y validado en GitHub Actions | Repositorio, secretos y stack | `.github/workflows/qa-integracion-base.yml`; run `35944837459` verde para `1294231` |
+| QA-04 | Automatizar el camino feliz completo | Jairo | Parcial avanzado: Saga/E2E hasta despacho, entrega y devolución; falta demostrar ERP/POS dentro del recorrido de diez pasos | ORD-05 y productores/consumidores restantes | `OrderJourneysE2ETest` y `docs/evidence/functional/ORD-05-QA-04-cinco-flujos-e2e.md` |
+| DOC-01 | Consolidar DDA, diagramas y ADR | Jairo | Parcial: ER y trazabilidad presentes; contratos/ADR todavía `Proposed` y documentos antiguos por reconciliar | Aprobación de dueños de decisión | `Docs/DDA.md`, `docs/diagrams/SGO-Logic-Modelo-ER.drawio` y `docs/contracts/contract-status.md` |
+| DOC-03 | Bitácora, capturas Kanban y burndown | Jairo | Parcial avanzado: registro técnico actualizado; captura final y burndown final pendientes | Registro diario de todos y estado real de Trello | Esta bitácora y tarjeta [MnIkXzvZ](https://trello.com/c/MnIkXzvZ) |
 | BB-04 | Outbox transaccional, dispatcher, reintento y DLQ | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y ratificación de rangos | `V3001`, `integration/outbox`, `OutboxIntegrationTest` y `docs/qa/trazabilidad-cun-mvp.md` |
 | BB-07 | Autenticación, autorización y sanitización | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | ADR-013 y decisión JWT | `security/`, `ADR-013`, `SecurityAuthorizationTest` y `SensitiveDataSanitizerTest` |
 | AUD-01 | Registro auditable transversal | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y correlación | `V3002`, `audit/api`, `AuditIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.7 |
@@ -393,6 +396,16 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
 - Persona que quedaría bloqueada y acción temporal: nadie queda bloqueado para demostrar ORD-05; la integración final a `main` queda deliberadamente fuera de este trabajo hasta que finalice el equipo.
 
+### Fecha: 2026-09-23 (cierre técnico en `develop`) — Integrante: Jairo Gómez
+
+- Trabajo realizado: se resolvió el merge de `feature/pruebas-e2e` hacia `develop`, conservando los bugfixes de Payments/SEC-01 y la implementación de Saga. El merge `1294231` está publicado en `origin/develop` y el árbol local está limpio y sincronizado.
+- Resultado verificable: `./mvnw test` finalizó con **148 pruebas, 0 fallos, 0 errores y 0 omitidas**; `docker compose config --quiet`, `node --check` y la arquitectura modular finalizaron correctamente. La ejecución de GitHub Actions del mismo commit (`35944837459`) terminó verde: compilación/pruebas y smoke test de Docker Compose exitosos.
+- Estado de las tareas de desarrollo de Jairo: BB-01, BB-05 y ORD-01 a ORD-05 están implementadas; la parte técnica principal de Orders/Saga queda cerrada. QA-04 permanece parcial frente a su criterio formal de diez pasos porque los cinco E2E no incorporan todavía ERP y POS en el mismo recorrido. El hallazgo de parámetros/headers faltantes que responden 500 en `GlobalExceptionHandler` continúa pendiente.
+- Estado documental/administrativo: la bitácora ya registra el merge y la evidencia técnica, pero DOC-03 no puede cerrarse hasta agregar captura final real del Kanban y burndown final. BB-02 y DOC-01 requieren aprobaciones/ratificación de ADR y reconciliar documentos que aún describen la Saga como pendiente. No se modifica el DDA para ocultar o reducir alcance.
+- Revisión contra la rúbrica: se contrastaron los 80 puntos base de la Hoja de Calificación con los doce CDU, EaC, código y pruebas; el diagnóstico, brechas y orden de cierre quedaron en `FASE 2/docs/qa/AUDITORIA-HC-FASE-2-2026-09-23.md`.
+- Impedimentos y responsables: las aprobaciones corresponden al equipo; la captura final requiere el estado real del tablero; ERP/POS depende de la integración transversal con los módulos propietarios. REL-01 y el merge/tag final permanecen fuera de este cierre hasta decisión del equipo.
+- Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -407,7 +420,7 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | Fecha | Tarea | Causa reproducible | Impacto | Puede desbloquear | Próxima revisión | Estado |
 |---|---|---|---|---|---|---|
 | 2026-09-14 | BB-02 | ADR-009 todavía no cuenta con tres aprobaciones registradas | BB-02 no puede cerrarse formalmente | Jairo coordina; al menos tres integrantes aprueban | Pendiente de acordar | Abierto |
-| 2026-09-14 | ORD-01 a ORD-05 | Faltan contratos aprobados y entregas de Inventario, Pagos, Fiscal y Logística | No puede iniciarse una implementación integrada definitiva | Responsables de cada módulo y revisión coordinada por Jairo | Pendiente de acordar | Abierto |
+| 2026-09-14 | ORD-01 a ORD-05 | Faltaban contratos aprobados y entregas de Inventario, Pagos, Fiscal y Logística | Impedía iniciar una implementación integrada definitiva | Responsables de cada módulo y revisión coordinada por Jairo | Resuelto el 2026-09-23 con merge `1294231` | Resuelto |
 
 ## 6. Decisiones arquitectónicas
 
@@ -478,6 +491,11 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 ## 9. Burndown o resumen consolidado
 
 La captura de estado actualizado permite registrar un conteo observable del tablero, sin equipararlo a avance aceptado del producto.
+
+> Los conteos siguientes corresponden a la captura disponible y se conservan
+> como evidencia histórica; no representan el estado técnico posterior al
+> merge `1294231`. El conteo final debe obtenerse de una nueva captura real de
+> Trello, sin inferir movimientos a `Done` desde Git.
 
 | Categoría | Cantidad | Justificación |
 |---|---:|---|
