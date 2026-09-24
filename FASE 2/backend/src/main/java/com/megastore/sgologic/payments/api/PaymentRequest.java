@@ -41,7 +41,7 @@ public record PaymentRequest(
             throw new IllegalArgumentException("paymentReference es obligatoria.");
         }
         if (paymentReference.matches(".*\\d{13,}.*") || paymentReference.toLowerCase().contains("cvv")) {
-            throw new IllegalArgumentException("paymentReference no puede contener PAN ni CVV.");
+            throw new IllegalArgumentException("paymentReference contiene datos sensibles no permitidos.");
         }
         if (correlationId == null) {
             throw new IllegalArgumentException("correlationId es obligatorio.");

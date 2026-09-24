@@ -1,5 +1,7 @@
 package com.megastore.sgologic.payments;
 
+import com.megastore.sgologic.payments.api.PaymentMethod;
+
 import com.megastore.sgologic.audit.api.AuditEntryRequest;
 import com.megastore.sgologic.audit.api.AuditRecorder;
 import com.megastore.sgologic.integration.outbox.OutboxEventRequest;

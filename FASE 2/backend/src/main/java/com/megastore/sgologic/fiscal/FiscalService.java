@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -16,7 +18,7 @@ import java.util.concurrent.Executor;
 
 /** Implementa FIS-01/FIS-02 sin leer tablas privadas de Orders o Payments. */
 @Service
-public class FiscalService {
+public class FiscalService implements FiscalProcessingPort {
 
     private static final Logger log = LoggerFactory.getLogger(FiscalService.class);
     static final long[] RETRY_DELAYS_SECONDS = {2L, 8L, 32L};
@@ -72,8 +74,24 @@ public class FiscalService {
                 originalDocumentId, taxIdentifier.trim(), customerName.trim(), total, normalizedCurrency,
                 cui, series, xml, correlationId, idempotencyKey, clock.instant());
         repository.save(document);
-        submissionExecutor.execute(() -> submitToSat(documentId));
+        submitAfterCommit(documentId);
         return document;
+    }
+
+    /** Evita que el hilo asíncrono consulte el documento antes del commit de la Saga. */
+    private void submitAfterCommit(UUID documentId) {
+        Runnable submission = () -> submissionExecutor.execute(() -> submitToSat(documentId));
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    submission.run();
+                }
+            });
+            return;
+        }
+        submission.run();
     }
 
     void submitToSat(UUID documentId) {
@@ -131,5 +149,23 @@ public class FiscalService {
 
     public boolean canConfirmOrder(UUID orderId) {
         return repository.existsByOrderIdAndStatus(orderId, FiscalStatus.APPROVED);
+    }
+
+    @Override
+    public FiscalProcessingResult requestInvoice(FiscalProcessingRequest request) {
+        return toResult(requestDocument(request.orderId(), request.paymentAttemptId(),
+                FiscalDocumentType.INVOICE, null, request.taxIdentifier(), request.customerName(),
+                request.total(), request.currency(), request.correlationId(), request.idempotencyKey()));
+    }
+
+    @Override
+    public Optional<FiscalProcessingResult> latestForOrder(UUID orderId) {
+        return getDocumentsForOrder(orderId).stream().findFirst().map(this::toResult);
+    }
+
+    private FiscalProcessingResult toResult(FiscalDocument document) {
+        return new FiscalProcessingResult(document.getId(), document.getOrderId(), document.getStatus(),
+                document.getCui(), document.getSeries(), document.getSatAuthorization(),
+                document.getFailureCode());
     }
 }

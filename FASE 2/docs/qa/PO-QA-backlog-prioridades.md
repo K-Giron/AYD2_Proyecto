@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | Responsable | Kevin Girón (Product Owner operativo / QA Coordinator) |
-| Corte | 2026-09-22 |
+| Corte | 2026-09-23 |
 | Fuente de tareas | `RESPONSABILIDADES_INTEGRANTES_FASE_2.md` |
 
 ## 1. Qué es este documento
@@ -12,17 +12,7 @@ Herramienta de arranque para las tareas `DEC-05/07` (prioridades P0/P1 sin inven
 
 ## 2. Estado observable a la fecha de corte
 
-Basado en el historial real de `git log` sobre `origin/develop` (no en lo que la planificación esperaba que hubiera pasado):
-
-| Integrante | Última entrega visible en `develop` | Fecha |
-|---|---|---|
-| Jairo Gómez | BB-01, BB-02 (borrador), BB-05, QA-01 (local) | 2026-09-14 |
-| Jorge Pumay | Ninguna todavía (BB-03 pendiente) | — |
-| Edson Sosa | Ninguna todavía (BB-04, BB-07, PAY pendientes) | — |
-| Andy Sánchez | Ninguna visible en `origin/develop`; BB-06, FIS, ERP y POS preparados localmente sin commit por instrucción del autor | 2026-09-22 (local) |
-| Kevin Girón | `logistics`, `notifications`, `query`, `incidents`, `frontend` (esta rama, sin commitear todavía) | 2026-09-22 |
-
-El plan original suponía que todos empezarían en paralelo el 10 de septiembre contra contratos congelados. A la fecha de corte de Git, solo Jairo y Kevin tienen entregas visibles; el trabajo local de Andy todavía no forma parte del historial ni de `origin/develop`.
+El corte se basa en el workspace integrado y no afirma que los cambios ya estén publicados en `origin/develop`. Existen módulos ejecutables de órdenes, inventario, pagos, fiscal, logística, notificaciones, consulta, incidencias, ERP, POS, messaging y audit. La suite completa registra 87 pruebas verdes. Outbox, Inbox y los consumidores Query/Notifications cubren transiciones de orden; siguen pendientes ERP/POS, productores de otros agregados, seguridad backend, prueba de carga 8x y evidencia integral de resiliencia.
 
 ## 3. Prioridades P0/P1 (sin inventar alcance nuevo)
 
@@ -30,15 +20,16 @@ Se listan tal como aparecen en `RESPONSABILIDADES_INTEGRANTES_FASE_2.md`; este d
 
 | Prioridad | Elemento crítico | Dueño | Estado |
 |---|---|---|---|
-| P0 | BB-03 (modelo relacional) | Jorge | Pendiente — bloquea INV-01, ORD-01/02, AUD-01 |
-| P0 | BB-04 (Outbox) | Edson | Pendiente — bloquea PAY, FIS, LOG-03/NOT-01 definitivos, ERP, POS |
-| P0 | BB-06 (simuladores oficiales) | Andy | Implementado localmente; pruebas y revisión cruzada pendientes antes de integrar |
-| P0 | LOG-01/02/03, NOT-01, QRY-01, INC-01 | Kevin | **Entregado** en esta rama, verificado con `./mvnw clean verify` (24/24) |
+| P0 | BB-03 (modelo relacional) | Jorge/equipo | **Modelo ER editable producido** en `docs/diagrams/SGO-Logic-Modelo-ER.drawio`; revisión cruzada pendiente |
+| P0 | BB-04 (Outbox) | Edson/Jairo | **Parcial integrado** — Outbox, publicador RabbitMQ, retry/DLQ, Inbox y consumidores Query/Notifications listos; faltan ERP/POS y productores de otros agregados |
+| P0 | BB-06 (simuladores oficiales) | Andy/equipo | Integrados para PayKlik, SAT, ERP, POS, LogiExpress y notificaciones; evidencia de fallas coordinadas pendiente |
+| P0 | LOG-01/02/03, NOT-01, QRY-01, INC-01 | Kevin/equipo | **Integrado**, verificado dentro de la suite completa de 87 pruebas; NOT-01 ya recibe confirmaciones de orden automáticamente |
 | P0 | UI-01 | Kevin | **Entregado** en esta rama, probado con `docker compose up` real |
-| P1 | ORD-03 (Saga) | Jairo | Pendiente — depende de INV-01, PAY-01, FIS-01, LOG-01 (Kevin ya lo expone) |
-| P1 | QA-03 (esta matriz) | Kevin | **Entregado** (`QA-03-matriz-eac.md`), 2 de 12 EaC cubiertos con evidencia |
-| P1 | QA-05 (fallas externas) | Kevin | Parcial (`QA-05-pruebas-fallas-externas.md`); FIS-02 tiene prueba local, continúa bloqueado por PAY-02 y E2E |
-| P1 | DEMO-01 | Kevin | Guion y datos entregados (`DEMO-01-guion-demo.md`); falta el ensayo con el equipo |
+| P1 | ORD-03 (Saga) | Jairo/equipo | Camino feliz carrito → inventario → pago → fiscal → confirmación integrado; despacho se coordina desde STAFF |
+| P1 | QA-03 | Kevin | **Actualizado**; 2 EaC cubiertos, 7 parciales, 1 bloqueado y 2 no evaluados |
+| P1 | QA-05 (fallas externas) | Kevin/equipo | Pruebas de módulo cubiertas; evidencia E2E versionada y mediciones temporales pendientes |
+| P1 | QA-06 (gate de penalizaciones) | Equipo | **Creado**; obligatorio para todo trabajo nuevo |
+| P1 | DEMO-01 | Kevin/equipo | Guion actualizado al flujo integrado; capturas y ensayo cruzado pendientes |
 
 ## 4. Registro de feedback real
 
@@ -53,7 +44,7 @@ Ningún stakeholder externo (Roberto Quezada, Finanzas, Personal de atención, e
 Tomadas literalmente de `RESPONSABILIDADES_INTEGRANTES_FASE_2.md` §8.3 y §12, no reinterpretadas:
 
 - Ninguna tarjeta que afirme cumplir un EaC pasa a `Done` si `QA-03-matriz-eac.md` no lo respalda con evidencia.
-- P0 y P1 tienen prioridad sobre cualquier refinamiento visual P2 (aplica también al propio UI-01: por eso el checkout quedó bloqueado en vez de simulado).
+- P0 y P1 tienen prioridad sobre cualquier refinamiento visual P2. La UI solo puede mostrar como terminadas capacidades respaldadas por el gate QA-06.
 - Un integrante cierra su responsabilidad solo si sus pruebas automatizadas y negativas están ejecutadas, otra persona revisó su código, y su trabajo corre dentro de Docker Compose — no se acepta "funciona en mi máquina".
 - Kevin no acepta sus propias tareas sin revisor (§8.3): **el código de esta rama todavía no tiene revisor distinto del autor** y no debe marcarse `Done` en Kanban hasta que alguien del equipo lo revise.
 

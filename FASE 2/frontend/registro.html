@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Crear cuenta | MegaStore</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="store.css" />
+</head>
+<body class="store">
+    <div class="auth-shell">
+        <aside class="auth-hero"><div class="auth-hero-content"><a href="index.html" class="store-brand auth-brand"><span class="store-brand-mark">M</span><span>MegaStore</span></a><h1>Tu carrito, siempre contigo.</h1><p>Crea una cuenta para continuar compras entre web, tienda, móvil y centro de atención.</p></div></aside>
+        <main class="auth-main"><div class="auth-card"><p class="eyebrow">Nueva cuenta</p><h2>Comienza en MegaStore</h2>
+            <form id="registration-form" class="login-form"><label class="field">Nombre completo<input id="registration-name" type="text" autocomplete="name" required minlength="3" /></label><label class="field">Correo electrónico<input id="registration-email" type="email" autocomplete="email" required /></label><label class="field">Contraseña<input id="registration-password" type="password" autocomplete="new-password" required minlength="8" /></label><label class="checkbox remember-row"><input id="registration-terms" type="checkbox" required /> Acepto el uso de mis datos para operar la compra</label><button type="submit" class="btn btn-primary btn-block">Crear cuenta</button><p id="registration-error" class="login-error hidden"></p></form>
+            <p class="auth-alternative">¿Ya tienes cuenta? <a href="login.html">Iniciar sesión</a></p>
+        </div></main>
+    </div>
+    <script src="session.js"></script><script src="app-registro.js"></script>
+</body>
+</html>

@@ -169,6 +169,57 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendientes de registrar por Andy.
 - Persona que quedaría bloqueada y acción temporal: Jairo puede revisar el endpoint de compuerta fiscal y los contratos propuestos; no debe acoplarse a entidades/repositorios internos ni aceptar ADR-010/012 sin la revisión del equipo.
 
+### Fecha: 2026-09-23 — Integrante: Jairo Gómez
+
+- Ayer: se contaba con el flujo integrado de carrito, reserva, pago y confirmación fiscal, además de los módulos de logística, consulta, notificaciones e incidencias; permanecían abiertas las brechas de trazabilidad entre el DDA, el modelo de datos objetivo y las migraciones existentes.
+- Trabajo realizado hoy:
+  - Se revisó y corrigió el modelo ER para que represente el alcance completo descrito por el DDA, en lugar de limitarse a las migraciones ya implementadas.
+  - Se estableció la página `01 - Modelo ER objetivo DDA` como fuente de diseño para las migraciones, con cobertura de CUN-01 a CUN-12 y ADR-001 a ADR-008.
+  - Se conservaron en páginas separadas el modelo físico actualmente implementado y los controles de trazabilidad pendientes, evitando presentar estructuras objetivo como si ya existieran.
+  - Se incorporaron al modelo las estructuras faltantes para cuenta de cliente, Saga y compensaciones, conciliación de pagos, intentos SAT, movimientos de inventario, cambios de entrega, devolución/reembolso, Outbox/Inbox/DLQ, notificaciones y auditoría de accesos/exportaciones.
+  - Se simplificó la presentación del `.drawio` a notación ER/UML monocromática, con referencias externas y elementos pendientes diferenciados por línea discontinua, sin depender de colores.
+  - Se añadió la subsección `6.3 Modelo ER` en `Docs/DDA.md` y se enlazó la exportación del diagrama como evidencia arquitectónica.
+- Resultado funcional o numérico: el artefacto editable `FASE 2/docs/diagrams/SGO-Logic-Modelo-ER.drawio` contiene tres páginas; su XML es válido, no contiene identificadores duplicados ni relaciones colgantes. La exportación `FASE 2/docs/diagrams/SGO-Logic-Modelo-ER.jpg` queda referenciada desde el DDA.
+- Hoy y trazabilidad a CUN/EaC/restricción/ADR: el modelo cubre CUN-01 a CUN-12, hace visibles las decisiones ADR-001 a ADR-008 y fortalece el gate de EaC-07/CUN-12 al separar claramente diseño objetivo, implementación física y brechas.
+- Impedimentos, responsable e impacto: el ER completo revela que las migraciones actuales todavía no materializan Outbox, auditoría transversal, conciliaciones históricas, intentos SAT, movimientos de inventario y postventa completa. Jairo continuará la integración priorizando las brechas transversales para el entregable.
+- Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
+- Personas o tareas desbloqueadas: el equipo puede derivar migraciones y pruebas desde una fuente de datos única y verificar cada entrega contra el gate DDA → ER → código → prueba.
+
+### Fecha: 2026-09-23 (continuación) — Integrante: Jairo Gómez
+
+- Trabajo de integración realizado con asistencia de Codex y bajo coordinación de Jairo:
+  - `[BB-04/ADR-002]` se creó el módulo `messaging`, la tabla `outbox_messages` y un publicador hacia el exchange durable `sgo.business.events.v1`.
+  - El Outbox deduplica por agregado, tipo de evento y clave idempotente; conserva intentos, error, próxima disponibilidad, publicación y estado `DEAD_LETTER` después de agotar cinco intentos.
+  - `[AUD-01/CUN-12]` se implementaron `audit_events` y `audit_evidence_access` como evidencia append-only con actor, acción, estado previo/nuevo, resultado, orden/transacción, correlación y hash SHA-256.
+  - Se añadieron consultas autorizadas por orden o transacción y exportación JSON mediante `/api/v1/audit/events` y `/api/v1/audit/exports`; toda búsqueda, rechazo o exportación deja registro de acceso.
+  - Las transiciones del módulo Orders ahora guardan historial, evento Outbox y evidencia de auditoría dentro de la misma transacción local. Esto cubre la base confiable sin afirmar todavía que ERP, POS y Notifications ya consuman esos eventos.
+  - Se agregó la migración `V4001__messaging_and_audit_create_tables.sql`, se actualizó la arquitectura modular para declarar `messaging` y se documentaron los límites pendientes.
+  - Se conectó el panel interno con los endpoints reales de CUN-12: una cuenta demostrativa de Finanzas puede consultar y exportar la evidencia de una orden; STAFF recibe una restricción visible y no suplanta ese rol.
+  - Se actualizaron el guion de demostración, QA-05 y las limitaciones del README para distinguir entre la base Outbox/auditoría ya implementada y los consumidores o productores que aún faltan.
+  - `[BB-04/QRY-01]` se agregó `inbox_messages`, el sobre público de eventos v1, una cola RabbitMQ durable y el consumidor idempotente que proyecta automáticamente `ORDER_STATUS_CHANGED` en la consulta consolidada.
+  - El endpoint manual de proyección se conserva únicamente para pagos, despacho, entrega e incidencias mientras esos módulos incorporan sus productores; Query ya no depende de carga manual para estados de orden.
+- Resultado funcional o numérico: la línea base avanzó de 73 a 79 pruebas con Outbox/auditoría y finalmente a **84 pruebas, 0 fallos, 0 errores y 0 omitidas** con Inbox/Query y la regresión de eventos de creación. Flyway validó y aplicó **13 migraciones** desde una base PostgreSQL vacía; RabbitMQ real respondió dentro de la prueba de infraestructura.
+  - El smoke Compose creó una orden aislada, detectó y corrigió que `Map.copyOf` no admite `previousStatus=null`, y luego comprobó el recorrido real: Outbox `PUBLISHED` → Inbox `PROCESSED` → resumen de orden `CREATED`. Backend, frontend, PostgreSQL y RabbitMQ terminaron saludables.
+- Hoy y trazabilidad: ADR-002, ADR-004, CUN-09, CUN-12, EaC-01, EaC-02 y EaC-07. La implementación reduce la brecha crítica del modelo ER, pero BB-04 permanece parcial hasta disponer de consumidores de ERP/POS/Notifications y productores de los demás agregados; AUD-01 permanece parcial hasta incorporar eventos directos de pagos, fiscal, logística e incidencias y medir recuperación menor a un segundo.
+- Impedimentos y siguiente acción: seguridad backend todavía no existe; la cuenta de Finanzas y los encabezados `X-Actor-Id`/`X-Actor-Role` son mecanismos demostrativos y no deben presentarse como autenticación productiva. La siguiente prioridad es reutilizar el Inbox idempotente para conectar Notifications, ERP y POS.
+- Horas reales y estimadas restantes: pendientes de registrar por Jairo.
+
+### Fecha: 2026-09-23 (segunda continuación) — Integrante: Jairo Gómez
+
+- Trabajo de integración realizado con asistencia de Codex y bajo coordinación de Jairo:
+  - Se transformó la portada pública en una tienda departamental MegaStore, manteniendo la identidad azul/cian del inicio de sesión y dejando la mención de MVP únicamente en el pie de página.
+  - Se publicó un catálogo navegable sin autenticación, con búsqueda, filtros por departamento, existencias consultadas desde Inventory y acceso a una ficha independiente por producto.
+  - Se agregaron productos semilla con stock verificable para permitir recorridos E2E reproducibles; la interfaz muestra la suma real de `quantityAvailable` y el detalle por tienda o centro de distribución.
+  - La ficha de producto permite consultar descripción, precio, disponibilidad por ubicación, guardar favoritos e iniciar una compra. Si no existe sesión, conserva la intención de compra y solicita iniciar sesión o crear una cuenta.
+  - Se rediseñó la experiencia autenticada del cliente con accesos permanentes a Favoritos, Mis pedidos, Cerrar sesión y Mi carrito. El carrito muestra siempre su cantidad, y las tarjetas permiten ver detalle, marcar favoritos o agregar productos.
+  - Se incorporó el recurso visual propio `frontend/assets/megastore-campaign-hero.png` para la campaña principal, evitando depender de una captura o marca comercial ajena.
+  - `[NOT-01/CUN-11/ADR-008]` se agregó la cola durable `sgo.notifications.order-status.v1` y un consumidor que procesa `ORDER_STATUS_CHANGED` mediante Inbox, sin leer tablas de Orders. Una confirmación resuelve el contacto habilitado y verificado de mayor preferencia y crea el envío no bloqueante.
+  - La migración `V4003` materializa `customer_contacts` y deja un contacto verificable para la cuenta CLIENTE E2E. Los eventos de orden ahora incluyen `customerId` como dato del contrato, sin compartir entidades entre módulos.
+- Resultado funcional o numérico: `node --check` validó los tres scripts nuevos o modificados sin errores. Compose reconstruyó frontend y backend; PostgreSQL, RabbitMQ, backend y frontend quedaron `healthy`. Portada, ficha de producto, catálogo, recurso visual y consulta de inventario respondieron HTTP 200. Una comprobación automatizada en Chromium inició una sesión CLIENTE, guardó un favorito, confirmó una tarjeta en `Mis favoritos`, agregó un producto con stock y observó `1 producto` en el carrito con la compra habilitada. La suite completa terminó en `BUILD SUCCESS` con **87 pruebas, 0 fallos, 0 errores y 0 omitidas**, y Flyway aplicó **14 migraciones** desde una base PostgreSQL vacía.
+- Hoy y trazabilidad: UI-01, ORD-01/ORD-02, INV-01, NOT-01, CUN-01, CUN-02, CUN-11, ADR-002 y ADR-008. El catálogo es público; la modificación del carrito y el checkout requieren sesión. Notifications consume por contrato público y conserva idempotencia por consumidor.
+- Evidencia E2E: Chromium completó carrito → reserva → PayKlik → SAT → orden `CONFIRMED` para `f4ab0563-81b4-408a-b62b-8e2698e1bdb5`. RabbitMQ entregó el evento tanto a Query como a Notifications; ambos Inbox quedaron `PROCESSED` y se observó una solicitud `ORDER_CONFIRMED`, canal `EMAIL`, estado `SENT`, un intento.
+- Impedimentos y siguiente acción: la autenticación continúa siendo una simulación de frontend y no debe presentarse como seguridad productiva. CUN-11 continúa parcial hasta recibir eventos de despacho/incidencias, almacenar cada intento y disponer de DLQ del trabajador. La siguiente prioridad es conectar ERP y POS al mismo patrón Outbox/Inbox.
+- Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
 ### Fecha: 2026-09-23 — Integrante: Edson Sosa
 
 - Ayer: revisión cruzada de las entregas de Andy (fiscal/ERP/POS) y Jorge (inventario), aprobación de Edson sobre ADR-009/010/012, modelo de datos y matriz de trazabilidad CUN (commits `56de66d`, `e08b939`, `340eb1e`). En la prueba manual se detectó y corrigió el bloqueo optimista A8 de los flujos asíncronos (commits `4525bae`, `2b0aab1`).
@@ -276,6 +327,22 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendiente de registrar por Edson.
 - Persona que quedaría bloqueada y acción temporal: el release candidate puede citar EaC-12 como cubierto; QA-02 depende de la estabilidad del ambiente y de ORD-05/QRY-01 para el escenario completo.
 
+### Fecha: 2026-09-23 — Integrante: Jairo Gómez
+
+- Ayer: la rama `feature/carrito-ordenes` contenía el flujo comercial y la experiencia de catálogo, pero estaba 37 commits detrás de `develop` y no podía integrarse directamente por conflictos en pagos, auditoría, mensajería, seguridad, migraciones y frontend.
+- Trabajo realizado hoy:
+  - Se integró `develop` preservando el catálogo, carrito, órdenes, ficha de producto, dashboard, Query y Notifications de la rama funcional.
+  - Se adoptaron como contratos canónicos las APIs públicas de Payments, Audit y Outbox aportadas en `develop`, eliminando implementaciones duplicadas y declarando las fronteras con interfaces nombradas de Spring Modulith.
+  - Se conectaron las transiciones de orden al Outbox `sgo.events`; Query y Notifications consumen `ORDER_STATUS_CHANGED` de forma idempotente.
+  - Se unificaron JWT y roles con la navegación comercial; catálogo y stock permanecen públicos, mientras carrito, compra y paneles protegidos envían el token correspondiente.
+  - Se resolvieron colisiones Flyway: infraestructura transversal en `V3001`–`V3004` y flujo comercial en `V4001`–`V4003`.
+  - Se mantuvo `Docs/DDA.md` sin modificaciones durante la integración.
+- Resultado funcional o numérico: `./mvnw test` terminó con `BUILD SUCCESS`; 134 pruebas, 0 fallos, 0 errores y 0 omitidas; Flyway aplicó 16 migraciones desde cero. Todos los archivos JavaScript pasaron `node --check`, `docker compose config --quiet` terminó correctamente y no quedaron marcadores ni rutas sin resolver.
+- Hoy y trazabilidad a CUN/EaC/restricción/ADR: se consolidaron ORD-01/ORD-02 con PAY-01/02/03, AUD-01/02, BB-04, BB-07, QRY-01, NOT-01 y SEC-01 sin romper el flujo comercial del MVP descrito en el DDA.
+- Impedimentos, responsable e impacto: no hay impedimento técnico local para continuar; queda publicar la rama y realizar la revisión/aceptación del equipo antes de integrar a `develop` remoto.
+- Horas reales y estimadas restantes: pendientes de registrar por Jairo.
+- Persona que quedaría bloqueada y acción temporal: nadie queda bloqueado localmente; el equipo debe basarse en el commit de integración para evitar reintroducir las implementaciones duplicadas.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -319,6 +386,10 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-22 | Compilación de entrega Andy | Java 21 local mediante `-Djava.version=21`; fuentes de producción | `BUILD SUCCESS` | Salida Maven local | El código compila; falta repetir con Java 25 oficial |
 | 2026-09-22 | FIS-03 + integraciones + arquitectura | `FiscalServiceTest`, `ErpIntegrationServiceTest`, `PosIntegrationServiceTest`, `SimulatedPayKlikAdapterTest`, `ModularArchitectureTest` | 19 pruebas incluidas en la suite final, 0 fallos, 0 errores, 0 omitidas | Surefire local y `FASE 2/docs/qa/FIS-03-pruebas-fiscal-erp-pos.md` | Caminos feliz/negativo, timeout, reintento, idempotencia y límites modulares verificados sin infraestructura |
 | 2026-09-22 | Suite local sin contenedores | Todas las pruebas salvo `InfrastructureIntegrationTest` | `BUILD SUCCESS`; 40 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local | Los cambios no rompen los módulos unitarios/MVC existentes; falta Docker/Testcontainers |
+| 2026-09-23 | Línea base integrada antes de BB-04/AUD-01 | Java 25; PostgreSQL 17.11 y RabbitMQ 4.3.5 mediante Testcontainers | `BUILD SUCCESS`; 73 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local | Punto de comparación verificado antes de crear nuevas tablas y módulos |
+| 2026-09-23 | Outbox + auditoría transversal inicial | Migración V4001, módulos `messaging`/`audit`, integración con Orders y Testcontainers reales | `BUILD SUCCESS`; 79 pruebas, 0 fallos, 0 errores, 0 omitidas; 12 migraciones aplicadas desde cero | Surefire local y salida Maven | Publicación confiable y evidencia append-only operativas para transiciones de orden; consumidores y cobertura de otros agregados continúan pendientes |
+| 2026-09-23 | Inbox idempotente + consumidor Query | Migración V4002, sobre JSON v1, cola durable y proyección `ORDER_STATUS_CHANGED` | `BUILD SUCCESS`; 84 pruebas, 0 fallos, 0 errores, 0 omitidas; 13 migraciones aplicadas desde cero; smoke Outbox → RabbitMQ → Inbox → Query exitoso | Surefire local, Testcontainers PostgreSQL/RabbitMQ, pruebas de arquitectura y Compose | Query procesa cada evento una sola vez por consumidor; ERP, POS, Notifications y otros productores continúan pendientes |
+| 2026-09-23 | Catálogo comercial + consumidor Notifications | Catálogo público, ficha de producto, favoritos/carrito autenticado, V4003, contacto confirmado y cola Notifications | `BUILD SUCCESS`; 87 pruebas, 0 fallos, 0 errores, 0 omitidas; 14 migraciones; compra E2E y notificación `SENT` | Chromium, Surefire, Testcontainers, Compose y PostgreSQL/RabbitMQ reales | El flujo principal llega a orden confirmada y notifica sin llamada manual; ERP/POS y eventos de logística/incidencias continúan pendientes |
 | 2026-09-23 | `./mvnw clean verify` | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 74 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/qa/trazabilidad-cun-mvp.md` | Incluye la regresión A8 y las pruebas de Outbox/Inbox |
 | 2026-09-23 | Smoke Outbox en Compose | Cuatro servicios `healthy`; evento `PENDING` insertado y capturado con cola temporal | Evento `PUBLISHED`; sobre con `messageId`, correlación y tipo; topología declarada | Salida local del 2026-09-23 | Publicación confiable verificada contra RabbitMQ real |
 | 2026-09-23 | `./mvnw clean verify` (BB-07) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 85 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/adr/ADR-013-autenticacion-jwt-y-roles.md` | Login JWT, 401/403 por rol y sanitización verificados |
@@ -333,6 +404,7 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | `./mvnw clean verify` (PAY-03) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 116 pruebas, 0 fallos, 0 errores, 0 omitidas | `PaymentReconciliationServiceTest`, `PaymentReconciliationIntegrationTest` y QA-03 | Conciliación sin doble cobro, ≤ 60 s y alerta verificadas |
 | 2026-09-23 | Smoke PAY-03 en Compose | Intento indeterminado sembrado y, aparte, PayKlik `TIMEOUT` con reintentos cortos | Conciliación `RESOLVED/APPROVED` con evento `PaymentApproved`; en fallo, `DEAD_LETTER` sin perder la orden | Salida local del 2026-09-23 | Resolución y bandeja de fallidos operando en el stack real |
 | 2026-09-23 | `./mvnw clean verify` (SEC-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 118 pruebas, 0 fallos, 0 errores, 0 omitidas | `SensitiveDataLeakScanTest`, `SecurityAuthorizationTest` y `docs/evidence/security/SEC-01-scan-pan-cvv.md` | 0 PAN/CVV en base, mensajes y logs; matriz 401/403 completa |
+| 2026-09-23 | Integración `feature/carrito-ordenes` + `develop` | Java 25; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers; 16 migraciones Flyway | `BUILD SUCCESS`; 134 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local, `node --check`, `docker compose config --quiet` y verificación de conflictos | Flujo comercial, seguridad, pagos, auditoría y Outbox quedaron consolidados sin dependencias modulares inválidas |
 
 ## 8. Retrospectiva individual
 

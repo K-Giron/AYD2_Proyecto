@@ -1383,6 +1383,13 @@ El contorno azul representa el despliegue inicial **on-premises**. El número de
 
 ---
 
+### 6.3 Modelo ER
+El modelo entidad-relación (ER) representa la estructura de datos del sistema, mostrando las entidades principales, sus atributos y las relaciones entre ellas. Este modelo se basa en los requisitos funcionales y los atributos de calidad definidos.
+
+![Modelo ER objetivo de SGO-Logic](/FASE%202/docs/diagrams/SGO-Logic-Modelo-ER.jpg)
+
+---
+
 ## 7. Validación y Trazabilidad
 
 La matriz principal relaciona stakeholders y entidades externas con drivers, decisiones aceptadas, vistas y mecanismos de validación. Las referencias de vista corresponden a [Contexto (§2.3)](#23-diagrama-de-contexto), [Componentes (§6.1)](#61-diagrama-de-componentes), [Despliegue (§6.2)](#62-diagrama-de-despliegue), [Bloques (§5.1)](#51-visión-general-de-la-solución) y [Prototipo (§8)](#8-prototipo--mockups). Una validación prevista es un criterio o diseño de prueba de Fase 1, no un resultado de implementación. Las secciones 7.4 a 7.6 añaden matrices de control entre requisitos funcionales, atributos de calidad y decisiones arquitectónicas.

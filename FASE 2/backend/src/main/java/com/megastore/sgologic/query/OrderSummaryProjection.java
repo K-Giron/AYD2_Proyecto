@@ -15,10 +15,10 @@ import java.util.UUID;
  * mostrar la última información conocida marcándola como posiblemente
  * desactualizada (CDU-09, E1) en vez de fallar toda la consulta.
  *
- * <p>Este módulo no lee tablas de Orders, Payments, Fiscal ni Incidents: se
- * alimenta mediante {@code POST /api/v1/query/order-summary}, un punto de
- * integración temporal documentado en el README del módulo mientras el
- * sobre de eventos v1 y el Outbox (BB-04) no estén ratificados.</p>
+ * <p>Este módulo no lee tablas de Orders, Payments, Fiscal ni Incidents. Los
+ * estados de Orders llegan mediante el sobre de eventos v1 y un Inbox
+ * idempotente; la ingesta HTTP se conserva temporalmente para las fuentes que
+ * todavía no publican eventos.</p>
  */
 @Entity
 @Table(name = "order_summary_projections")

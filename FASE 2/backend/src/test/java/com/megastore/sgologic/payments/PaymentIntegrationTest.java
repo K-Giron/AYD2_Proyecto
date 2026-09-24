@@ -1,5 +1,7 @@
 package com.megastore.sgologic.payments;
 
+import com.megastore.sgologic.payments.api.PaymentMethod;
+
 import com.megastore.sgologic.payments.api.PaymentPort;
 import com.megastore.sgologic.payments.api.PaymentRequest;
 import com.megastore.sgologic.payments.api.PaymentResult;
@@ -140,10 +142,11 @@ class PaymentIntegrationTest {
         assertThatThrownBy(() -> new PaymentRequest(orderId, new BigDecimal("10.00"), "GTQ", "WEB", "CARD",
                 "4111111111111111", UUID.randomUUID(), "it-pay-4"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("PAN");
+                .hasMessage("paymentReference contiene datos sensibles no permitidos.");
         assertThatThrownBy(() -> new PaymentRequest(orderId, new BigDecimal("10.00"), "GTQ", "WEB", "CARD",
                 "cvv=123", UUID.randomUUID(), "it-pay-5"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("paymentReference contiene datos sensibles no permitidos.");
         assertThat(repository.findByOrderIdOrderByCreatedAtDesc(orderId)).isEmpty();
     }
 

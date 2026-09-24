@@ -34,11 +34,10 @@ public class OrderSummaryController {
     }
 
     /**
-     * Punto de ingesta temporal mientras el Outbox transversal (BB-04) y un
-     * consumidor de eventos no reemplazan esta llamada directa. Cada módulo
-     * productor (Orders, Payments, Fiscal, o este mismo módulo para
-     * despacho/entrega/incidencia) puede alimentar la proyección aquí hasta
-     * que el contrato de eventos se ratifique.
+     * Punto de ingesta manual conservado como apoyo para fuentes que aún no
+     * publican eventos. Los estados de Orders ya llegan automáticamente por
+     * RabbitMQ con Inbox idempotente; pagos, despacho, entrega e incidencias
+     * pueden usar este contrato mientras completan sus productores.
      */
     @PostMapping("/query/order-summary")
     public ResponseEntity<OrderSummaryResponse> upsert(@Valid @RequestBody OrderSummaryUpsertRequest request) {

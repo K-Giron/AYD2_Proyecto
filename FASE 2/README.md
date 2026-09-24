@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Materializar el DDA de la Fase 1 como un MVP reproducible de gestión de órdenes y logística omnicanal. El repositorio contiene el backbone técnico y entregas funcionales incrementales; la Saga completa todavía no está integrada.
+Materializar el DDA de la Fase 1 como un MVP reproducible de gestión de órdenes y logística omnicanal. El repositorio contiene el backbone técnico y un flujo ejecutable de carrito, reserva, pago y confirmación fiscal; despacho y las integraciones asíncronas continúan como capacidades separadas.
 
 ## Arquitectura
 
@@ -59,7 +59,7 @@ FASE 2/
 | Andy Sánchez | `fiscal`, SAT, ERP, POS y simuladores |
 | Kevin Girón | `logistics`, `notifications`, `query`, `incidents` y frontend |
 
-`integration` contiene los adaptadores legacy ERP/POS entregados por Andy. El mecanismo transversal Outbox/Inbox y la infraestructura de mensajería siguen bajo la propiedad técnica de Edson; cualquier cambio de contrato común se coordina con Jairo.
+`integration` contiene los adaptadores legacy ERP/POS entregados por Andy. `messaging` implementa Outbox, publicación RabbitMQ e Inbox idempotente; `audit` conserva evidencia append-only y registra sus accesos. Query y Notifications ya consumen eventos de orden; las conexiones hacia ERP y POS continúan bajo revisión técnica de Edson y coordinación de Jairo.
 
 ## Requisitos locales
 
@@ -102,7 +102,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 118 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario, los módulos de Kevin, fiscal/SAT/ERP/POS, Outbox/Inbox, seguridad (JWT, 401/403, sanitización y escaneo de fuga de PAN/CVV), auditoría (registro, consulta y EaC-02) y pagos (intentos idempotentes, timeout, circuit breaker, indeterminado y conciliación sin doble cobro). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 118/118 en verde.
+La suite integrada cubre PostgreSQL/RabbitMQ, concurrencia de inventario, arquitectura modular, HTTP, carrito y órdenes, pagos y conciliación, fiscal/SAT, ERP, POS, LogiExpress, notificaciones, consulta, incidencias, Outbox/Inbox, auditoría y seguridad JWT. El conteo y resultado vigente se registra después de cada `./mvnw clean verify` en la bitácora.
 
 ## Verificación completa con un comando
 
@@ -174,7 +174,7 @@ Actuator expone únicamente `health` e `info`.
 
 - `POST /api/v1/shipments` (`Idempotency-Key` requerido), `GET /api/v1/shipments/{id}`, `GET /api/v1/shipments?orderId=`, `GET/POST /api/v1/shipments/{id}/tracking-events`, `PATCH /api/v1/shipments/{id}/delivery-method` — LOG-01/02/03.
 - `POST /api/v1/notifications` (responde `202`), `GET /api/v1/notifications/{id}`, `GET /api/v1/notifications?sourceAggregateId=` — NOT-01.
-- `GET /api/v1/orders/{orderId}/summary` — QRY-01. `POST /api/v1/query/order-summary` es un punto de ingesta temporal mientras no exista un consumidor del Outbox (BB-04).
+- `GET /api/v1/orders/{orderId}/summary` — QRY-01. Orders alimenta automáticamente esta proyección mediante RabbitMQ e Inbox idempotente; `POST /api/v1/query/order-summary` queda como ingesta temporal para pagos, despacho, entrega e incidencias.
 - `POST /api/v1/incidents`, `GET /api/v1/incidents/{id}`, `GET /api/v1/incidents?orderId=`, `PATCH /api/v1/incidents/{id}/resolution` — INC-01.
 
 ## Endpoints de negocio (Jorge Pumay)
@@ -185,6 +185,31 @@ Actuator expone únicamente `health` e `info`.
 - Datos semilla de demostración: tres `productId` fijos documentados en `V2__inventory_seed_locations_and_stock.sql` (SGO-Logic no gestiona catálogo de productos, ver DDA §2.2).
 
 Todos usan el formato común de error de `shared.http.ApiError` y propagan `X-Correlation-Id`.
+
+## Endpoints de carrito y órdenes (Jairo Gómez)
+
+- `POST /api/v1/carts` (`Idempotency-Key` requerido) abre o recupera el carrito activo del cliente desde `WEB`, `MOBILE`, `STORE` o `CALL_CENTER`.
+- `GET /api/v1/carts/{cartId}` y `GET /api/v1/carts/active?customerId=` consultan el carrito omnicanal.
+- `PUT /api/v1/carts/{cartId}/items/{productId}` agrega o reemplaza cantidad y `DELETE` en la misma ruta elimina el artículo.
+- `POST /api/v1/carts/{cartId}/checkout` (`Idempotency-Key` requerido) crea una única orden a partir de la fotografía inmutable del carrito.
+- `GET /api/v1/orders/{orderId}` y `GET /api/v1/orders?customerId=` consultan órdenes.
+- `POST /api/v1/orders/{orderId}/inventory-reservations` reserva atómicamente todas las líneas antes de avanzar la Saga.
+- `POST /api/v1/orders/{orderId}/payment-attempts` persiste e invoca PayKlik con una referencia tokenizada; timeout o caída conserva la orden como pago indeterminado y agenda conciliación.
+- `GET /api/v1/payment-attempts/{id}` y `GET /api/v1/payment-attempts?orderId=` exponen la evidencia del intento sin PAN ni CVV.
+- `POST /api/v1/orders/{orderId}/fiscal-documents` inicia la compuerta SAT y `POST /api/v1/orders/{orderId}/fiscal-synchronization` confirma la orden únicamente si SAT aprobó el documento.
+- `PATCH /api/v1/orders/{orderId}/status` aplica la máquina de estados; cualquier salto que omita reserva, pago o aprobación fiscal devuelve `409` y conserva evidencia en el historial propietario de Orders.
+
+ORD-01, ORD-02 y el tramo principal de la Saga hasta `CONFIRMED` están implementados mediante contratos públicos entre módulos, sin leer repositorios ni tablas ajenas.
+
+## Outbox y auditoría transversal
+
+- Cada transición de orden persiste `order_status_history`, `outbox_messages` y `audit_events` dentro de la misma transacción local.
+- El publicador consulta mensajes pendientes, publica en el exchange durable `sgo.business.events.v1`, marca la entrega y aplica backoff hasta `DEAD_LETTER` al agotar cinco intentos.
+- `GET /api/v1/audit/events?orderId=` o `?transactionId=` recupera evidencia para los roles `FINANCE` y `SAT_AUDITOR` usando los encabezados provisionales `X-Actor-Id` y `X-Actor-Role`.
+- `GET /api/v1/audit/exports?orderId=` descarga la evidencia y registra el acceso/exportación.
+- Cada evidencia incluye actor, acción, estado anterior/nuevo, resultado, correlación y hash SHA-256.
+
+Los encabezados de actor son un contrato provisional hasta implementar autenticación/autorización en `security`; no deben presentarse como seguridad productiva.
 
 ## Endpoints fiscal e integraciones (Andy Sánchez)
 
@@ -275,27 +300,27 @@ Use valores exclusivos y no productivos para CI. Como no existe despliegue y los
 - `docs/integration/qa-01-ci-contract.md`: comportamiento y secretos del workflow.
 - `docs/evidence/functional/VALIDACION_CRUZADA_BB01_BB05.md`: procedimiento y evidencia pendiente para una persona no autora.
 
-Todos los diseños de Orders y Saga permanecen `PROPOSED`; no existen todavía sus entidades, transiciones ejecutables ni compensaciones. Los puertos fiscal y logístico ya tienen implementaciones locales, y los simuladores BB-06 son funcionales, pero la Saga aún no los consume.
+Las propuestas de diseño siguen sujetas a ratificación del equipo, pero Orders ya posee entidades, transiciones ejecutables y contratos con Inventory, Payments y Fiscal. Logística, notificaciones, ERP, POS, consulta e incidencias tienen implementaciones locales; falta enlazar automáticamente el tramo posterior a `CONFIRMED` y las compensaciones completas.
 
 ## Alcance de este incremento
 
 Se prepararon la estructura oficial, backend Spring Boot, módulos, configuración local/test, correlación HTTP, errores comunes, endpoint técnico, Dockerfile, Compose, documentación, contratos preliminares y pruebas iniciales.
 
-Kevin Girón agregó, sobre esa base: `logistics` (LOG-01/02/03, con integración simulada de LogiExpress y reintentos 2/8/32 s), `notifications` (NOT-01, despacho no bloqueante), `query` (QRY-01, vista consolidada con indicador de dato desactualizado) e `incidents` (INC-01, devoluciones/incidencias), cada uno con su propia migración Flyway y pruebas; y `frontend` (UI-01), la base de UI que ADR-009 reservaba para él, con checkout deliberadamente bloqueado por depender de `ORD-01`.
+Kevin Girón agregó, sobre esa base: `logistics` (LOG-01/02/03, con integración simulada de LogiExpress y reintentos 2/8/32 s), `notifications` (NOT-01, despacho no bloqueante), `query` (QRY-01, vista consolidada con indicador de dato desactualizado) e `incidents` (INC-01, devoluciones/incidencias), cada uno con su propia migración Flyway y pruebas. El frontend de cliente fue integrado al flujo real de carrito, reserva, pago y SAT, con identidad azul/cian compartida por portada, login y tienda.
 
 Andy Sánchez agregó `fiscal` (XML, CUI/serie, estado `FISCAL_PENDING`, SAT asíncrono, idempotencia y compuerta de confirmación), lotes ERP CSV/XML cada 30 minutos, distribución POS a 32 tiendas y los simuladores configurables BB-06, además de las migraciones `V2001`–`V2003`, ADR-010/ADR-012 y pruebas de FIS-03.
 
 Edson Sosa agregó el Outbox/Inbox transversal (BB-04: `V3001`, `PublishEvent`, dispatcher con reintentos y DLQ, `IdempotentConsumer`) y la seguridad del MVP (BB-07/ADR-013: login JWT, autorización por roles, respuestas 401/403 con `ApiError` y sanitización de PAN/CVV).
 
-Continúan pendientes: esquema y migraciones de `orders` (Jairo), carrito, estados ejecutables, Saga, compensaciones, E2E funcional y que los flujos de negocio consuman el Outbox. El workflow de GitHub Actions está creado, pero necesita secretos y una ejecución verde para cerrar QA-01.
+Jairo Gómez agregó el catálogo público, carrito recuperable, órdenes y estados ejecutables, el recorrido hasta confirmación fiscal y consumidores de eventos para Query y Notifications. Continúan pendientes el despacho automático posterior a `CONFIRMED`, las compensaciones completas de Saga, productores para las demás proyecciones y la ejecución remota verde de QA-01.
 
 BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanece parcial hasta integrar frontend y componentes compartidos pendientes. Los contratos de estados, eventos y API son propuestas sujetas a aprobación del equipo.
 
 ## Limitaciones actuales
 
 - El endpoint de plataforma no representa funcionalidad de negocio ni sustituye Actuator.
-- Existen entidades y migraciones de Logistics, Notifications, Query, Incidents, Fiscal, ERP, POS, Outbox e Inbox; Orders, Payments y Saga continúan pendientes o incompletos.
-- El Outbox transversal (BB-04) está operativo, pero fiscal, ERP, POS y notificaciones todavía no publican sus hechos a través de él; usan sus adaptadores y colas locales hasta que se conecten.
+- Orders, Inventory, Payments y la compuerta Fiscal cubren el camino principal hasta `CONFIRMED`; el tramo automático de despacho, entrega y compensaciones continúa incompleto.
+- El Outbox transversal está operativo y Orders publica sus transiciones; Query y Notifications las consumen con Inbox idempotente. Fiscal, ERP y POS todavía deben completar su participación en el flujo transversal.
 - La autenticación JWT y la autorización por roles están implementadas (BB-07/ADR-013); las cuentas son de demostración local y no hay refresh token, revocación ni límite de intentos.
 - `audit` registra evidencia transversal atómica (AUD-01, `V3002`) y expone consulta indexada y exportación (AUD-02); `incidents` y `payments` son sus consumidores. Fiscal y logística aún deben sumar sus acciones al registro para completar la reconstrucción de CDU-12.
 - `payments` registra intentos idempotentes con orden, canal, fecha, referencia y resultado, aplica timeout y circuit breaker (PAY-01/PAY-02) y concilia los indeterminados sin segundo cobro (PAY-03); la alerta operativa es un log y un registro auditable, sin canal externo de notificaciones.
@@ -303,9 +328,9 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
 - `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.
-- `logistics` (`shipment_dead_letters`) usa una cola de fallidos local en vez del Outbox transversal porque BB-04 todavía no existe.
-- `query` se alimenta manualmente vía `POST /api/v1/query/order-summary`; no hay todavía un consumidor de eventos real.
+- `logistics` (`shipment_dead_letters`) conserva una cola de fallidos local; todavía no está conectado al Outbox transversal ya disponible para eventos de orden.
+- `query` consume automáticamente `ORDER_STATUS_CHANGED` mediante la cola durable `sgo.query.order-status.v1` y deduplica por consumidor/evento en `inbox_messages`; las demás fuentes todavía usan `POST /api/v1/query/order-summary`.
 - `shared` se declaró `@ApplicationModule(type = OPEN)` y `ModularArchitectureTest` se amplió para permitir que un módulo de negocio dependa de `shared`; ambos cambios tocan código compartido y están pendientes de revisión por Jairo Gómez (arquitecto integrador).
-- Las migraciones `V1001`-`V1004` (logistics/notifications/query/incidents) usan una numeración provisional de Kevin Girón; BB-03 aún no reserva su propio rango (ver `backend/src/main/resources/db/migration/README.md`).
-- Las migraciones `V2001`-`V2003` (fiscal/ERP/POS) no se ejecutaron en esta máquina contra PostgreSQL real porque Docker no está instalado; deben validarse en el entorno oficial Java 25 + Docker.
-- Los ejecutores asíncronos actuales conservan el estado de negocio y reintentan dentro del proceso. La recuperación durable de una tarea justo después de reiniciar depende de BB-04/Outbox.
+- Las migraciones `V3001`-`V3002` reservan el rango posterior a las entregas existentes y fueron validadas sobre una base persistente que ya estaba en `V2003`.
+- Las 14 migraciones se ejecutaron correctamente contra PostgreSQL 17 en Docker durante la suite y el recorrido HTTP del MVP.
+- Los ejecutores asíncronos existentes de cada módulo conservan su estado y reintentan dentro del proceso. El Outbox ya recupera eventos de orden después de reinicios; los demás agregados todavía deben adoptarlo.

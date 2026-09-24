@@ -1,5 +1,7 @@
 package com.megastore.sgologic.payments;
 
+import com.megastore.sgologic.payments.api.PaymentMethod;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

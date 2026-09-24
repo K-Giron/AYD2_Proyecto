@@ -1,5 +1,7 @@
 package com.megastore.sgologic.payments;
 
+import com.megastore.sgologic.payments.api.PaymentMethod;
+
 import com.megastore.sgologic.payments.api.PaymentRequest;
 import com.megastore.sgologic.payments.api.PaymentResult;
 import org.junit.jupiter.api.Test;

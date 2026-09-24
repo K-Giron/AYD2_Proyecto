@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0752b8" />
+    <title>Producto | MegaStore</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="store.css" />
+    <link rel="stylesheet" href="landing.css" />
+</head>
+<body class="store landing-body product-page">
+    <a class="skip-link" href="#product-detail">Ir al producto</a>
+    <div class="commerce-promo">Inventario conectado en 32 tiendas y dos centros de distribución</div>
+    <header class="commerce-header">
+        <a class="commerce-brand" href="index.html" aria-label="MegaStore, inicio"><span>M</span><strong>MegaStore</strong></a>
+        <label class="commerce-search"><span class="sr-only">Buscar productos</span><input id="detail-search" type="search" placeholder="Buscar otro producto" autocomplete="off" /><button type="button" id="detail-search-btn">Buscar</button></label>
+        <nav id="detail-account-nav" class="commerce-actions" aria-label="Cuenta y compra"></nav>
+    </header>
+    <nav class="department-nav" aria-label="Ruta del producto"><a href="index.html">Inicio</a><a href="index.html#catalogo">Productos</a><span id="detail-breadcrumb">Detalle</span></nav>
+    <main id="product-detail" class="product-detail-shell"><div class="product-detail-loading">Consultando producto y disponibilidad.</div></main>
+    <dialog id="detail-auth-dialog" class="shop-dialog"><button class="dialog-close" data-close-detail-auth aria-label="Cerrar">Cerrar</button><h2>Inicia sesión para comprar</h2><p>Conservaremos este producto y lo agregaremos a tu carrito después de identificarte.</p><div><a href="login.html">Iniciar sesión</a><a href="registro.html" class="secondary">Crear cuenta</a></div></dialog>
+    <footer class="commerce-footer"><div><strong>MegaStore</strong><span>Detalle, stock y compra conectados.</span></div><p>© 2026 MegaStore. MVP académico. Todos los derechos reservados.</p></footer>
+    <script src="session.js"></script><script src="app-producto.js"></script>
+</body>
+</html>
