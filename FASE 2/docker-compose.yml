@@ -31,12 +31,15 @@ services:
       - "${RABBITMQ_MANAGEMENT_PORT}:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    # rabbitmq-diagnostics lanza una VM Erlang por invocación: con 5 s de
+    # intervalo consumía ~36 % de un núcleo en reposo. 30 s es suficiente
+    # para un ambiente local (hallazgo de QA-02).
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-      start_period: 15s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
     networks:
       - sgo-internal
 
