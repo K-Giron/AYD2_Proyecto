@@ -1,0 +1,19 @@
+{
+  "users": {
+    "client": {"username": "cliente@megastore.com", "password": "Cliente123", "role": "CLIENT"},
+    "staff": {"username": "staff@megastore.com", "password": "Staff123", "roles": ["SUPPORT", "LOGISTICS"]},
+    "finance": {"username": "finanzas@megastore.com", "password": "Finanzas123", "role": "FINANCE"}
+  },
+  "products": [
+    {"productId": "11111111-1111-1111-1111-111111111101", "sku": "SKU-CAMISA-AZUL", "name": "Camisa manga larga azul", "price": 249.00},
+    {"productId": "11111111-1111-1111-1111-111111111102", "sku": "SKU-PANTALON-NEGRO", "name": "Pantalón de lona negro", "price": 399.00},
+    {"productId": "11111111-1111-1111-1111-111111111103", "sku": "SKU-ZAPATOS-BLANCOS", "name": "Zapatos deportivos blancos", "price": 549.00}
+  ],
+  "checkout": {
+    "currency": "GTQ",
+    "paymentReference": "tok_e2e_4242",
+    "taxIdentifier": "CF-E2E",
+    "customerName": "Cliente E2E",
+    "destination": "Zona 10, Guatemala"
+  }
+}

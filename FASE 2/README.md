@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Materializar el DDA de la Fase 1 como un MVP reproducible de gestión de órdenes y logística omnicanal. El repositorio contiene el backbone técnico y un flujo ejecutable de carrito, reserva, pago y confirmación fiscal; despacho y las integraciones asíncronas continúan como capacidades separadas.
+Materializar el DDA de la Fase 1 como un MVP reproducible de gestión de órdenes y logística omnicanal. El repositorio contiene el backbone técnico y una Saga reentrante de carrito, reserva, pago, confirmación fiscal y creación automática del despacho.
 
 ## Arquitectura
 
@@ -30,7 +30,7 @@ FASE 2/
 `frontend/` (Kevin Girón, UI-01) es un sitio estático de tres páginas, sin build tooling (HTML/CSS/JS planos), servido por nginx con proxy inverso hacia `/api/` para evitar configurar CORS:
 
 - `index.html` — landing que elige entre las dos experiencias siguientes.
-- `cliente.html` (tema claro, `store.css`) — tienda omnicanal: catálogo y carrito son una vitrina de referencia sin backend (no existe `INV-01`); "Mis pedidos" y "Devoluciones" sí llaman a QRY-01, LOG-02 y NOT-01/INC-01 reales. El checkout no crea una compra real porque todavía faltan ORD-01/PAY-01 y la integración de esos flujos con FIS-01.
+- `cliente.html` (tema claro, `store.css`) — tienda omnicanal con catálogo público, carrito persistente, checkout real mediante `OrderSagaService`, pedidos, seguimiento y devoluciones. La Saga se puede repetir para continuar una confirmación SAT pendiente sin duplicar reservas, cobros, facturas ni despachos.
 - `staff.html` (tema oscuro, `styles.css`) — consola operativa para Personal de logística/atención al cliente (actores reales de CDU-07, 09, 10 y 11): buscar una orden y gestionar despacho (LOG-01/02/03), notificaciones (NOT-01), resumen consolidado (QRY-01) y devoluciones (INC-01).
 
 ## Tecnologías y versiones
@@ -103,6 +103,12 @@ Desde `FASE 2/backend`:
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
 La suite integrada cubre PostgreSQL/RabbitMQ, concurrencia de inventario, arquitectura modular, HTTP, carrito y órdenes, pagos y conciliación, fiscal/SAT, ERP, POS, LogiExpress, notificaciones, consulta, incidencias, Outbox/Inbox, auditoría y seguridad JWT. El conteo y resultado vigente se registra después de cada `./mvnw clean verify` en la bitácora.
+
+Los cinco recorridos E2E de ORD-05/QA-04 se ejecutan con:
+
+```bash
+./mvnw -Dtest=OrderJourneysE2ETest test
+```
 
 ## Verificación completa con un comando
 
@@ -197,14 +203,16 @@ Todos usan el formato común de error de `shared.http.ApiError` y propagan `X-Co
 - `POST /api/v1/orders/{orderId}/payment-attempts` persiste e invoca PayKlik con una referencia tokenizada; timeout o caída conserva la orden como pago indeterminado y agenda conciliación.
 - `GET /api/v1/payment-attempts/{id}` y `GET /api/v1/payment-attempts?orderId=` exponen la evidencia del intento sin PAN ni CVV.
 - `POST /api/v1/orders/{orderId}/fiscal-documents` inicia la compuerta SAT y `POST /api/v1/orders/{orderId}/fiscal-synchronization` confirma la orden únicamente si SAT aprobó el documento.
+- `POST /api/v1/orders/{orderId}/saga` (`Idempotency-Key` requerido) inicia o reanuda reserva, pago, SAT, consumo de inventario y despacho automático.
+- `POST /api/v1/orders/{orderId}/cancel` compensa una orden todavía no cobrada y libera sus reservas activas de forma idempotente.
 - `PATCH /api/v1/orders/{orderId}/status` aplica la máquina de estados; cualquier salto que omita reserva, pago o aprobación fiscal devuelve `409` y conserva evidencia en el historial propietario de Orders.
 
-ORD-01, ORD-02 y el tramo principal de la Saga hasta `CONFIRMED` están implementados mediante contratos públicos entre módulos, sin leer repositorios ni tablas ajenas.
+ORD-01 a ORD-05 están implementados mediante contratos públicos entre módulos, sin leer repositorios ni tablas ajenas. La confirmación fiscal materializa el consumo de las reservas y crea el despacho desde el origen asignado por Inventory.
 
 ## Outbox y auditoría transversal
 
-- Cada transición de orden persiste `order_status_history`, `outbox_messages` y `audit_events` dentro de la misma transacción local.
-- El publicador consulta mensajes pendientes, publica en el exchange durable `sgo.business.events.v1`, marca la entrega y aplica backoff hasta `DEAD_LETTER` al agotar cinco intentos.
+- Cada transición de orden persiste `order_status_history`, `outbox_event` y `audit_events` dentro de la misma transacción local.
+- El publicador consulta mensajes pendientes, publica en el exchange durable `sgo.events`, marca la entrega y aplica backoff hasta el estado fallido y la DLQ configurada.
 - `GET /api/v1/audit/events?orderId=` o `?transactionId=` recupera evidencia para los roles `FINANCE` y `SAT_AUDITOR` usando los encabezados provisionales `X-Actor-Id` y `X-Actor-Role`.
 - `GET /api/v1/audit/exports?orderId=` descarga la evidencia y registra el acceso/exportación.
 - Cada evidencia incluye actor, acción, estado anterior/nuevo, resultado, correlación y hash SHA-256.

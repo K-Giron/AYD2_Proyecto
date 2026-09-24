@@ -135,6 +135,9 @@ public class OrdersService {
     @Transactional(noRollbackFor = InvalidOrderTransitionException.class)
     public CustomerOrder transition(UUID orderId, OrderStatus next, String actor,
                                     String reason, UUID correlationId) {
+        if (next == OrderStatus.CANCELLED) {
+            return cancelOrder(orderId, actor, reason, correlationId);
+        }
         CustomerOrder order = getOrder(orderId);
         OrderStatus previous = order.getStatus();
         Instant now = clock.instant();
@@ -150,6 +153,43 @@ public class OrdersService {
         recordTransition(orderId, previous, next, actor, reason,
                 correlationId, now, "SUCCESS");
         return saved;
+    }
+
+    /**
+     * ORD-04: cancela únicamente estados compensables sin cobro aprobado y
+     * libera las reservas activas en la misma unidad de trabajo.
+     */
+    @Transactional
+    public CustomerOrder cancelOrder(UUID orderId, String actor, String reason, UUID correlationId) {
+        CustomerOrder order = getOrder(orderId);
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            return order;
+        }
+        OrderStatus previous = order.getStatus();
+        if (previous != OrderStatus.CREATED
+                && previous != OrderStatus.INVENTORY_RESERVED
+                && previous != OrderStatus.PAYMENT_REJECTED) {
+            throw new InvalidOrderTransitionException(orderId, previous, OrderStatus.CANCELLED);
+        }
+        inventoryReservationPort.releaseOrderReservations(orderId);
+        order.transitionTo(OrderStatus.CANCELLED, clock.instant());
+        CustomerOrder saved = orderRepository.save(order);
+        recordTransition(orderId, previous, OrderStatus.CANCELLED, actor,
+                reason == null || reason.isBlank() ? "Orden cancelada y reservas compensadas" : reason,
+                correlationId, clock.instant(), "SUCCESS");
+        return saved;
+    }
+
+    /** Confirma el consumo del stock una vez satisfecha la compuerta fiscal. */
+    @Transactional
+    public void confirmInventoryReservations(UUID orderId) {
+        getOrder(orderId);
+        inventoryReservationPort.confirmOrderReservations(orderId);
+    }
+
+    public List<InventoryReservationAllocation> getInventoryReservations(UUID orderId) {
+        getOrder(orderId);
+        return inventoryReservationPort.findOrderReservations(orderId);
     }
 
     public CustomerOrder getOrder(UUID orderId) {

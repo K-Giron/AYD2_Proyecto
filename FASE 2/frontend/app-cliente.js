@@ -163,16 +163,17 @@ function selectView(name) {
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-const FLOW_STEPS = ["Orden creada", "Inventario reservado", "Pago procesado", "Documento fiscal", "Orden confirmada"];
+const FLOW_STEPS = ["Orden creada", "Inventario reservado", "Pago procesado", "Documento fiscal", "Despacho iniciado"];
 function renderFlow(current, completed = false) {
     el("checkout-result").innerHTML = `<div class="flow-status">${FLOW_STEPS.map((label, index) => `<div class="flow-step ${completed || index < current ? "done" : index === current ? "current" : ""}">${label}</div>`).join("")}</div>`;
 }
 
 function sleep(milliseconds) { return new Promise(resolve => setTimeout(resolve, milliseconds)); }
-async function waitForFiscal(documentId) {
+async function waitForSaga(orderId, sagaKey, payload) {
     for (let attempt = 0; attempt < 12; attempt++) {
-        const document = await apiCall("GET", `/api/v1/fiscal-documents/${documentId}`);
-        if (document.status !== "FISCAL_PENDING") return document;
+        const result = await apiCall("POST", `/api/v1/orders/${orderId}/saga`, payload,
+            { "Idempotency-Key": sagaKey, "X-Actor": `customer:${CUSTOMER_ID}` });
+        if (result.sagaStatus !== "WAITING_FISCAL") return result;
         await sleep(500);
     }
     return null;
@@ -182,7 +183,8 @@ async function completePurchase() {
     const button = el("confirm-purchase-btn");
     const fiscalName = el("fiscal-name").value.trim();
     const taxIdentifier = el("fiscal-tax-id").value.trim();
-    if (!fiscalName || !taxIdentifier) { toast("Completa los datos fiscales.", "error"); return; }
+    const destination = el("checkout-destination").value.trim();
+    if (!fiscalName || !taxIdentifier || !destination) { toast("Completa destino y datos fiscales.", "error"); return; }
     button.disabled = true;
     try {
         const cart = await ensureCart();
@@ -191,18 +193,15 @@ async function completePurchase() {
         const order = await apiCall("POST", `/api/v1/carts/${cart.id}/checkout`, undefined, { "Idempotency-Key": checkoutKey, "X-Actor": `customer:${CUSTOMER_ID}` });
         localStorage.setItem(LAST_ORDER_KEY, order.id);
         renderFlow(1);
-        await apiCall("POST", `/api/v1/orders/${order.id}/inventory-reservations`, undefined, { "Idempotency-Key": `reserve-${order.id}`, "X-Actor": "SAGA" });
-        renderFlow(2);
-        const payment = await apiCall("POST", `/api/v1/orders/${order.id}/payment-attempts`, { method: "CARD", currency: "GTQ", paymentReference: "tok_demo_4242" }, { "Idempotency-Key": `payment-${order.id}`, "X-Actor": `customer:${CUSTOMER_ID}` });
-        if (payment.paymentStatus !== "APPROVED") throw new Error(payment.paymentStatus === "INDETERMINATE" ? "PayKlik no confirmó el cobro. La orden quedó guardada para conciliación." : "PayKlik rechazó el pago.");
-        renderFlow(3);
-        const fiscal = await apiCall("POST", `/api/v1/orders/${order.id}/fiscal-documents`, { paymentAttemptId: payment.paymentAttemptId, taxIdentifier, customerName: fiscalName, currency: "GTQ" }, { "Idempotency-Key": `fiscal-${order.id}`, "X-Actor": "SAGA" });
-        const resolvedFiscal = await waitForFiscal(fiscal.documentId);
-        if (!resolvedFiscal) throw new Error("SAT sigue procesando el documento. La orden permanece en estado fiscal pendiente.");
-        const synchronized = await apiCall("POST", `/api/v1/orders/${order.id}/fiscal-synchronization`, undefined, { "X-Actor": "SAGA" });
-        if (synchronized.order.status !== "CONFIRMED") throw new Error(`SAT devolvió el estado ${synchronized.fiscalStatus}.`);
+        const sagaKey = `saga-${order.id}`;
+        const saga = await waitForSaga(order.id, sagaKey, {
+            paymentMethod: "CARD", currency: "GTQ", paymentReference: "tok_demo_4242",
+            taxIdentifier, customerName: fiscalName, destination
+        });
+        if (!saga) throw new Error("SAT sigue procesando el documento. Puedes reanudar la compra sin duplicar cobros.");
+        if (saga.sagaStatus !== "COMPLETED") throw new Error(saga.detail || `La Saga quedó en ${saga.sagaStatus}.`);
         renderFlow(5, true);
-        el("checkout-result").innerHTML += `<div class="checkout-success"><strong>Compra confirmada</strong><br />Orden ${escapeHtml(order.id)}<br />CUI ${escapeHtml(synchronized.cui)} · Serie ${escapeHtml(synchronized.series)}</div>`;
+        el("checkout-result").innerHTML += `<div class="checkout-success"><strong>Compra confirmada y en preparación</strong><br />Orden ${escapeHtml(order.id)}<br />CUI ${escapeHtml(saga.fiscalCui)} · Serie ${escapeHtml(saga.fiscalSeries)}<br />Guía en proceso para ${escapeHtml(destination)}</div>`;
         localStorage.removeItem(CART_CONTEXT_KEY); activeCart = null; await loadRecentOrders(); renderCatalog(); renderCart();
     } catch (error) {
         el("checkout-result").innerHTML = `<div class="checkout-error"><strong>No se completó el flujo.</strong><br />${escapeHtml(error.message)}</div>`;

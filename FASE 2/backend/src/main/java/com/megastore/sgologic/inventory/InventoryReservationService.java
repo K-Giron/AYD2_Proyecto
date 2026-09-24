@@ -161,4 +161,55 @@ public class InventoryReservationService implements InventoryReservationPort {
                     reservation.getExpiresAt());
         }).toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InventoryReservationAllocation> findOrderReservations(UUID orderId) {
+        return reservationRepository.findByOrderId(orderId).stream()
+                .map(this::toAllocation)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void confirmOrderReservations(UUID orderId) {
+        Instant now = clock.instant();
+        for (InventoryReservation reservation : reservationRepository.findByOrderId(orderId)) {
+            if (reservation.getStatus() == InventoryReservationStatus.CONFIRMED) {
+                continue;
+            }
+            if (!reservation.isActive()
+                    || itemRepository.tryConfirm(reservation.getProductId(), reservation.getLocationId(),
+                    reservation.getQuantity(), now) != 1) {
+                throw new IllegalStateException("No se pudo confirmar la reserva " + reservation.getId() + ".");
+            }
+            reservation.markConfirmed(now);
+            reservationRepository.save(reservation);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void releaseOrderReservations(UUID orderId) {
+        Instant now = clock.instant();
+        for (InventoryReservation reservation : reservationRepository.findByOrderId(orderId)) {
+            if (!reservation.isActive()) {
+                continue;
+            }
+            if (itemRepository.tryRelease(reservation.getProductId(), reservation.getLocationId(),
+                    reservation.getQuantity(), now) != 1) {
+                throw new IllegalStateException("No se pudo liberar la reserva " + reservation.getId() + ".");
+            }
+            reservation.markReleased(now);
+            reservationRepository.save(reservation);
+        }
+    }
+
+    private InventoryReservationAllocation toAllocation(InventoryReservation reservation) {
+        InventoryLocation location = locationRepository.findById(reservation.getLocationId())
+                .orElseThrow(() -> new InventoryLocationNotFoundException(reservation.getLocationId()));
+        return new InventoryReservationAllocation(reservation.getId(), reservation.getProductId(),
+                reservation.getQuantity(), reservation.getLocationId(), location.getType(),
+                location.getCode(), reservation.getExpiresAt());
+    }
 }

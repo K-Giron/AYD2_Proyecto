@@ -11,4 +11,13 @@ public interface InventoryReservationPort {
             UUID correlationId,
             String idempotencyKey
     );
+
+    /** Recupera las asignaciones sin exponer entidades ni repositorios de Inventory. */
+    List<InventoryReservationAllocation> findOrderReservations(UUID orderId);
+
+    /** Convierte las reservas activas en consumo definitivo de inventario. */
+    void confirmOrderReservations(UUID orderId);
+
+    /** Libera, de forma idempotente, las reservas activas de una orden cancelada. */
+    void releaseOrderReservations(UUID orderId);
 }

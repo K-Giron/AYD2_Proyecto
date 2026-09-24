@@ -112,9 +112,9 @@ public class CustomerOrder {
         map.put(OrderStatus.PAYMENT_APPROVED, EnumSet.of(OrderStatus.FISCAL_PENDING));
         map.put(OrderStatus.FISCAL_PENDING,
                 EnumSet.of(OrderStatus.FISCAL_APPROVED, OrderStatus.FISCAL_REJECTED));
-        map.put(OrderStatus.FISCAL_REJECTED, EnumSet.of(OrderStatus.FISCAL_PENDING, OrderStatus.CANCELLED));
+        map.put(OrderStatus.FISCAL_REJECTED, EnumSet.of(OrderStatus.FISCAL_PENDING));
         map.put(OrderStatus.FISCAL_APPROVED, EnumSet.of(OrderStatus.CONFIRMED));
-        map.put(OrderStatus.CONFIRMED, EnumSet.of(OrderStatus.PREPARING, OrderStatus.CANCELLED));
+        map.put(OrderStatus.CONFIRMED, EnumSet.of(OrderStatus.PREPARING));
         map.put(OrderStatus.PREPARING, EnumSet.of(OrderStatus.IN_TRANSIT));
         map.put(OrderStatus.IN_TRANSIT, EnumSet.of(OrderStatus.DELIVERED));
         return Map.copyOf(map);

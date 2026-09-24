@@ -48,4 +48,14 @@ interface InventoryItemRepository extends JpaRepository<InventoryItem, UUID> {
             + "AND i.quantityReserved >= :quantity")
     int tryRelease(@Param("productId") UUID productId, @Param("locationId") UUID locationId,
                    @Param("quantity") int quantity, @Param("now") Instant now);
+
+    /** Materializa la venta: descuenta existencia y compromiso en una sola escritura. */
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE InventoryItem i SET i.quantityOnHand = i.quantityOnHand - :quantity, "
+            + "i.quantityReserved = i.quantityReserved - :quantity, "
+            + "i.updatedAt = :now, i.version = i.version + 1 "
+            + "WHERE i.productId = :productId AND i.locationId = :locationId "
+            + "AND i.quantityOnHand >= :quantity AND i.quantityReserved >= :quantity")
+    int tryConfirm(@Param("productId") UUID productId, @Param("locationId") UUID locationId,
+                   @Param("quantity") int quantity, @Param("now") Instant now);
 }
