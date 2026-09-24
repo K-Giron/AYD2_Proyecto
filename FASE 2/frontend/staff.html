@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MegaStore | Centro de operaciones</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <header class="app-bar">
+        <div class="app-bar-brand">
+            <a href="index.html" class="brand-mark" title="Volver al inicio">MS</a>
+            <div>
+                <h1>Centro de operaciones</h1>
+                <p class="app-bar-subtitle">Ventas, cumplimiento y atención de MegaStore</p>
+            </div>
+        </div>
+        <div class="app-bar-actions">
+            <a href="login.html" class="btn btn-ghost btn-sm">Ver como cliente</a>
+            <div class="app-bar-status">
+                <span id="backend-status-dot" class="status-dot unknown"></span>
+                <span id="backend-status-text">Verificando servicios...</span>
+            </div>
+            <div class="session-chip">
+                <span id="session-name">Sesión interna</span>
+                <button id="logout-btn" class="btn btn-ghost btn-sm">Cerrar sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="workbench">
+        <section class="operations-heading">
+            <div>
+                <p class="section-kicker">Visión ejecutiva</p>
+                <h2>Operación comercial de hoy</h2>
+                <p>Información consolidada desde órdenes, pagos, facturación, despacho e incidencias.</p>
+            </div>
+            <button id="refresh-operations-btn" class="btn btn-ghost">Actualizar operación</button>
+        </section>
+
+        <section class="operations-metrics" aria-label="Indicadores operativos">
+            <article><span>Órdenes registradas</span><strong id="metric-orders">0</strong><small>todos los canales</small></article>
+            <article><span>Confirmadas</span><strong id="metric-confirmed">0</strong><small>listas para cumplimiento</small></article>
+            <article><span>Requieren atención</span><strong id="metric-attention">0</strong><small>rechazos o conciliación</small></article>
+            <article><span>Valor procesado</span><strong id="metric-revenue">Q0.00</strong><small>órdenes registradas</small></article>
+        </section>
+
+        <section class="operations-table-panel">
+            <header><div><h2>Órdenes recientes</h2><p>Selecciona una orden para operar su ciclo completo.</p></div><span class="environment-badge">Ambiente simulado controlado</span></header>
+            <div id="operations-orders" class="operations-orders"><p class="empty-state">Cargando órdenes...</p></div>
+        </section>
+
+        <section class="order-picker">
+            <label for="order-id-input">Consultar una orden por identificador</label>
+            <div class="order-picker-row">
+                <input type="text" id="order-id-input" placeholder="UUID de la orden" />
+                <button id="load-order-btn" class="btn btn-primary">Cargar</button>
+            </div>
+            <p class="hint">El detalle reúne el estado comercial, despacho, comunicaciones e incidencias sin cambiar de pantalla.</p>
+        </section>
+
+        <section id="dashboard" class="dashboard hidden">
+            <!-- Resumen consolidado — QRY-01 -->
+            <article class="card card-wide card-summary" data-area="summary">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+                        </span>
+                        <div>
+                            <h2>Resumen consolidado</h2>
+                            <p class="card-subtitle">QRY-01 · CDU-09 — compra, pago, despacho, entrega e incidencia en un solo lugar</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" data-action="refresh-summary">Actualizar</button>
+                </header>
+                <div id="summary-body" class="card-body">
+                    <p class="empty-state">Carga una orden para ver su resumen.</p>
+                </div>
+            </article>
+
+            <!-- Despacho — LOG-01/02/03 -->
+            <article class="card" data-area="dispatch">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon icon-dispatch">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"/><path d="M3 7.5 12 12l9-4.5"/><path d="M12 12v9"/></svg>
+                        </span>
+                        <div>
+                            <h2>Despacho</h2>
+                            <p class="card-subtitle">LOG-01 · LOG-02 · LOG-03 — CDU-07 / CDU-08</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" data-action="refresh-dispatch">Actualizar</button>
+                </header>
+                <div id="dispatch-list" class="card-body list-body">
+                    <p class="empty-state">Sin despachos todavía.</p>
+                </div>
+                <details class="new-item-form">
+                    <summary>+ Nuevo despacho</summary>
+                    <form id="dispatch-form" class="form-grid compact">
+                        <label>Origen
+                            <select name="origin" required>
+                                <option value="DISTRIBUTION_CENTER">Centro de distribución</option>
+                                <option value="STORE">Tienda</option>
+                                <option value="CUSTOMER_PICKUP">Recogida por el cliente</option>
+                            </select>
+                        </label>
+                        <label>Destino
+                            <input type="text" name="destination" placeholder="Dirección o tienda destino" required />
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm">Crear despacho</button>
+                    </form>
+                </details>
+            </article>
+
+            <!-- Notificaciones — NOT-01 -->
+            <article class="card" data-area="notifications">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon icon-notifications">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        </span>
+                        <div>
+                            <h2>Notificaciones</h2>
+                            <p class="card-subtitle">NOT-01 — CUN-11, no bloqueante</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" data-action="refresh-notifications">Actualizar</button>
+                </header>
+                <div id="notifications-list" class="card-body list-body">
+                    <p class="empty-state">Sin notificaciones todavía.</p>
+                </div>
+                <details class="new-item-form">
+                    <summary>+ Nueva notificación</summary>
+                    <form id="notification-form" class="form-grid compact">
+                        <label>Evento
+                            <select name="eventType" required>
+                                <option value="ORDER_CONFIRMED">Confirmación de compra</option>
+                                <option value="SHIPMENT_PREPARING">Preparación</option>
+                                <option value="SHIPMENT_IN_TRANSIT">Tránsito</option>
+                                <option value="SHIPMENT_DELIVERED">Entrega</option>
+                                <option value="INCIDENT_REGISTERED">Incidencia</option>
+                            </select>
+                        </label>
+                        <label>Canal
+                            <select name="channel" required>
+                                <option value="EMAIL">Correo</option>
+                                <option value="SMS">SMS</option>
+                                <option value="PUSH">Push</option>
+                            </select>
+                        </label>
+                        <label>Destinatario
+                            <input type="text" name="recipient" placeholder="correo@ejemplo.com o +502..." required />
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm">Enviar</button>
+                    </form>
+                </details>
+            </article>
+
+            <!-- Devoluciones — INC-01 -->
+            <article class="card" data-area="incidents">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon icon-incidents">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5A5.5 5.5 0 0 1 20 14.5v0A5.5 5.5 0 0 1 14.5 20H11"/></svg>
+                        </span>
+                        <div>
+                            <h2>Devoluciones e incidencias</h2>
+                            <p class="card-subtitle">INC-01 — CDU-10</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" data-action="refresh-incidents">Actualizar</button>
+                </header>
+                <div id="incidents-list" class="card-body list-body">
+                    <p class="empty-state">Sin devoluciones ni incidencias todavía.</p>
+                </div>
+                <details class="new-item-form">
+                    <summary>+ Registrar devolución/incidencia</summary>
+                    <form id="incident-form" class="form-grid compact">
+                        <label>Tipo
+                            <select name="type" required>
+                                <option value="RETURN">Devolución</option>
+                                <option value="INCIDENT">Incidencia</option>
+                            </select>
+                        </label>
+                        <label>Motivo
+                            <input type="text" name="reason" placeholder="Ej. talla incorrecta" required />
+                        </label>
+                        <label>SKU
+                            <input type="text" name="sku" placeholder="SKU del artículo" required />
+                        </label>
+                        <label>Cantidad
+                            <input type="number" name="quantity" min="1" value="1" required />
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="partial" />
+                            Devolución parcial
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm">Registrar</button>
+                    </form>
+                </details>
+            </article>
+
+            <article class="card" data-area="legacy">
+                <header class="card-header">
+                    <div class="card-title"><span class="card-icon">32</span><div><h2>ERP y puntos de venta</h2><p class="card-subtitle">Sincronización con sistemas legados sin modificarlos</p></div></div>
+                </header>
+                <div class="card-body">
+                    <p class="integration-help">Registra la venta confirmada en la ventana de ERP-Core o publica el cambio a una de las 32 tiendas.</p>
+                    <div class="legacy-actions">
+                        <button id="erp-sync-btn" class="btn btn-primary btn-sm">Registrar en ERP</button>
+                        <label>Tienda POS<input id="pos-store-number" type="number" min="1" max="32" value="1" /></label>
+                        <button id="pos-publish-btn" class="btn btn-ghost btn-sm">Publicar a POS</button>
+                    </div>
+                    <div id="legacy-result" class="integration-result"><p class="empty-state">Selecciona una orden para operar las integraciones.</p></div>
+                </div>
+            </article>
+
+            <article class="card" data-area="audit">
+                <header class="card-header">
+                    <div class="card-title"><span class="card-icon">ID</span><div><h2>Evidencia de auditoría</h2><p class="card-subtitle">CUN-12 · consulta y exportación restringidas a Finanzas/Auditor SAT</p></div></div>
+                    <button id="export-audit-btn" class="btn btn-ghost btn-sm">Exportar JSON</button>
+                </header>
+                <div id="audit-list" class="card-body list-body"><p class="empty-state">Carga una orden para reconstruir su historia.</p></div>
+            </article>
+
+            <article class="card card-wide integrations-card" data-area="integrations">
+                <header class="card-header">
+                    <div class="card-title">
+                        <span class="card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                        </span>
+                        <div>
+                            <h2>Cadena de integración</h2>
+                            <p class="card-subtitle">Servicios externos representados con simuladores configurables y trazables</p>
+                        </div>
+                    </div>
+                    <span class="badge badge-warn">Entorno académico</span>
+                </header>
+                <div class="card-body">
+                    <div class="integration-strip">
+                        <div><strong>PayKlik</strong><span>Autorización e idempotencia</span><i class="status-dot unknown"></i></div>
+                        <div><strong>SAT</strong><span>Documento fiscal y CUI</span><i class="status-dot unknown"></i></div>
+                        <div><strong>LogiExpress</strong><span>Guía y seguimiento</span><i class="status-dot unknown"></i></div>
+                        <div><strong>Mensajería</strong><span>Correo, SMS y push</span><i class="status-dot unknown"></i></div>
+                    </div>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>Correlation ID de esta sesión: <code id="correlation-id"></code></p>
+    </footer>
+
+    <script src="session.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

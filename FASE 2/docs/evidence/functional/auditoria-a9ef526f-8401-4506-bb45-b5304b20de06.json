@@ -1,0 +1,28 @@
+{
+  "orderId": "a9ef526f-8401-4506-bb45-b5304b20de06",
+  "exportedAt": "2026-09-23T23:18:02.293Z",
+  "correlationId": "47fadc11-b8c3-4a97-aae6-5b772cb1aad2",
+  "entries": [
+    {
+      "id": "eab74176-5764-45e8-8a5d-bbe6b8c93dab",
+      "actorId": "QA_SMOKE",
+      "actorType": "QA_SMOKE",
+      "action": "ORDER_STATUS_CHANGED",
+      "aggregateType": "ORDER",
+      "aggregateId": "a9ef526f-8401-4506-bb45-b5304b20de06",
+      "orderId": "a9ef526f-8401-4506-bb45-b5304b20de06",
+      "transactionId": "20000000-0000-4000-8000-000000000923",
+      "correlationId": "20000000-0000-4000-8000-000000000923",
+      "previousState": {},
+      "newState": {
+        "status": "CREATED"
+      },
+      "result": "SUCCESS",
+      "occurredAt": "2026-09-23T23:09:14.829795Z",
+      "metadata": {
+        "reason": "Orden creada desde carrito omnicanal"
+      },
+      "evidenceHash": "1f3f5ed323e01de16d5b5005ae5e932597d63ff2c760ae90fa9e14070a82687d"
+    }
+  ]
+}

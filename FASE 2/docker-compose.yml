@@ -1,0 +1,168 @@
+name: sgo-logic
+
+services:
+  postgres:
+    image: postgres:17.11-alpine3.23
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sgo-internal
+
+  rabbitmq:
+    image: rabbitmq:4.3.5-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    # rabbitmq-diagnostics lanza una VM Erlang por invocación: con 5 s de
+    # intervalo consumía ~36 % de un núcleo en reposo. 30 s es suficiente
+    # para un ambiente local (hallazgo de QA-02).
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - sgo-internal
+
+  backend:
+    image: sgo-logic-backend:0.0.1-phase2
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      BACKEND_PORT: 8080
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      SGO_SIMULATORS_PAYKLIK_MODE: ${SGO_SIMULATORS_PAYKLIK_MODE:-SUCCESS}
+      SGO_SIMULATORS_SAT_MODE: ${SGO_SIMULATORS_SAT_MODE:-SUCCESS}
+      SGO_SIMULATORS_ERP_MODE: ${SGO_SIMULATORS_ERP_MODE:-SUCCESS}
+      SGO_SIMULATORS_POS_MODE: ${SGO_SIMULATORS_POS_MODE:-SUCCESS}
+      SGO_SIMULATORS_LOGIEXPRESS_MODE: ${SGO_SIMULATORS_LOGIEXPRESS_MODE:-RANDOM}
+      SGO_SIMULATORS_NOTIFICATIONS_MODE: ${SGO_SIMULATORS_NOTIFICATIONS_MODE:-RANDOM}
+      SGO_SIMULATORS_PAYKLIK_LATENCY_MS: ${SGO_SIMULATORS_PAYKLIK_LATENCY_MS:-1200}
+      SGO_SIMULATORS_SAT_LATENCY_MS: ${SGO_SIMULATORS_SAT_LATENCY_MS:-1500}
+      SGO_SIMULATORS_ERP_LATENCY_MS: ${SGO_SIMULATORS_ERP_LATENCY_MS:-1000}
+      SGO_SIMULATORS_POS_LATENCY_MS: ${SGO_SIMULATORS_POS_LATENCY_MS:-400}
+      SGO_SIMULATORS_LOGIEXPRESS_LATENCY_MS: ${SGO_SIMULATORS_LOGIEXPRESS_LATENCY_MS:-800}
+      SGO_SIMULATORS_NOTIFICATIONS_LATENCY_MS: ${SGO_SIMULATORS_NOTIFICATIONS_LATENCY_MS:-500}
+      SGO_SIMULATORS_PAYKLIK_FAILURE_RATE: ${SGO_SIMULATORS_PAYKLIK_FAILURE_RATE:-0.10}
+      SGO_SIMULATORS_SAT_FAILURE_RATE: ${SGO_SIMULATORS_SAT_FAILURE_RATE:-0.10}
+      SGO_SIMULATORS_ERP_FAILURE_RATE: ${SGO_SIMULATORS_ERP_FAILURE_RATE:-0.05}
+      SGO_SIMULATORS_POS_FAILURE_RATE: ${SGO_SIMULATORS_POS_FAILURE_RATE:-0.05}
+      SGO_SIMULATORS_LOGIEXPRESS_FAILURE_RATE: ${SGO_SIMULATORS_LOGIEXPRESS_FAILURE_RATE:-0.02}
+      SGO_SIMULATORS_NOTIFICATIONS_FAILURE_RATE: ${SGO_SIMULATORS_NOTIFICATIONS_FAILURE_RATE:-0.05}
+      SGO_SIMULATORS_POS_UNAVAILABLE_STORES: ${SGO_SIMULATORS_POS_UNAVAILABLE_STORES:-}
+      SGO_ERP_FORMAT: ${SGO_ERP_FORMAT:-CSV}
+      SGO_ERP_INTERVAL_MS: ${SGO_ERP_INTERVAL_MS:-1800000}
+      SGO_ERP_INITIAL_DELAY_MS: ${SGO_ERP_INITIAL_DELAY_MS:-1800000}
+      SGO_PAYKLIK_TIMEOUT_MS: ${SGO_PAYKLIK_TIMEOUT_MS:-5000}
+      SGO_PAYKLIK_CALL_POOL_SIZE: ${SGO_PAYKLIK_CALL_POOL_SIZE:-8}
+      SGO_PAYKLIK_FAILURE_RATE_THRESHOLD: ${SGO_PAYKLIK_FAILURE_RATE_THRESHOLD:-50}
+      SGO_PAYKLIK_SLIDING_WINDOW_SIZE: ${SGO_PAYKLIK_SLIDING_WINDOW_SIZE:-10}
+      SGO_PAYKLIK_MINIMUM_CALLS: ${SGO_PAYKLIK_MINIMUM_CALLS:-5}
+      SGO_PAYKLIK_OPEN_STATE_WAIT: ${SGO_PAYKLIK_OPEN_STATE_WAIT:-30s}
+      SGO_PAYKLIK_HALF_OPEN_CALLS: ${SGO_PAYKLIK_HALF_OPEN_CALLS:-3}
+      SGO_PAYMENT_RECONCILIATION_ENABLED: ${SGO_PAYMENT_RECONCILIATION_ENABLED:-true}
+      SGO_PAYMENT_RECONCILIATION_POLL_INTERVAL_MS: ${SGO_PAYMENT_RECONCILIATION_POLL_INTERVAL_MS:-5000}
+      SGO_PAYMENT_RECONCILIATION_BATCH_SIZE: ${SGO_PAYMENT_RECONCILIATION_BATCH_SIZE:-20}
+      SGO_PAYMENT_RECONCILIATION_MAX_ATTEMPTS: ${SGO_PAYMENT_RECONCILIATION_MAX_ATTEMPTS:-4}
+      SGO_PAYMENT_RECONCILIATION_FIRST_DELAY: ${SGO_PAYMENT_RECONCILIATION_FIRST_DELAY:-30s}
+      SGO_PAYMENT_RECONCILIATION_STALE_PENDING_AFTER: ${SGO_PAYMENT_RECONCILIATION_STALE_PENDING_AFTER:-60s}
+      SGO_PAYMENT_RECONCILIATION_RETRY_DELAYS: ${SGO_PAYMENT_RECONCILIATION_RETRY_DELAYS:-60s,120s,240s}
+      SGO_PAYMENT_RECONCILIATION_ALERT_AFTER: ${SGO_PAYMENT_RECONCILIATION_ALERT_AFTER:-5m}
+      SGO_OUTBOX_ENABLED: ${SGO_OUTBOX_ENABLED:-true}
+      SGO_OUTBOX_POLL_INTERVAL_MS: ${SGO_OUTBOX_POLL_INTERVAL_MS:-2000}
+      SGO_OUTBOX_BATCH_SIZE: ${SGO_OUTBOX_BATCH_SIZE:-50}
+      SGO_OUTBOX_MAX_ATTEMPTS: ${SGO_OUTBOX_MAX_ATTEMPTS:-4}
+      SGO_OUTBOX_RETRY_DELAYS: ${SGO_OUTBOX_RETRY_DELAYS:-2s,8s,32s}
+      SGO_OUTBOX_EXCHANGE: ${SGO_OUTBOX_EXCHANGE:-sgo.events}
+      SGO_OUTBOX_DLX: ${SGO_OUTBOX_DLX:-sgo.events.dlx}
+      SGO_OUTBOX_DLQ: ${SGO_OUTBOX_DLQ:-sgo.events.dlq}
+      SGO_SECURITY_ENABLED: ${SGO_SECURITY_ENABLED:-true}
+      SGO_SECURITY_JWT_SECRET: ${SGO_SECURITY_JWT_SECRET:-local_dev_only_jwt_secret_change_me_32b!}
+      SGO_SECURITY_JWT_ISSUER: ${SGO_SECURITY_JWT_ISSUER:-sgo-logic}
+      SGO_SECURITY_JWT_TTL: ${SGO_SECURITY_JWT_TTL:-PT8H}
+      SGO_SECURITY_CLIENT_USER: ${SGO_SECURITY_CLIENT_USER:-cliente@megastore.com}
+      SGO_SECURITY_CLIENT_PASSWORD: ${SGO_SECURITY_CLIENT_PASSWORD:-Cliente123}
+      SGO_SECURITY_SUPPORT_USER: ${SGO_SECURITY_SUPPORT_USER:-staff@megastore.com}
+      SGO_SECURITY_SUPPORT_PASSWORD: ${SGO_SECURITY_SUPPORT_PASSWORD:-Staff123}
+      SGO_SECURITY_LOGISTICS_USER: ${SGO_SECURITY_LOGISTICS_USER:-logistica@megastore.com}
+      SGO_SECURITY_LOGISTICS_PASSWORD: ${SGO_SECURITY_LOGISTICS_PASSWORD:-Logistica123}
+      SGO_SECURITY_FINANCE_USER: ${SGO_SECURITY_FINANCE_USER:-finanzas@megastore.com}
+      SGO_SECURITY_FINANCE_PASSWORD: ${SGO_SECURITY_FINANCE_PASSWORD:-Finanzas123}
+    ports:
+      - "${BACKEND_PORT}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+    networks:
+      - sgo-internal
+
+  # UI-01 (Kevin Girón): base de frontend agregada a la topología según
+  # ADR-009 ("El frontend se agregará cuando Kevin entregue la base de UI").
+  frontend:
+    image: sgo-logic-frontend:0.0.1-phase2
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      BACKEND_HOST: backend
+      BACKEND_INTERNAL_PORT: 8080
+    ports:
+      - "${FRONTEND_PORT:-8081}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
+    networks:
+      - sgo-internal
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+
+networks:
+  sgo-internal:
+    driver: bridge

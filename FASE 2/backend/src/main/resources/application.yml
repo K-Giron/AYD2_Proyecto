@@ -1,0 +1,116 @@
+spring:
+  application:
+    name: sgo-logic
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    baseline-on-migrate: false
+    clean-disabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  info:
+    env:
+      enabled: false
+
+sgo:
+  simulators:
+    payklik:
+      mode: ${SGO_SIMULATORS_PAYKLIK_MODE:SUCCESS}
+      latency-ms: ${SGO_SIMULATORS_PAYKLIK_LATENCY_MS:1200}
+      failure-rate: ${SGO_SIMULATORS_PAYKLIK_FAILURE_RATE:0.10}
+    sat:
+      mode: ${SGO_SIMULATORS_SAT_MODE:SUCCESS}
+      latency-ms: ${SGO_SIMULATORS_SAT_LATENCY_MS:1500}
+      failure-rate: ${SGO_SIMULATORS_SAT_FAILURE_RATE:0.10}
+    erp:
+      mode: ${SGO_SIMULATORS_ERP_MODE:SUCCESS}
+      latency-ms: ${SGO_SIMULATORS_ERP_LATENCY_MS:1000}
+      failure-rate: ${SGO_SIMULATORS_ERP_FAILURE_RATE:0.05}
+    pos:
+      mode: ${SGO_SIMULATORS_POS_MODE:SUCCESS}
+      latency-ms: ${SGO_SIMULATORS_POS_LATENCY_MS:400}
+      failure-rate: ${SGO_SIMULATORS_POS_FAILURE_RATE:0.05}
+      unavailable-stores: ${SGO_SIMULATORS_POS_UNAVAILABLE_STORES:}
+    logiexpress:
+      mode: ${SGO_SIMULATORS_LOGIEXPRESS_MODE:RANDOM}
+      latency-ms: ${SGO_SIMULATORS_LOGIEXPRESS_LATENCY_MS:800}
+      failure-rate: ${SGO_SIMULATORS_LOGIEXPRESS_FAILURE_RATE:0.02}
+    notifications:
+      mode: ${SGO_SIMULATORS_NOTIFICATIONS_MODE:RANDOM}
+      latency-ms: ${SGO_SIMULATORS_NOTIFICATIONS_LATENCY_MS:500}
+      failure-rate: ${SGO_SIMULATORS_NOTIFICATIONS_FAILURE_RATE:0.05}
+  integrations:
+    erp:
+      format: ${SGO_ERP_FORMAT:CSV}
+      interval-ms: ${SGO_ERP_INTERVAL_MS:1800000}
+      initial-delay-ms: ${SGO_ERP_INITIAL_DELAY_MS:1800000}
+  payments:
+    payklik:
+      timeout-ms: ${SGO_PAYKLIK_TIMEOUT_MS:5000}
+      call-pool-size: ${SGO_PAYKLIK_CALL_POOL_SIZE:8}
+      failure-rate-threshold: ${SGO_PAYKLIK_FAILURE_RATE_THRESHOLD:50}
+      sliding-window-size: ${SGO_PAYKLIK_SLIDING_WINDOW_SIZE:10}
+      minimum-number-of-calls: ${SGO_PAYKLIK_MINIMUM_CALLS:5}
+      wait-duration-in-open-state: ${SGO_PAYKLIK_OPEN_STATE_WAIT:30s}
+      permitted-number-of-calls-in-half-open-state: ${SGO_PAYKLIK_HALF_OPEN_CALLS:3}
+    reconciliation:
+      enabled: ${SGO_PAYMENT_RECONCILIATION_ENABLED:true}
+      poll-interval-ms: ${SGO_PAYMENT_RECONCILIATION_POLL_INTERVAL_MS:5000}
+      batch-size: ${SGO_PAYMENT_RECONCILIATION_BATCH_SIZE:20}
+      max-attempts: ${SGO_PAYMENT_RECONCILIATION_MAX_ATTEMPTS:4}
+      first-delay: ${SGO_PAYMENT_RECONCILIATION_FIRST_DELAY:30s}
+      stale-pending-after: ${SGO_PAYMENT_RECONCILIATION_STALE_PENDING_AFTER:60s}
+      retry-delays: ${SGO_PAYMENT_RECONCILIATION_RETRY_DELAYS:60s,120s,240s}
+      alert-after: ${SGO_PAYMENT_RECONCILIATION_ALERT_AFTER:5m}
+  outbox:
+    enabled: ${SGO_OUTBOX_ENABLED:true}
+    poll-interval-ms: ${SGO_OUTBOX_POLL_INTERVAL_MS:2000}
+    batch-size: ${SGO_OUTBOX_BATCH_SIZE:50}
+    max-attempts: ${SGO_OUTBOX_MAX_ATTEMPTS:4}
+    retry-delays: ${SGO_OUTBOX_RETRY_DELAYS:2s,8s,32s}
+    exchange: ${SGO_OUTBOX_EXCHANGE:sgo.events}
+    dead-letter-exchange: ${SGO_OUTBOX_DLX:sgo.events.dlx}
+    dead-letter-queue: ${SGO_OUTBOX_DLQ:sgo.events.dlq}
+  security:
+    enabled: ${SGO_SECURITY_ENABLED:true}
+    jwt:
+      secret: ${SGO_SECURITY_JWT_SECRET:local_dev_only_jwt_secret_change_me_32b!}
+      issuer: ${SGO_SECURITY_JWT_ISSUER:sgo-logic}
+      ttl: ${SGO_SECURITY_JWT_TTL:PT8H}
+    users:
+      - username: ${SGO_SECURITY_CLIENT_USER:cliente@megastore.com}
+        password: ${SGO_SECURITY_CLIENT_PASSWORD:Cliente123}
+        roles: [CLIENT]
+      # La consola de personal interno cubre despacho (LOGISTICS) y atencion
+      # (SUPPORT); por eso la cuenta demo acumula ambos roles.
+      - username: ${SGO_SECURITY_SUPPORT_USER:staff@megastore.com}
+        password: ${SGO_SECURITY_SUPPORT_PASSWORD:Staff123}
+        roles: [SUPPORT, LOGISTICS]
+      - username: ${SGO_SECURITY_LOGISTICS_USER:logistica@megastore.com}
+        password: ${SGO_SECURITY_LOGISTICS_PASSWORD:Logistica123}
+        roles: [LOGISTICS]
+      - username: ${SGO_SECURITY_FINANCE_USER:finanzas@megastore.com}
+        password: ${SGO_SECURITY_FINANCE_PASSWORD:Finanzas123}
+        roles: [FINANCE]

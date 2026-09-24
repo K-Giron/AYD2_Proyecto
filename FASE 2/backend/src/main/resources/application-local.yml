@@ -1,0 +1,20 @@
+server:
+  port: ${BACKEND_PORT:8080}
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:sgo_logic_local}
+    username: ${POSTGRES_USER:sgo_local}
+    password: ${POSTGRES_PASSWORD:local_only_change_me}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:sgo_local}
+    password: ${RABBITMQ_PASSWORD:local_only_change_me}
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.megastore.sgologic: ${LOG_LEVEL_SGO:DEBUG}
+  pattern:
+    correlation: "[correlationId=%X{correlationId:-none}] "
