@@ -19,9 +19,9 @@
 
 | ID | Atributo (DDA) | Medida de respuesta (DDA) | Estado | Evidencia | Responsable del pendiente |
 |---|---|---|---|---|---|
-| EaC-01 | Rendimiento — consulta de orden | 100 % de consultas ≤ 5 s, con p50/p95/p99 | **Parcial** | `GET /api/v1/orders/{orderId}/summary` implementado (QRY-01) y probado funcionalmente: `docker compose up` real, respuesta en un solo salto de base de datos indexada por PK, `HTTP 200` en la prueba de humo del 2026-09-22. Falta el escenario de validación con datos reales de Orders/Payments/Fiscal y medición p50/p95/p99 bajo carga. | Kevin (medición formal) junto con QA-02 (Edson, ambiente de carga) |
+| EaC-01 | Rendimiento — consulta de orden | 100 % de consultas ≤ 5 s, con p50/p95/p99 | **Cubierto** | QA-02 con k6 sobre 500 proyecciones: `T` (10 VUs) 1 190 iteraciones, p50 3.35 ms / p95 5.88 ms / p99 7.10 ms; `8T` (80 VUs) 9 600 iteraciones, p50 2.07 ms / p95 4.22 ms / p99 8.30 ms; 0 % de errores y 100 % ≤ 5 s. Evidencia en `docs/evidence/performance/QA-02-linea-base-y-8T.md`. | Edson Sosa — cerrado en este incremento |
 | EaC-02 | Rendimiento/Auditabilidad — evidencia de transacción | < 1 s | **Cubierto** | AUD-01/AUD-02 implementados: `GET /api/v1/audit/events` y exportación sobre `audit_events` (`V3002`) con índices por orden, agregado y correlación. `AuditQueryIntegrationTest.queryStaysUnderOneSecondWithDeclaredDataset` verifica < 1 s sobre 10 000 eventos (1 000 de una misma orden) y el smoke real respondió en ~63 ms. | Edson Sosa — cerrado en este incremento |
-| EaC-03 | Escalabilidad — Black Friday 8x | Soportar 8x sin degradar EaC-01/EaC-02 | **Bloqueado** | Requiere plataforma estable con todos los módulos P0 y la prueba de carga `T`/`8T` (QA-02). No hay ambiente para ejercitarlo. | Edson Sosa (QA-02), equipo completo |
+| EaC-03 | Escalabilidad — Black Friday 8x | Soportar 8x sin degradar EaC-01/EaC-02 | **Parcial** | QA-02 midió `8T` (80 VUs, ≈ 8.04× la tasa de `T`) sobre los endpoints consolidados disponibles sin degradar EaC-01 ni EaC-02 y con 0 % de errores. Falta el conjunto de módulos P0 (Orders y Saga, ORD-01 a ORD-05) y un ambiente con balanceo para escalabilidad horizontal real. | Edson Sosa (medición) y Jairo Gómez (ORD) |
 | EaC-04 | Disponibilidad/Resiliencia — falla de PayKlik | 0 órdenes perdidas; reintento/conciliación ≤ 60 s | **Cubierto** | PAY-01 a PAY-03 implementados: el intento se conserva con orden, canal, fecha, referencia y resultado; timeout/caída/circuito abierto lo dejan `INDETERMINATE` y publican `PaymentIndeterminate`; la conciliación se programa dentro de los 60 s, reutiliza la misma Idempotency-Key (sin segundo cobro), reintenta con backoff y deja alerta auditable (`PAYMENT_RECONCILIATION_ALERT`) al agotar o superar 5 min. Evidencia: `PaymentIndeterminateIntegrationTest` (0 intentos perdidos, delay ≤ 60 s, circuito abierto), `PaymentReconciliationServiceTest` (misma llave, alerta) y `PaymentReconciliationIntegrationTest` (resolución y no duplicidad); smoke real de resolución y de bandeja de fallidos. | Edson Sosa — cerrado en este incremento |
 | EaC-05 | Confiabilidad — timeout LogiExpress (2 %) | 0 pedidos bloqueados; hasta 3 reintentos (2/8/32 s) antes de mensajes fallidos | **Cubierto** | `SimulatedLogiExpressAdapter` reproduce ~2 % de timeout; `ShipmentServiceTest.exhaustsThreeRetriesThenSendsToDeadLetterQueue` verifica 1 intento inicial + 3 reintentos exactamente en la secuencia 2/8/32 s y el registro en `shipment_dead_letters`. Prueba en verde dentro de `./mvnw clean verify` (24/24, 2026-09-22). El adaptador ahora comparte los modos configurables de BB-06. | Kevin/Andy — revisión cruzada pendiente |
 | EaC-06 | Confiabilidad — entrega eventual a 32 POS | Acuse ≤ 5 min; reintento persistente, alerta antes de 24 h | **Parcial** | POS-01 persiste entrega, acuse, intentos y deduplicación para tiendas 1–32; `PosIntegrationServiceTest` verifica éxito y 3 reintentos hasta `DEAD_LETTER`. Falta probar el límite de 5 minutos con infraestructura real, la alerta antes de 24 h y la recuperación durable mediante BB-04. | Andy (infraestructura/alerta) y Edson (BB-04) |
@@ -36,9 +36,9 @@
 
 | Estado | Cantidad |
 |---|---:|
-| Cubierto | 5 (EaC-02, EaC-04, EaC-05, EaC-08, EaC-12) |
-| Parcial | 4 (EaC-01, EaC-06, EaC-07, EaC-09) |
-| Bloqueado | 1 (EaC-03) |
+| Cubierto | 6 (EaC-01, EaC-02, EaC-04, EaC-05, EaC-08, EaC-12) |
+| Parcial | 4 (EaC-03, EaC-06, EaC-07, EaC-09) |
+| Bloqueado | 0 |
 | No evaluado | 2 (EaC-10, EaC-11) |
 
 EaC-05 y EaC-08 permanecen cubiertos. La entrega local de Andy aporta evidencia parcial a EaC-06 y EaC-12, pero no se marcan cubiertos sin infraestructura real, alertas y los módulos de Edson. Esta matriz debe releerse después de revisión e integración.

@@ -55,7 +55,7 @@ respaldo documental previo.
 | AUD-01 Registro auditable | CDU-12 pasos 2 y 3; postcondición de toda operación relevante | `audit_events` (**implementado**, `V3002`, modelo §3.7) | Registro y lectura de auditoría | EaC-02, EaC-07 | ADR-002, ADR-006, ADR-007 |
 | AUD-02 Consulta indexada < 1 s | CDU-12 paso 5 y 6 (registrar acceso); A1 exportación; E1 búsqueda fallida | `audit_events` con índices por orden, agregado y correlación (**implementado**, `V3002`) | Registro y lectura de auditoría | EaC-02 | ADR-006 |
 | SEC-01 Pruebas 401/403 y fuga | CDU-12 precondición; CDU-03 paso 3 | `audit_events`, `payment_attempts`, `outbox_event` (**escaneados**, evidencia en `docs/evidence/security/SEC-01-scan-pan-cvv.md`) | Entrada segura, SGO-Logic | EaC-12 | ADR-013 |
-| QA-02 Línea base `T` y carga `8T` | EaC-01, EaC-02, EaC-03 | Datos de prueba controlados | SGO-Logic `N` instancias, Broker | EaC-01, EaC-02, EaC-03 | ADR-001, ADR-006; DEC-02 |
+| QA-02 Línea base `T` y carga `8T` | EaC-01, EaC-02, EaC-03 | 500 proyecciones y 10 000 eventos (**implementado**, `tests/data/seed-load.sql`) | SGO-Logic (una instancia), Broker | EaC-01, EaC-02, EaC-03 | ADR-001, ADR-006; **DEC-02 cerrado** con `docs/qa/DEC-02-protocolo-carga-T-8T.md` y resultados en `docs/evidence/performance/QA-02-linea-base-y-8T.md` |
 
 ## 4. Elementos técnicos sin CUN de negocio (justificación)
 
@@ -92,7 +92,7 @@ planificación, sección 12).
 
 - `./mvnw clean verify` con Java 25 (`eclipse-temurin:25.0.4_7-jdk-alpine-3.23`)
   y Testcontainers (PostgreSQL 17.11 + RabbitMQ 4.3.5): **BUILD SUCCESS**,
-  32 clases, **118 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
+  32 clases, **119 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
   incluida la regresión `AsyncIntegrationPersistenceTest` (bloqueo optimista
   de flujos asíncronos, ver REV-EDSON §7), las pruebas de Outbox
   (`OutboxEventTest`, `OutboxDispatcherTest` y `OutboxIntegrationTest`), las

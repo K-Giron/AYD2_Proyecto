@@ -102,7 +102,7 @@ Desde `FASE 2/backend`:
 
 La verificación incluye pruebas unitarias, MVC, arquitectura modular e integración con contenedores reales de PostgreSQL y RabbitMQ. Docker debe estar activo para ejecutar la suite completa.
 
-La suite actual contiene 118 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario, los módulos de Kevin, fiscal/SAT/ERP/POS, Outbox/Inbox, seguridad (JWT, 401/403, sanitización y escaneo de fuga de PAN/CVV), auditoría (registro, consulta y EaC-02) y pagos (intentos idempotentes, timeout, circuit breaker, indeterminado y conciliación sin doble cobro). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 118/118 en verde.
+La suite actual contiene 119 pruebas: conectividad con PostgreSQL/RabbitMQ, controles modulares y HTTP, inventario, los módulos de Kevin, fiscal/SAT/ERP/POS, Outbox/Inbox, seguridad (JWT, 401/403, sanitización y escaneo de fuga de PAN/CVV), auditoría (registro, consulta, concurrencia y EaC-02) y pagos (intentos idempotentes, timeout, circuit breaker, indeterminado y conciliación sin doble cobro). El `verify` completo se ejecutó con Java 25 y Testcontainers el 2026-09-23: `BUILD SUCCESS`, 119/119 en verde.
 
 ## Verificación completa con un comando
 
@@ -244,6 +244,19 @@ El módulo `payments` materializa la capacidad "autorización de pago" de `docs/
 - Cada intento y su resultado dejan evidencia auditable (`PAYMENT_ATTEMPT_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_REJECTED`, `PAYMENT_INDETERMINATE`, `PAYMENT_RECONCILIATION_ALERT`).
 - `payments.api.PaymentPort` es la API pública para ORD-03.
 
+## Rendimiento y carga (Edson Sosa, DEC-02/QA-02)
+
+La línea base `T` y la carga `8T` se midieron con k6 sobre el conjunto declarado de 500 proyecciones de orden y 10 000 eventos de auditoría (`tests/data/seed-load.sql`):
+
+| Escenario | Endpoint | req/s | p50 | p95 | p99 | Errores |
+|---|---|---:|---:|---:|---:|---:|
+| `T` (10 VUs) | Consulta consolidada (EaC-01) | 19.75 | 3.35 ms | 5.88 ms | 7.10 ms | 0 % |
+| `8T` (80 VUs) | Consulta consolidada | 158.86 | 2.07 ms | 4.22 ms | 8.30 ms | 0 % |
+| `T` (10 VUs) | Evidencia (EaC-02) | 19.59 | 5.86 ms | 17.20 ms | 28.90 ms | 0 % |
+| `8T` (80 VUs) | Evidencia | 157.47 | 3.02 ms | 7.23 ms | 22.56 ms | 0 % |
+
+`8T` es ≈ 8.04× la tasa de `T` sin degradar los umbrales. Protocolo en `docs/qa/DEC-02-protocolo-carga-T-8T.md`, resultados y hallazgos en `docs/evidence/performance/QA-02-linea-base-y-8T.md` y comandos en `tests/k6/README.md`. La prueba encontró y corrigió un agotamiento del pool de conexiones en la consulta de auditoría y el consumo excesivo del healthcheck de RabbitMQ.
+
 ## Integración continua — QA-01
 
 El workflow `.github/workflows/qa-integracion-base.yml` usa dos jobs: primero compila y prueba el backend; después construye Compose y ejecuta el smoke test. Se activa en pull requests, push a `develop`/`main` y manualmente. Puede utilizar estos secretos de GitHub Actions:
@@ -301,6 +314,7 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 - `payments` registra intentos idempotentes con orden, canal, fecha, referencia y resultado, aplica timeout y circuit breaker (PAY-01/PAY-02) y concilia los indeterminados sin segundo cobro (PAY-03); la alerta operativa es un log y un registro auditable, sin canal externo de notificaciones.
 - El escaneo de PAN/CVV de SEC-01 cubre la base de pruebas, los payloads persistidos del Outbox y los logs del proceso; no inspecciona colas en vuelo ni un agregador externo de logs.
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
+- Las mediciones de QA-02 son de una sola instancia y host de desarrollo; EaC-03 queda parcial hasta contar con Orders/Saga (ORD-01 a ORD-05) y un ambiente con balanceo.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
 - `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.
 - `logistics` (`shipment_dead_letters`) usa una cola de fallidos local en vez del Outbox transversal porque BB-04 todavía no existe.

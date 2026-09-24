@@ -29,6 +29,8 @@
 | PAY-02 | Timeout, circuit breaker y pago indeterminado | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-04 y PAY-01 | `ResilientPayKlikClient`, `PaymentIndeterminateIntegrationTest` y evento `PaymentIndeterminate` |
 | PAY-03 | Conciliación/reintento idempotente ≤ 60 s | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | PAY-02 | `V3004`, `PaymentReconciliationService`, `PaymentReconciliationIntegrationTest` y alerta auditable |
 | SEC-01 | Pruebas de autorización y fuga de datos | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-07 y PAY-01 | `SensitiveDataLeakScanTest`, `SecurityAuthorizationTest` y `docs/evidence/security/SEC-01-scan-pan-cvv.md` |
+| DEC-02 | Protocolo de línea base `T` y carga `8T` | Edson | Cerrado con protocolo y medición | Gate 0 | `docs/qa/DEC-02-protocolo-carga-T-8T.md` |
+| QA-02 | Línea base `T` y carga `8T` | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | ORD-05/QRY-01 para EaC-03 completo | `tests/k6/`, `tests/data/seed-load.sql` y `docs/evidence/performance/QA-02-linea-base-y-8T.md` |
 | Resto del backlog | Consultar planificación oficial | Según planificación | Pendiente | Contratos e implementaciones del equipo | Pendiente |
 
 Los estados anteriores describen únicamente los artefactos presentes; no equivalen a tarjetas `Done` ni inventan aceptación del equipo.
@@ -276,6 +278,20 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendiente de registrar por Edson.
 - Persona que quedaría bloqueada y acción temporal: el release candidate puede citar EaC-12 como cubierto; QA-02 depende de la estabilidad del ambiente y de ORD-05/QRY-01 para el escenario completo.
 
+### Fecha: 2026-09-23 (octava continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; SEC-01 cerrado.
+- Trabajo realizado hoy:
+  - `[DEC-02]` protocolo de línea base `T` y carga `8T` con ambiente, conjunto declarado (500 proyecciones y 10 000 eventos), escenarios, umbrales, procedimiento y limitaciones.
+  - `[QA-02]` scripts k6 `consult-order-summary.js` y `audit-evidence.js`, datos semilla idempotentes y guía de ejecución; corridas `T` (10 VUs) y `8T` (80 VUs) de 1 minuto con p50/p95/p99, errores y recursos.
+  - Hallazgo 1: la consulta de auditoría agotaba el pool de conexiones con 10 VUs (p95 30 s, 95 % de errores) porque `AuditQueryService` era transaccional y escribía la evidencia de acceso con `REQUIRES_NEW`. Se corrigió quitando la transacción externa y separando los eventos de acceso de la evidencia de negocio; se agregó una prueba de concurrencia de 16 hilos.
+  - Hallazgo 2: RabbitMQ consumía ~36 % de un núcleo en reposo por el healthcheck cada 5 s (una VM Erlang por invocación); se subió a 30 s y el consumo quedó en ~0 %.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 119 pruebas, 0 fallos, 0 errores, 0 omitidas. `T` ≈ 19.6–19.8 req/s y `8T` ≈ 157–159 req/s (≈ 8.04×) con 0 % de errores: consulta consolidada p95 4.22 ms y evidencia p95 7.23 ms en `8T`. Recursos en `8T`: backend 8–21 % de CPU, PostgreSQL 2–6 %, RabbitMQ ~0.1 %.
+- Hoy y trazabilidad: DEC-02 cerrado, QA-02 con resultados; EaC-01 cubierto, EaC-02 con evidencia de carga y EaC-03 parcial hasta contar con Orders/Saga.
+- Impedimentos: EaC-03 no puede cerrarse sin los módulos P0 de Jairo (ORD-01 a ORD-05) ni un ambiente con balanceo; se documenta como limitación honesta.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: el equipo puede citar EaC-01/02/03 con evidencia; Jairo debe integrar Orders/Saga para completar EaC-03.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -333,6 +349,10 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | `./mvnw clean verify` (PAY-03) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 116 pruebas, 0 fallos, 0 errores, 0 omitidas | `PaymentReconciliationServiceTest`, `PaymentReconciliationIntegrationTest` y QA-03 | Conciliación sin doble cobro, ≤ 60 s y alerta verificadas |
 | 2026-09-23 | Smoke PAY-03 en Compose | Intento indeterminado sembrado y, aparte, PayKlik `TIMEOUT` con reintentos cortos | Conciliación `RESOLVED/APPROVED` con evento `PaymentApproved`; en fallo, `DEAD_LETTER` sin perder la orden | Salida local del 2026-09-23 | Resolución y bandeja de fallidos operando en el stack real |
 | 2026-09-23 | `./mvnw clean verify` (SEC-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 118 pruebas, 0 fallos, 0 errores, 0 omitidas | `SensitiveDataLeakScanTest`, `SecurityAuthorizationTest` y `docs/evidence/security/SEC-01-scan-pan-cvv.md` | 0 PAN/CVV en base, mensajes y logs; matriz 401/403 completa |
+| 2026-09-23 | k6 `T` y `8T` — consulta consolidada | 10 y 80 VUs, 1 min, 500 proyecciones | `T` 1 190 iter / p95 5.88 ms; `8T` 9 600 iter / p95 4.22 ms; 0 % errores | `docs/evidence/performance/QA-02-linea-base-y-8T.md` | EaC-01 cubierto; `8T` ≈ 8.04× `T` |
+| 2026-09-23 | k6 `T` y `8T` — evidencia | 10 y 80 VUs, 1 min, 10 000 eventos | `T` 1 180 iter / p95 17.2 ms; `8T` 9 540 iter / p95 7.23 ms; 0 % errores | `docs/evidence/performance/QA-02-linea-base-y-8T.md` | EaC-02 con evidencia de carga; `8T` ≈ 8.04× `T` |
+| 2026-09-23 | Corrección por QA-02 | 10 VUs sobre auditoría antes/después | Antes: p95 30 s y 95 % errores; después: p95 17.2 ms y 0 % | `AuditQueryIntegrationTest.concurrentQueriesDoNotExhaustTheConnectionPool` | Pool de conexiones liberado; acceso separado de la evidencia |
+| 2026-09-23 | `./mvnw clean verify` (QA-02) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 119 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y QA-03 | Suite completa tras las correcciones de DEC-02/QA-02 |
 
 ## 8. Retrospectiva individual
 
