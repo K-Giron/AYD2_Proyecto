@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 interface PaymentAttemptRepository extends JpaRepository<PaymentAttempt, UUID> {
+
     Optional<PaymentAttempt> findByIdempotencyKey(String idempotencyKey);
+
     List<PaymentAttempt> findByOrderIdOrderByCreatedAtDesc(UUID orderId);
 }

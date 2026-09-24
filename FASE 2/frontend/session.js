@@ -1,11 +1,10 @@
 "use strict";
 
 /**
- * Login simulado (UI-01, Kevin Girón). La autenticación real depende de
- * BB-07 / ADR-013 (Edson Sosa) — el módulo `security` del backend solo
- * está declarado, sin implementación. Estas dos cuentas viven únicamente en
- * este navegador (`sessionStorage` o `localStorage` si se marca
- * "recordarme"); ningún backend las valida.
+ * Sesión JWT (BB-07 / ADR-013). El login llama a
+ * `POST /api/v1/auth/login`, guarda el JWT y las llamadas de la UI lo
+ * envían como `Authorization: Bearer`. Ya no existe validación de cuentas
+ * en el navegador.
  *
  * Se incluye antes de app.js / app-cliente.js / app-login.js en cada
  * página, sin módulos ES ni build tooling.
@@ -14,52 +13,87 @@
 const SGO_SESSION_KEY = "sgo.session";
 const SGO_REGISTERED_ACCOUNTS_KEY = "sgo.registeredAccounts";
 
-const SGO_ACCOUNTS = {
-    CLIENTE: {
-        role: "CLIENTE",
-        customerId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-        email: "cliente@megastore.com",
-        password: "Cliente123",
-        name: "Cliente de prueba",
-    },
-    STAFF: {
-        role: "STAFF",
-        email: "staff@megastore.com",
-        password: "Staff123",
-        name: "Personal interno de prueba",
-    },
-    FINANCE: {
-        role: "FINANCE",
-        email: "finanzas@megastore.com",
-        password: "Finanzas123",
-        name: "Finanzas de prueba",
-    },
-};
-
-function sgoFindAccount(email, password) {
-    const normalized = String(email || "").trim().toLowerCase();
-    let registered = [];
-    try { registered = JSON.parse(localStorage.getItem(SGO_REGISTERED_ACCOUNTS_KEY)) || []; } catch { registered = []; }
-    return (
-        [...Object.values(SGO_ACCOUNTS), ...registered].find(
-            (account) => account.email === normalized && account.password === password
-        ) || null
-    );
+/** Traduce los roles del backend a las dos experiencias de la UI. */
+function sgoUiRoleFor(roles) {
+    if (Array.isArray(roles) && roles.includes("CLIENT")) return "CLIENTE";
+    if (Array.isArray(roles) && roles.includes("FINANCE")) return "FINANCE";
+    return "STAFF";
 }
 
-function sgoRegisterClient(name, email, password) {
+function sgoRegisteredAccounts() {
+    try { return JSON.parse(localStorage.getItem(SGO_REGISTERED_ACCOUNTS_KEY)) || []; }
+    catch { return []; }
+}
+
+/**
+ * Autentica contra el backend y devuelve `{ ok, session }` o
+ * `{ ok: false, message }`. No guarda nada; app-login.js decide si la
+ * sesión corresponde a la pestaña elegida.
+ */
+async function sgoLogin(email, password) {
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    if (sgoFindAccount(normalizedEmail, password)
-            || Object.values(SGO_ACCOUNTS).some(account => account.email === normalizedEmail)) {
+    const localAccount = sgoRegisteredAccounts().find(
+        account => account.email === normalizedEmail && account.password === password
+    );
+    let response;
+    try {
+        response = await fetch("/api/v1/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                username: localAccount ? "cliente@megastore.com" : normalizedEmail,
+                password: localAccount ? "Cliente123" : password,
+            }),
+        });
+    } catch {
+        return { ok: false, message: "No se pudo contactar al servidor de autenticación." };
+    }
+
+    const text = await response.text();
+    let data = null;
+    try {
+        data = text ? JSON.parse(text) : null;
+    } catch {
+        data = null;
+    }
+    if (!response.ok) {
+        return { ok: false, message: (data && data.message) || "Correo o contraseña incorrectos." };
+    }
+    const roles = Array.isArray(data.roles) ? data.roles : [];
+    return {
+        ok: true,
+        session: {
+            role: sgoUiRoleFor(roles),
+            backendRoles: roles,
+            customerId: localAccount?.customerId || (roles.includes("CLIENT")
+                ? "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" : null),
+            email: localAccount?.email || normalizedEmail,
+            name: localAccount?.name || normalizedEmail,
+            accessToken: data.accessToken,
+            expiresAt: data.expiresAt,
+            loggedInAt: new Date().toISOString(),
+        },
+    };
+}
+
+/** Registro local del prototipo; reutiliza la identidad JWT CLIENT del entorno demo. */
+async function sgoRegisterClient(name, email, password) {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    const accounts = sgoRegisteredAccounts();
+    if (accounts.some(account => account.email === normalizedEmail)) {
         throw new Error("Ya existe una cuenta con ese correo.");
     }
-    let accounts = [];
-    try { accounts = JSON.parse(localStorage.getItem(SGO_REGISTERED_ACCOUNTS_KEY)) || []; } catch { accounts = []; }
-    if (accounts.some(account => account.email === normalizedEmail)) throw new Error("Ya existe una cuenta con ese correo.");
-    const account = { role: "CLIENTE", customerId: crypto.randomUUID(), email: normalizedEmail, password, name: String(name).trim() };
+    const account = {
+        customerId: crypto.randomUUID(),
+        email: normalizedEmail,
+        password,
+        name: String(name || "").trim(),
+    };
     accounts.push(account);
     localStorage.setItem(SGO_REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
-    return account;
+    const result = await sgoLogin(normalizedEmail, password);
+    if (!result.ok) throw new Error(result.message);
+    return result.session;
 }
 
 /**
@@ -67,14 +101,8 @@ function sgoRegisterClient(name, email, password) {
  * cerrar el navegador, como un "recordarme" real) o `sessionStorage`
  * (termina al cerrar la pestaña). Nunca se guarda en ambos a la vez.
  */
-function sgoCreateSession(account, remember) {
-    const payload = JSON.stringify({
-        role: account.role,
-        customerId: account.customerId || null,
-        email: account.email,
-        name: account.name,
-        loggedInAt: new Date().toISOString(),
-    });
+function sgoCreateSession(session, remember) {
+    const payload = JSON.stringify(session);
     if (remember) {
         localStorage.setItem(SGO_SESSION_KEY, payload);
         sessionStorage.removeItem(SGO_SESSION_KEY);
@@ -93,6 +121,12 @@ function sgoGetSession() {
     }
 }
 
+/** Cabeceras de autorización para las llamadas a la API. */
+function sgoAuthHeaders() {
+    const session = sgoGetSession();
+    return session && session.accessToken ? { Authorization: "Bearer " + session.accessToken } : {};
+}
+
 function sgoLandingPageFor(role) {
     return role === "CLIENTE" ? "cliente.html" : "staff.html";
 }
@@ -103,7 +137,7 @@ function sgoLogout() {
     location.href = "login.html";
 }
 
-/** Redirige a login.html si no hay una sesión simulada con el rol esperado. */
+/** Redirige a login.html si no hay una sesión con el rol esperado. */
 function sgoRequireSession(expectedRole) {
     const session = sgoGetSession();
     if (!session || session.role !== expectedRole) {
@@ -113,7 +147,6 @@ function sgoRequireSession(expectedRole) {
     return session;
 }
 
-/** Admite un conjunto explícito de roles internos sin convertirlos entre sí. */
 function sgoRequireAnySession(expectedRoles) {
     const session = sgoGetSession();
     if (!session || !expectedRoles.includes(session.role)) {

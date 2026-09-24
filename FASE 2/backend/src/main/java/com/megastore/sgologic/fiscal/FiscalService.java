@@ -105,6 +105,9 @@ public class FiscalService implements FiscalProcessingPort {
             return;
         }
         document.markAttempt(clock.instant());
+        // save() devuelve la copia gestionada con la version incrementada. Sin
+        // reasignarla, el segundo save usaria la version obsoleta del objeto
+        // desconectado y fallaria con ObjectOptimisticLockingFailureException.
         document = repository.save(document);
         try {
             SatGatewayPort.SatResult result = satGateway.submit(new SatGatewayPort.SatSubmission(
@@ -124,14 +127,15 @@ public class FiscalService implements FiscalProcessingPort {
     private void scheduleRetryOrKeepPending(FiscalDocument document, String reason) {
         int nextRetryIndex = document.getSubmissionAttempts() - 1;
         document.remainPending("SAT_TRANSIENT_FAILURE", reason, clock.instant());
-        FiscalDocument saved = repository.save(document);
+        document = repository.save(document);
+        UUID documentId = document.getId();
         if (nextRetryIndex < RETRY_DELAYS_SECONDS.length) {
             long delay = RETRY_DELAYS_SECONDS[nextRetryIndex];
-            retryScheduler.schedule(() -> submitToSat(saved.getId()), clock.instant().plusSeconds(delay));
+            retryScheduler.schedule(() -> submitToSat(documentId), clock.instant().plusSeconds(delay));
         } else {
-            saved.remainPending("SAT_RETRY_EXHAUSTED",
+            document.remainPending("SAT_RETRY_EXHAUSTED",
                     "SAT sigue sin confirmar; la orden debe permanecer en FISCAL_PENDING.", clock.instant());
-            repository.save(saved);
+            repository.save(document);
         }
     }
 

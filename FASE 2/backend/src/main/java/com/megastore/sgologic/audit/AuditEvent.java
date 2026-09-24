@@ -2,36 +2,28 @@ package com.megastore.sgologic.audit;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Evidencia auditable de solo anexado (CDU-12). La aplicación no expone
+ * operaciones de actualización ni de eliminación sobre esta entidad.
+ */
 @Entity
 @Table(name = "audit_events")
 public class AuditEvent {
 
     @Id
-    @Column(nullable = false, updatable = false)
+    @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "actor_id", nullable = false, updatable = false, length = 160)
-    private String actorId;
+    @Column(name = "event_id", nullable = false, updatable = false)
+    private UUID eventId;
 
-    @Column(name = "actor_type", nullable = false, updatable = false, length = 40)
-    private String actorType;
-
-    @Column(nullable = false, updatable = false, length = 120)
-    private String action;
-
-    @Column(name = "aggregate_type", nullable = false, updatable = false, length = 80)
+    @Column(name = "aggregate_type", nullable = false, updatable = false, length = 64)
     private String aggregateType;
 
     @Column(name = "aggregate_id", nullable = false, updatable = false)
@@ -40,70 +32,65 @@ public class AuditEvent {
     @Column(name = "order_id", updatable = false)
     private UUID orderId;
 
-    @Column(name = "transaction_id", nullable = false, updatable = false)
-    private UUID transactionId;
+    @Column(name = "actor", nullable = false, updatable = false, length = 100)
+    private String actor;
+
+    @Column(name = "action", nullable = false, updatable = false, length = 100)
+    private String action;
+
+    @Column(name = "result", nullable = false, updatable = false, length = 64)
+    private String result;
+
+    @Column(name = "before_state", updatable = false, columnDefinition = "TEXT")
+    private String beforeState;
+
+    @Column(name = "after_state", updatable = false, columnDefinition = "TEXT")
+    private String afterState;
 
     @Column(name = "correlation_id", nullable = false, updatable = false)
     private UUID correlationId;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "previous_state", updatable = false, columnDefinition = "jsonb")
-    private Map<String, Object> previousState;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "new_state", updatable = false, columnDefinition = "jsonb")
-    private Map<String, Object> newState;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, updatable = false, length = 24)
-    private AuditResult result;
+    @Column(name = "causation_id", updatable = false)
+    private UUID causationId;
 
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, updatable = false, columnDefinition = "jsonb")
-    private Map<String, Object> metadata = new LinkedHashMap<>();
-
-    @Column(name = "evidence_hash", nullable = false, updatable = false, length = 64)
-    private String evidenceHash;
-
     protected AuditEvent() {
+        // Requerido por JPA.
     }
 
-    static AuditEvent from(AuditCommand command, Instant occurredAt, String evidenceHash) {
+    static AuditEvent create(UUID id, UUID eventId, String aggregateType, UUID aggregateId, UUID orderId,
+                             String actor, String action, String result, String beforeState, String afterState,
+                             UUID correlationId, UUID causationId, Instant occurredAt) {
         AuditEvent event = new AuditEvent();
-        event.id = UUID.randomUUID();
-        event.actorId = command.actorId();
-        event.actorType = command.actorType();
-        event.action = command.action();
-        event.aggregateType = command.aggregateType();
-        event.aggregateId = command.aggregateId();
-        event.orderId = command.orderId();
-        event.transactionId = command.transactionId();
-        event.correlationId = command.correlationId();
-        event.previousState = command.previousState() == null ? null : new LinkedHashMap<>(command.previousState());
-        event.newState = command.newState() == null ? null : new LinkedHashMap<>(command.newState());
-        event.result = command.result();
+        event.id = id;
+        event.eventId = eventId == null ? UUID.randomUUID() : eventId;
+        event.aggregateType = aggregateType;
+        event.aggregateId = aggregateId;
+        event.orderId = orderId;
+        event.actor = actor;
+        event.action = action;
+        event.result = result;
+        event.beforeState = beforeState;
+        event.afterState = afterState;
+        event.correlationId = correlationId;
+        event.causationId = causationId;
         event.occurredAt = occurredAt;
-        event.metadata = command.metadata() == null ? new LinkedHashMap<>() : new LinkedHashMap<>(command.metadata());
-        event.evidenceHash = evidenceHash;
         return event;
     }
 
     public UUID getId() { return id; }
-    public String getActorId() { return actorId; }
-    public String getActorType() { return actorType; }
-    public String getAction() { return action; }
+    public UUID getEventId() { return eventId; }
     public String getAggregateType() { return aggregateType; }
     public UUID getAggregateId() { return aggregateId; }
     public UUID getOrderId() { return orderId; }
-    public UUID getTransactionId() { return transactionId; }
+    public String getActor() { return actor; }
+    public String getAction() { return action; }
+    public String getResult() { return result; }
+    public String getBeforeState() { return beforeState; }
+    public String getAfterState() { return afterState; }
     public UUID getCorrelationId() { return correlationId; }
-    public Map<String, Object> getPreviousState() { return previousState == null ? null : Map.copyOf(previousState); }
-    public Map<String, Object> getNewState() { return newState == null ? null : Map.copyOf(newState); }
-    public AuditResult getResult() { return result; }
+    public UUID getCausationId() { return causationId; }
     public Instant getOccurredAt() { return occurredAt; }
-    public Map<String, Object> getMetadata() { return Map.copyOf(metadata); }
-    public String getEvidenceHash() { return evidenceHash; }
 }

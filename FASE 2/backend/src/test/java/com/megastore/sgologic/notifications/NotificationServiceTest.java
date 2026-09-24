@@ -58,6 +58,8 @@ class NotificationServiceTest {
         NotificationRequest request = NotificationRequest.create(NotificationEventType.SHIPMENT_PREPARING,
                 NotificationChannel.SMS, "+50212345678", UUID.randomUUID(), UUID.randomUUID(), clock.instant());
         when(repository.findById(any())).thenReturn(Optional.of(request));
+        // save() debe devolver la entidad guardada, como lo hace Spring Data;
+        // devolver null ocultaba el manejo real de la version de la entidad.
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         doThrow(new NotificationProviderUnavailableException("caído"))
                 .when(provider).send(any(), any(), any());

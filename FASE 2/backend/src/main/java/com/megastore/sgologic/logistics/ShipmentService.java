@@ -89,7 +89,9 @@ public class ShipmentService {
         }
         Shipment shipment = maybeShipment.get();
         shipment.markLabelRequested(clock.instant());
-        shipmentRepository.save(shipment);
+        // Reasignar la copia gestionada: conserva la version vigente para el
+        // siguiente save y evita el bloqueo optimista del objeto desconectado.
+        shipment = shipmentRepository.save(shipment);
 
         try {
             LogiExpressLabelResult result = logiExpressGateway.requestLabel(

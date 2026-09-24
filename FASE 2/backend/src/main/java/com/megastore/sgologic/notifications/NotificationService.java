@@ -74,7 +74,10 @@ public class NotificationService {
     }
 
     void dispatch(UUID id, boolean allowRetry) {
-        repository.findById(id).ifPresentOrElse(request -> {
+        repository.findById(id).ifPresentOrElse(found -> {
+            // Reasignar la copia gestionada en cada save: conserva la version
+            // vigente y evita el bloqueo optimista del objeto desconectado.
+            NotificationRequest request = found;
             request.markAttempt(clock.instant());
             request = repository.save(request);
             try {
@@ -86,7 +89,7 @@ public class NotificationService {
                     log.warn("Proveedor de notificaciones no disponible para {}; reintentando en {} s.",
                             id, RETRY_DELAY_SECONDS);
                     request.markPendingRetry(failure.getMessage(), clock.instant());
-                    repository.save(request);
+                    request = repository.save(request);
                     retryScheduler.schedule(() -> dispatch(id, false),
                             Instant.now().plusSeconds(RETRY_DELAY_SECONDS));
                 } else {

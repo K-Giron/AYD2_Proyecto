@@ -70,6 +70,8 @@ public class PosIntegrationService {
             return;
         }
         delivery.markAttempt(clock.instant());
+        // Reasignar la copia gestionada: conserva la version vigente para el
+        // siguiente save y evita el bloqueo optimista del objeto desconectado.
         delivery = repository.save(delivery);
         try {
             PosGatewayPort.DeliveryResult result = gateway.deliver(delivery.getStoreNumber(),
@@ -90,8 +92,9 @@ public class PosIntegrationService {
         int retryIndex = delivery.getAttempts() - 1;
         if (retryIndex < RETRY_DELAYS_SECONDS.length) {
             delivery.pendingRetry(reason, clock.instant());
-            repository.save(delivery);
-            retryScheduler.schedule(() -> deliver(delivery.getId()),
+            delivery = repository.save(delivery);
+            UUID deliveryId = delivery.getId();
+            retryScheduler.schedule(() -> deliver(deliveryId),
                     clock.instant().plusSeconds(RETRY_DELAYS_SECONDS[retryIndex]));
         } else {
             delivery.deadLetter(reason, clock.instant());

@@ -7,6 +7,14 @@
 @org.springframework.modulith.ApplicationModule(
         id = "orders",
         displayName = "Orders",
-        allowedDependencies = {"shared", "inventory", "payments", "fiscal", "messaging", "audit"}
+        allowedDependencies = {
+                "shared",
+                "inventory",
+                "payments :: payments-api",
+                "fiscal",
+                "messaging",
+                "audit :: audit-api",
+                "integration :: outbox"
+        }
 )
 package com.megastore.sgologic.orders;

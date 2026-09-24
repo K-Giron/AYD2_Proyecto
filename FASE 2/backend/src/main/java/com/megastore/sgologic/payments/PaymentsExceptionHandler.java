@@ -12,20 +12,24 @@ import java.time.Instant;
 
 @RestControllerAdvice(basePackageClasses = PaymentsExceptionHandler.class)
 class PaymentsExceptionHandler {
+
     @ExceptionHandler(PaymentAttemptNotFoundException.class)
-    ResponseEntity<ApiError> notFound(RuntimeException error, HttpServletRequest request) {
-        return build(HttpStatus.NOT_FOUND, "PAYMENT_ATTEMPT_NOT_FOUND", error, request);
+    public ResponseEntity<ApiError> handleNotFound(PaymentAttemptNotFoundException exception,
+                                                    HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, "PAYMENT_ATTEMPT_NOT_FOUND", exception.getMessage(), request);
     }
 
-    @ExceptionHandler({UnsupportedPaymentMethodException.class, IllegalArgumentException.class})
-    ResponseEntity<ApiError> invalid(RuntimeException error, HttpServletRequest request) {
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, "PAYMENT_REQUEST_INVALID", error, request);
+    @ExceptionHandler({InvalidPaymentRequestException.class, IllegalArgumentException.class})
+    public ResponseEntity<ApiError> handleInvalidRequest(RuntimeException exception,
+                                                          HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "INVALID_PAYMENT_REQUEST", exception.getMessage(), request);
     }
 
-    private ResponseEntity<ApiError> build(HttpStatus status, String code, RuntimeException error,
+    private ResponseEntity<ApiError> build(HttpStatus status, String code, String message,
                                             HttpServletRequest request) {
         Object correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME);
-        return ResponseEntity.status(status).body(new ApiError(code, error.getMessage(), Instant.now(),
-                request.getRequestURI(), correlationId == null ? "unavailable" : correlationId.toString()));
+        ApiError body = new ApiError(code, message, Instant.now(), request.getRequestURI(),
+                correlationId == null ? "unavailable" : correlationId.toString());
+        return ResponseEntity.status(status).body(body);
     }
 }

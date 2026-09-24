@@ -11,7 +11,9 @@ public interface PayKlikGatewayPort {
     AuthorizationResult authorize(AuthorizationRequest request);
 
     /** Consulta previa a cualquier eventual reintento para evitar doble cobro. */
-    Optional<AuthorizationResult> findByIdempotencyKey(String idempotencyKey);
+    default Optional<AuthorizationResult> findByIdempotencyKey(String idempotencyKey) {
+        return Optional.empty();
+    }
 
     record AuthorizationRequest(
             UUID orderId,

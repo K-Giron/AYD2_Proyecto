@@ -37,7 +37,7 @@ function toast(message, type = "") {
 }
 
 async function apiCall(method, path, body, extraHeaders = {}) {
-    const headers = { "X-Correlation-Id": CORRELATION_ID, ...extraHeaders };
+    const headers = { "X-Correlation-Id": CORRELATION_ID, ...sgoAuthHeaders(), ...extraHeaders };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     const response = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
     const text = await response.text();

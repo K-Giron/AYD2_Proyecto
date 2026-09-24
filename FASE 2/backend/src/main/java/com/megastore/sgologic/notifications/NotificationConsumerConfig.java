@@ -23,6 +23,6 @@ class NotificationConsumerConfig {
                                            TopicExchange businessEventsExchange) {
         return BindingBuilder.bind(notificationOrderStatusQueue)
                 .to(businessEventsExchange)
-                .with("order.order_status_changed");
+                .with("ORDER_STATUS_CHANGED");
     }
 }

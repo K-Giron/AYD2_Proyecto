@@ -21,6 +21,14 @@
 | BB-05 | Docker Compose y configuración por ambiente | Jairo | `Ready for Testing` en captura | ADR-009 y componentes compartidos | `FASE 2/docker-compose.yml`, `.env.example` y tarjeta [eu881SUz](https://trello.com/c/eu881SUz) |
 | QA-01 | Contrato e integración continua | Jairo | Implementación local preparada; ejecución GitHub pendiente | Repositorio, secretos y stack | `.github/workflows/qa-integracion-base.yml` y `FASE 2/docs/integration/qa-01-ci-contract.md` |
 | DOC-03 | Bitácora, capturas Kanban y burndown | Jairo | `In Progress` en captura | Registro diario de todos | Esta bitácora y tarjeta [MnIkXzvZ](https://trello.com/c/MnIkXzvZ) |
+| BB-04 | Outbox transaccional, dispatcher, reintento y DLQ | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y ratificación de rangos | `V3001`, `integration/outbox`, `OutboxIntegrationTest` y `docs/qa/trazabilidad-cun-mvp.md` |
+| BB-07 | Autenticación, autorización y sanitización | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | ADR-013 y decisión JWT | `security/`, `ADR-013`, `SecurityAuthorizationTest` y `SensitiveDataSanitizerTest` |
+| AUD-01 | Registro auditable transversal | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y correlación | `V3002`, `audit/api`, `AuditIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.7 |
+| AUD-02 | Consulta indexada de evidencia | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | AUD-01 | `AuditController`, `AuditQueryIntegrationTest` y evidencia EaC-02 < 1 s |
+| PAY-01 | Puerto PayKlik e intentos de pago | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-06 y BB-07 | `V3003`, `payments.api.PaymentPort`, `PaymentIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.8 |
+| PAY-02 | Timeout, circuit breaker y pago indeterminado | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-04 y PAY-01 | `ResilientPayKlikClient`, `PaymentIndeterminateIntegrationTest` y evento `PaymentIndeterminate` |
+| PAY-03 | Conciliación/reintento idempotente ≤ 60 s | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | PAY-02 | `V3004`, `PaymentReconciliationService`, `PaymentReconciliationIntegrationTest` y alerta auditable |
+| SEC-01 | Pruebas de autorización y fuga de datos | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-07 y PAY-01 | `SensitiveDataLeakScanTest`, `SecurityAuthorizationTest` y `docs/evidence/security/SEC-01-scan-pan-cvv.md` |
 | Resto del backlog | Consultar planificación oficial | Según planificación | Pendiente | Contratos e implementaciones del equipo | Pendiente |
 
 Los estados anteriores describen únicamente los artefactos presentes; no equivalen a tarjetas `Done` ni inventan aceptación del equipo.
@@ -212,6 +220,128 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Evidencia E2E: Chromium completó carrito → reserva → PayKlik → SAT → orden `CONFIRMED` para `f4ab0563-81b4-408a-b62b-8e2698e1bdb5`. RabbitMQ entregó el evento tanto a Query como a Notifications; ambos Inbox quedaron `PROCESSED` y se observó una solicitud `ORDER_CONFIRMED`, canal `EMAIL`, estado `SENT`, un intento.
 - Impedimentos y siguiente acción: la autenticación continúa siendo una simulación de frontend y no debe presentarse como seguridad productiva. CUN-11 continúa parcial hasta recibir eventos de despacho/incidencias, almacenar cada intento y disponer de DLQ del trabajador. La siguiente prioridad es conectar ERP y POS al mismo patrón Outbox/Inbox.
 - Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
+### Fecha: 2026-09-23 — Integrante: Edson Sosa
+
+- Ayer: revisión cruzada de las entregas de Andy (fiscal/ERP/POS) y Jorge (inventario), aprobación de Edson sobre ADR-009/010/012, modelo de datos y matriz de trazabilidad CUN (commits `56de66d`, `e08b939`, `340eb1e`). En la prueba manual se detectó y corrigió el bloqueo optimista A8 de los flujos asíncronos (commits `4525bae`, `2b0aab1`).
+- Trabajo realizado hoy:
+  - `[BB-04]` Outbox/Inbox transversal en `integration.outbox` con migración `V3001`: `PublishEvent` con transacción obligatoria, dispatcher con reintentos 2/8/32 s y estado `FAILED`, reclamo con `FOR UPDATE SKIP LOCKED`, topología `sgo.events` / `sgo.events.dlx` / `sgo.events.dlq` e `IdempotentConsumer` con `INSERT ... ON CONFLICT DO NOTHING`.
+  - `[DEC-06]` decisión de autenticación JWT registrada para ADR-013 (BB-07, siguiente tarjeta).
+  - Rangos de migración ratificados (`V3001`-`V3999` para integration/payments/audit) y documentados en `db/migration/README.md`.
+  - Se actualizó `ModularArchitectureTest` para permitir la dependencia a la API pública `integration.outbox`, y la documentación del sobre de eventos, modelo de datos, trazabilidad y README.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 74 pruebas, 0 fallos, 0 errores, 0 omitidas. Smoke manual en Compose: un evento insertado en `outbox_event` pasó a `PUBLISHED`; se capturó el sobre con `messageId`, `X-Correlation-Id` y `X-Event-Type`; y el exchange, exchange de fallidos y cola de fallidos quedaron declarados en RabbitMQ.
+- Hoy y trazabilidad: BB-04; precondición de CDU-06, E1 de CDU-03 y entrega asíncrona de CDU-04/CDU-05/CDU-11; ADR-002 y ADR-004; EaC-04, EaC-05, EaC-06 y EaC-07. Los consumidores de negocio se conectarán con ORD-03.
+- Impedimentos: ninguno propio. Los flujos de negocio todavía no consumen el Outbox porque dependen de ORD-03 (Jairo); la rama permanece local por indicación del equipo.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: Jairo puede consumir `PublishEvent` desde la Saga; Kevin y Andy pueden reemplazar sus colas locales por la DLQ del broker cuando integren.
+
+### Fecha: 2026-09-23 (continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entrada anterior del mismo día; BB-04 cerrado con Outbox/Inbox, dispatcher, reintentos y DLQ.
+- Trabajo realizado hoy:
+  - `[BB-07/DEC-06]` autenticación JWT HMAC-SHA256 sin estado en el módulo `security`: `POST /api/v1/auth/login`, cuentas de demostración configurables por `SGO_SECURITY_*`, `JwtTokenService` con vigencia de 8 h y roles `CLIENT`, `SUPPORT`, `LOGISTICS` y `FINANCE`.
+  - Autorización por endpoint en la cadena de filtros y respuestas `401 UNAUTHENTICATED` / `403 FORBIDDEN` con el formato común `ApiError` y correlation ID.
+  - `SensitiveDataSanitizer` para PAN/CVV y registro de eventos de seguridad con ruta enmascarada.
+  - `ADR-013` redactado en estado `Proposed` con la matriz de autorización, alternativas, consecuencias y limitaciones.
+  - UI-01 (Kevin): el login simulado se reemplazó por el real; `session.js` guarda el JWT y `apiCall` lo envía como `Authorization: Bearer`. Cambio sujeto a revisión de Kevin.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 85 pruebas, 0 fallos, 0 errores, 0 omitidas. Smoke en Compose: login válido devuelve token; sin token 401; `CLIENT` recibe 403 en fiscal y despacho; `FINANCE` y `LOGISTICS` acceden a lo suyo; health, estado de plataforma y frontend siguen públicos.
+- Hoy y trazabilidad: BB-07, DEC-06, precondición de CDU-12, paso 3 de CDU-03, EaC-12, R4 y ADR-013.
+- Impedimentos: ninguno propio. El ADR-013 queda `Proposed` hasta la revisión de Jairo, Andy y Kevin; SEC-01 cerrará el escaneo de PAN/CVV sobre base, mensajes y logs.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: PAY-01 (Edson) ya puede construirse sobre la API protegida; SEC-01 usará los roles y el sanitizador existentes.
+
+### Fecha: 2026-09-23 (segunda continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; BB-04 y BB-07 cerrados.
+- Trabajo realizado hoy:
+  - `[AUD-01]` registro auditable transversal en el módulo `audit` con migración `V3002`: `AuditRecorder` como API pública (`@NamedInterface`), `AuditService` que exige transacción activa, actor tomado del contexto autenticado (o `system`) y evidencia con acción, resultado, antes/después, correlación y causalidad.
+  - Tabla `audit_events` de solo anexado: el repositorio extiende `Repository` y no expone actualización ni borrado; índices por orden, agregado y correlación para AUD-02.
+  - Primer consumidor: `incidents` registra `INCIDENT_REGISTERED` e `INCIDENT_RESOLVED` en la misma transacción del cambio, y `ModularArchitectureTest` permite la dependencia a `audit.api`.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 91 pruebas, 0 fallos, 0 errores, 0 omitidas; `AuditIntegrationTest` verifica atomicidad, actor autenticado, rechazo sin transacción y evidencia desde incidencias.
+- Hoy y trazabilidad: AUD-01, CDU-12 pasos 2 y 3, EaC-02/EaC-07, ADR-002/ADR-006/ADR-007 y modelo de datos §3.7.
+- Impedimentos: ninguno propio. AUD-02 (consulta indexada < 1 s, registro de acceso, búsqueda fallida y exportación) es la siguiente tarjeta.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: PAY-01 podrá dejar evidencia de cada intento; fiscal, logística y órdenes podrán sumar sus acciones al registro cuando integren `AuditRecorder`.
+
+### Fecha: 2026-09-23 (tercera continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; AUD-01 cerrado.
+- Trabajo realizado hoy:
+  - `[AUD-02]` consulta indexada de evidencia en `audit`: `GET /api/v1/audit/events` por `orderId` o por `aggregateType`+`aggregateId`, y `GET /api/v1/audit/orders/{orderId}/export` en CSV, ambos con rol `FINANCE`.
+  - Cada acceso y exportación se registran como evidencia (`AUDIT_EVIDENCE_ACCESSED`, `AUDIT_EVIDENCE_EXPORTED`); la búsqueda sin resultados responde `404 AUDIT_EVIDENCE_NOT_FOUND`, registra `AUDIT_SEARCH_FAILED` y deja alerta para Finanzas (CDU-12 E1) en una transacción independiente para que sobreviva al fallo.
+  - `SecurityConfig` restringe `/api/v1/audit/**` a `FINANCE`; ADR-013, README y matriz de trazabilidad actualizados.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 97 pruebas, 0 fallos, 0 errores, 0 omitidas. `AuditQueryIntegrationTest` verifica consulta por orden y agregado, acceso registrado, búsqueda fallida, exportación CSV y **EaC-02 < 1 s** sobre 10 000 eventos (1 000 de una orden). Smoke real: consulta en ~63 ms, export CSV correcto, 404 con evidencia de fallo y 403 para `CLIENT`.
+- Hoy y trazabilidad: AUD-02, CDU-12 pasos 5 y 6, A1, E1; EaC-02 cerrado y EaC-07 parcial; ADR-006 y modelo de datos §3.7.
+- Impedimentos: ninguno propio. EaC-07 queda parcial hasta que pagos, fiscal y logística registren sus acciones.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: PAY-01 puede construir su evidencia sobre `AuditRecorder`; SEC-01 puede escanear `audit_events` como parte del barrido de PAN/CVV.
+
+### Fecha: 2026-09-23 (cuarta continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; AUD-02 cerrado.
+- Trabajo realizado hoy:
+  - `[PAY-01]` intentos de pago con migración `V3003` (`payment_attempts`) y `payments.api.PaymentPort` para la Saga: orden, canal, método, importe, moneda, referencia segura, correlación e idempotencia; estados `PENDING`, `APPROVED`, `REJECTED` e `INDETERMINATE`.
+  - `PaymentAttemptService` usa el `PayKlikGatewayPort` de BB-06 y persiste cada paso en transacción propia con evidencia auditable (`PAYMENT_ATTEMPT_CREATED`, `PAYMENT_APPROVED`, `PAYMENT_REJECTED`, `PAYMENT_PENDING_CONFIRMATION`). Idempotencia por llave única, incluida la concurrencia; un timeout deja `PENDING` y nunca se reporta como aprobación (frontera con PAY-02).
+  - `PaymentController`: `POST /api/v1/payments/attempts` con `Idempotency-Key` (201/202/200), `GET` por id y por orden; PAN/CVV se rechazan con 400 antes de llamar a PayKlik; `/api/v1/payments/**` queda para `CLIENT`/`SUPPORT`.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 107 pruebas, 0 fallos, 0 errores, 0 omitidas. Smoke real: intento `APPROVED` con referencia del proveedor, repetición con la misma llave devuelve el mismo intento (200), PAN rechazado (400), `FINANCE` recibe 403 y la BD no contiene PAN/CVV; dos eventos de auditoría con el actor autenticado.
+- Hoy y trazabilidad: PAY-01, CDU-03 pasos 2 y 3, postcondición auditable; EaC-04 parcial y EaC-12 parcial; ADR-003, ADR-012 y `saga-required-ports.md`.
+- Impedimentos: ninguno propio. PAY-02 (timeout, circuit breaker, indeterminado) y PAY-03 (conciliación ≤ 60 s) son las siguientes tarjetas.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: Jairo puede consumir `payments.api.PaymentPort` en ORD-03; SEC-01 puede escanear `payment_attempts` como parte del barrido de PAN/CVV.
+
+### Fecha: 2026-09-23 (quinta continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; PAY-01 cerrado.
+- Trabajo realizado hoy:
+  - `[PAY-02]` timeout y circuit breaker con Resilience4j (módulos core, sin starter de plataforma) en `ResilientPayKlikClient`: límite de tiempo configurable, umbral de fallas, ventana deslizante, espera en abierto y llamadas permitidas en semiabierto.
+  - Un timeout, una caída o el circuito abierto dejan el intento `INDETERMINATE` (antes `PENDING` en PAY-01), conservan la orden y publican `PaymentIndeterminate` por Outbox en la misma transacción para la conciliación de PAY-03.
+  - Configuración externalizada `SGO_PAYKLIK_*` en `application.yml`, `.env.example`, Compose y README.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 112 pruebas, 0 fallos, 0 errores, 0 omitidas. Smoke real con PayKlik en modo `TIMEOUT`: dos intentos `INDETERMINATE` con `PAYKLIK_TIMEOUT` y el tercero con `PAYKLIK_CIRCUIT_OPEN` (sin llamar al proveedor), 0 órdenes perdidas, evidencia auditable y evento `PaymentIndeterminate` con payload sin PAN/CVV.
+- Hoy y trazabilidad: PAY-02, CDU-03 E1, EaC-04 y ADR-003; modelo de datos §3.8 y `saga-required-ports.md`.
+- Impedimentos: ninguno propio. PAY-03 (conciliación/reintento idempotente ≤ 60 s) es la siguiente tarjeta.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: ORD-04 (compensaciones) depende de PAY-02 y ya cuenta con el estado indeterminado; QA-05 podrá inyectar timeout y caída con los modos del simulador.
+
+### Fecha: 2026-09-23 (sexta continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; PAY-02 cerrado.
+- Trabajo realizado hoy:
+  - `[PAY-03]` conciliación en `payment_reconciliations` (`V3004`) con programación dentro de los 60 s (`first-delay` 30 s por defecto), índice único parcial de un trabajo abierto por intento y reclamo `FOR UPDATE SKIP LOCKED`.
+  - `PaymentReconciliationService` reutiliza la misma `Idempotency-Key` y la referencia segura del intento (columna nueva `payment_attempts.payment_reference`), por lo que nunca genera un segundo cobro; resuelve como `APPROVED`/`REJECTED`, reintenta con backoff 60/120/240 s y deja `DEAD_LETTER` con alerta auditable `PAYMENT_RECONCILIATION_ALERT` si supera 5 min o agota intentos.
+  - Los eventos terminales `PaymentApproved` y `PaymentRejected` se publican por Outbox en la misma transacción, con payload común sin PAN/CVV.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 116 pruebas, 0 fallos, 0 errores, 0 omitidas. Smoke real: un intento `INDETERMINATE` sembrado se concilió como `APPROVED` con `PaymentApproved` y auditoría, y en modo `TIMEOUT` con reintentos cortos la conciliación terminó en `DEAD_LETTER` sin perder la orden ni duplicar el cobro.
+- Hoy y trazabilidad: PAY-03, CDU-03 E1, EaC-04 cerrado, ADR-003 y modelo de datos §3.8.
+- Impedimentos: ninguno propio. Con PAY-01 a PAY-03 cerrados, el siguiente bloque del plan para Edson es SEC-01 (pruebas de autorización y fuga de PAN/CVV) y QA-02.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: Jairo puede consumir `payments.api.PaymentPort` y los eventos de pago en ORD-03; QA-05 ya tiene timeout, caída y conciliación reproducibles.
+
+### Fecha: 2026-09-23 (séptima continuación) — Integrante: Edson Sosa
+
+- Ayer: ver entradas anteriores del mismo día; PAY-03 cerrado.
+- Trabajo realizado hoy:
+  - `[SEC-01]` `SensitiveDataLeakScanTest` genera actividad real (pago aprobado, intentos con PAN/CVV rechazados, incidencia resuelta, despacho con guía y tracking, notificación, fiscal, consulta de auditoría y un 401) y escanea todas las columnas de texto/JSON del esquema público, los payloads del Outbox, los estados de auditoría y los logs capturados con patrones de PAN (13–19 dígitos) y CVV/CVC: 0 apariciones, con verificación de no vacuidad.
+  - `SecurityAuthorizationTest.roleMatrixRestrictsEndpoints` consolida la matriz 401/403: cliente prohibido en fiscal/query/notificaciones, logística en pagos/auditoría, finanzas en despachos/pagos y soporte en fiscal.
+  - Evidencia en `docs/evidence/security/SEC-01-scan-pan-cvv.md`.
+- Resultado funcional o numérico: `./mvnw clean verify` con Java 25 y Testcontainers: `BUILD SUCCESS`, 118 pruebas, 0 fallos, 0 errores, 0 omitidas. El escaneo cubrió más de 20 columnas, con eventos en Outbox y auditoría, y los intentos con PAN/CVV no se persistieron.
+- Hoy y trazabilidad: SEC-01, CDU-03 paso 3, EaC-12 cerrado, R4 y ADR-013.
+- Impedimentos: ninguno propio. Queda QA-02/DEC-02 (línea base `T` y carga `8T`) como siguiente bloque del plan para Edson.
+- Horas reales y estimadas restantes: pendiente de registrar por Edson.
+- Persona que quedaría bloqueada y acción temporal: el release candidate puede citar EaC-12 como cubierto; QA-02 depende de la estabilidad del ambiente y de ORD-05/QRY-01 para el escenario completo.
+
+### Fecha: 2026-09-23 — Integrante: Jairo Gómez
+
+- Ayer: la rama `feature/carrito-ordenes` contenía el flujo comercial y la experiencia de catálogo, pero estaba 37 commits detrás de `develop` y no podía integrarse directamente por conflictos en pagos, auditoría, mensajería, seguridad, migraciones y frontend.
+- Trabajo realizado hoy:
+  - Se integró `develop` preservando el catálogo, carrito, órdenes, ficha de producto, dashboard, Query y Notifications de la rama funcional.
+  - Se adoptaron como contratos canónicos las APIs públicas de Payments, Audit y Outbox aportadas en `develop`, eliminando implementaciones duplicadas y declarando las fronteras con interfaces nombradas de Spring Modulith.
+  - Se conectaron las transiciones de orden al Outbox `sgo.events`; Query y Notifications consumen `ORDER_STATUS_CHANGED` de forma idempotente.
+  - Se unificaron JWT y roles con la navegación comercial; catálogo y stock permanecen públicos, mientras carrito, compra y paneles protegidos envían el token correspondiente.
+  - Se resolvieron colisiones Flyway: infraestructura transversal en `V3001`–`V3004` y flujo comercial en `V4001`–`V4003`.
+  - Se mantuvo `Docs/DDA.md` sin modificaciones durante la integración.
+- Resultado funcional o numérico: `./mvnw test` terminó con `BUILD SUCCESS`; 134 pruebas, 0 fallos, 0 errores y 0 omitidas; Flyway aplicó 16 migraciones desde cero. Todos los archivos JavaScript pasaron `node --check`, `docker compose config --quiet` terminó correctamente y no quedaron marcadores ni rutas sin resolver.
+- Hoy y trazabilidad a CUN/EaC/restricción/ADR: se consolidaron ORD-01/ORD-02 con PAY-01/02/03, AUD-01/02, BB-04, BB-07, QRY-01, NOT-01 y SEC-01 sin romper el flujo comercial del MVP descrito en el DDA.
+- Impedimentos, responsable e impacto: no hay impedimento técnico local para continuar; queda publicar la rama y realizar la revisión/aceptación del equipo antes de integrar a `develop` remoto.
+- Horas reales y estimadas restantes: pendientes de registrar por Jairo.
+- Persona que quedaría bloqueada y acción temporal: nadie queda bloqueado localmente; el equipo debe basarse en el commit de integración para evitar reintroducir las implementaciones duplicadas.
 
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
@@ -238,6 +368,10 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-14 | Línea base documental de integración | Proposed | Jairo (preparación); propietarios pendientes | Documentos en `FASE 2/docs/contracts` y `docs/integration` | Permite revisión anticipada sin declarar contratos aceptados |
 | 2026-09-22 | ADR-010, confirmación fiscal asíncrona | Proposed | Andy (redacción); Edson y Jairo pendientes | `FASE 2/docs/adr/ADR-010-confirmacion-fiscal-asincrona.md` | La orden solo puede confirmarse con documento fiscal aprobado |
 | 2026-09-22 | ADR-012, contratos de simuladores | Proposed | Andy (redacción); Edson, Kevin y Jairo pendientes | `FASE 2/docs/adr/ADR-012-contratos-de-simuladores.md` | Modos externos reproducibles sin afirmar integración real |
+| 2026-09-23 | ADR-009, ADR-010 y ADR-012, aprobación de Edson | Aprobados por Edson; siguen `Proposed` | Edson (revisión); Jairo y Kevin pendientes | `contract-status.md` y REV-EDSON | Habilita construir pagos y auditoría sobre contratos ya revisados |
+| 2026-09-23 | DEC-06, autenticación para ADR-013 | Aceptada: JWT | Equipo (registrada por Edson) | Pendiente de redactar ADR-013 en BB-07 | BB-07 y SEC-01 usarán tokens JWT y roles por endpoint |
+| 2026-09-23 | BB-04, implementación del sobre de eventos v1 | Implementado contra contrato `Proposed` | Edson | `V3001`, `integration/outbox` y `OutboxIntegrationTest` | El contrato sigue `Proposed` hasta ratificación del equipo |
+| 2026-09-23 | ADR-013, autenticación JWT, roles y sanitización | Proposed | Edson (redacción y decisión JWT del equipo); revisión de Jairo, Andy y Kevin pendiente | `docs/adr/ADR-013-autenticacion-jwt-y-roles.md` | BB-07 implementado; SEC-01 y PAY-01 se apoyan en la API protegida |
 
 ## 7. Resultados de pruebas
 
@@ -256,6 +390,21 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | Outbox + auditoría transversal inicial | Migración V4001, módulos `messaging`/`audit`, integración con Orders y Testcontainers reales | `BUILD SUCCESS`; 79 pruebas, 0 fallos, 0 errores, 0 omitidas; 12 migraciones aplicadas desde cero | Surefire local y salida Maven | Publicación confiable y evidencia append-only operativas para transiciones de orden; consumidores y cobertura de otros agregados continúan pendientes |
 | 2026-09-23 | Inbox idempotente + consumidor Query | Migración V4002, sobre JSON v1, cola durable y proyección `ORDER_STATUS_CHANGED` | `BUILD SUCCESS`; 84 pruebas, 0 fallos, 0 errores, 0 omitidas; 13 migraciones aplicadas desde cero; smoke Outbox → RabbitMQ → Inbox → Query exitoso | Surefire local, Testcontainers PostgreSQL/RabbitMQ, pruebas de arquitectura y Compose | Query procesa cada evento una sola vez por consumidor; ERP, POS, Notifications y otros productores continúan pendientes |
 | 2026-09-23 | Catálogo comercial + consumidor Notifications | Catálogo público, ficha de producto, favoritos/carrito autenticado, V4003, contacto confirmado y cola Notifications | `BUILD SUCCESS`; 87 pruebas, 0 fallos, 0 errores, 0 omitidas; 14 migraciones; compra E2E y notificación `SENT` | Chromium, Surefire, Testcontainers, Compose y PostgreSQL/RabbitMQ reales | El flujo principal llega a orden confirmada y notifica sin llamada manual; ERP/POS y eventos de logística/incidencias continúan pendientes |
+| 2026-09-23 | `./mvnw clean verify` | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 74 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/qa/trazabilidad-cun-mvp.md` | Incluye la regresión A8 y las pruebas de Outbox/Inbox |
+| 2026-09-23 | Smoke Outbox en Compose | Cuatro servicios `healthy`; evento `PENDING` insertado y capturado con cola temporal | Evento `PUBLISHED`; sobre con `messageId`, correlación y tipo; topología declarada | Salida local del 2026-09-23 | Publicación confiable verificada contra RabbitMQ real |
+| 2026-09-23 | `./mvnw clean verify` (BB-07) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 85 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/adr/ADR-013-autenticacion-jwt-y-roles.md` | Login JWT, 401/403 por rol y sanitización verificados |
+| 2026-09-23 | Smoke de seguridad en Compose | Backend y frontend `healthy`; login de los cuatro roles | Token válido; 401 sin token; 403 de `CLIENT` en fiscal/despacho; health y frontend públicos | Salida local del 2026-09-23 | Autorización por rol operando en el stack real |
+| 2026-09-23 | `./mvnw clean verify` (AUD-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 91 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire y `docs/diagrams/modelo-datos.md` §3.7 | Evidencia auditable atómica con actor, cambio, resultado y correlación |
+| 2026-09-23 | `./mvnw clean verify` (AUD-02) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 97 pruebas, 0 fallos, 0 errores, 0 omitidas | `AuditQueryIntegrationTest` y `docs/qa/QA-03-matriz-eac.md` | EaC-02 < 1 s sobre 10 000 eventos; acceso, fallo y exportación registrados |
+| 2026-09-23 | Smoke AUD-02 en Compose | Backend `healthy`; consulta, exportación, búsqueda fallida y 403 de `CLIENT` | Consulta ~63 ms; CSV con `Content-Disposition`; 404 con evidencia `AUDIT_SEARCH_FAILED` | Salida local del 2026-09-23 | Consulta indexada y evidencia de acceso operando en el stack real |
+| 2026-09-23 | `./mvnw clean verify` (PAY-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 107 pruebas, 0 fallos, 0 errores, 0 omitidas | `PaymentAttemptServiceTest`, `PaymentIntegrationTest` y `docs/qa/QA-03-matriz-eac.md` | Intentos idempotentes, concurrencia y ausencia de PAN/CVV verificados |
+| 2026-09-23 | Smoke PAY-01 en Compose | Backend `healthy`; intento, repetición, consulta, PAN y rol | 201 `APPROVED`; 200 mismo intento; 400 PAN; 403 `FINANCE`; auditoría y BD sin PAN/CVV | Salida local del 2026-09-23 | Puerto PayKlik e intentos operando en el stack real |
+| 2026-09-23 | `./mvnw clean verify` (PAY-02) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 112 pruebas, 0 fallos, 0 errores, 0 omitidas | `ResilientPayKlikClientTest`, `PaymentIndeterminateIntegrationTest` y QA-03 | Timeout, circuito abierto e indeterminado verificados |
+| 2026-09-23 | Smoke PAY-02 en Compose | PayKlik en modo `TIMEOUT`, umbral de 2 fallas; tres intentos | Dos `INDETERMINATE`/`PAYKLIK_TIMEOUT` y uno `PAYKLIK_CIRCUIT_OPEN`; evento `PaymentIndeterminate`; 0 órdenes perdidas | Salida local del 2026-09-23 | Aislamiento de fallas de PayKlik operando en el stack real |
+| 2026-09-23 | `./mvnw clean verify` (PAY-03) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 116 pruebas, 0 fallos, 0 errores, 0 omitidas | `PaymentReconciliationServiceTest`, `PaymentReconciliationIntegrationTest` y QA-03 | Conciliación sin doble cobro, ≤ 60 s y alerta verificadas |
+| 2026-09-23 | Smoke PAY-03 en Compose | Intento indeterminado sembrado y, aparte, PayKlik `TIMEOUT` con reintentos cortos | Conciliación `RESOLVED/APPROVED` con evento `PaymentApproved`; en fallo, `DEAD_LETTER` sin perder la orden | Salida local del 2026-09-23 | Resolución y bandeja de fallidos operando en el stack real |
+| 2026-09-23 | `./mvnw clean verify` (SEC-01) | Java 25.0.4_7; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 118 pruebas, 0 fallos, 0 errores, 0 omitidas | `SensitiveDataLeakScanTest`, `SecurityAuthorizationTest` y `docs/evidence/security/SEC-01-scan-pan-cvv.md` | 0 PAN/CVV en base, mensajes y logs; matriz 401/403 completa |
+| 2026-09-23 | Integración `feature/carrito-ordenes` + `develop` | Java 25; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers; 16 migraciones Flyway | `BUILD SUCCESS`; 134 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local, `node --check`, `docker compose config --quiet` y verificación de conflictos | Flujo comercial, seguridad, pagos, auditoría y Outbox quedaron consolidados sin dependencias modulares inválidas |
 
 ## 8. Retrospectiva individual
 

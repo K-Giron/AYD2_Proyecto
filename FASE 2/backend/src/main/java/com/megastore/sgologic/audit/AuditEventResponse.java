@@ -1,31 +1,29 @@
 package com.megastore.sgologic.audit;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 
-public record AuditEventResponse(
+/** Evidencia auditable expuesta por la consulta de AUD-02 (CDU-12). */
+record AuditEventResponse(
         UUID id,
-        String actorId,
-        String actorType,
-        String action,
+        UUID eventId,
         String aggregateType,
         UUID aggregateId,
         UUID orderId,
-        UUID transactionId,
+        String actor,
+        String action,
+        String result,
+        String beforeState,
+        String afterState,
         UUID correlationId,
-        Map<String, Object> previousState,
-        Map<String, Object> newState,
-        AuditResult result,
-        Instant occurredAt,
-        Map<String, Object> metadata,
-        String evidenceHash
+        UUID causationId,
+        Instant occurredAt
 ) {
+
     static AuditEventResponse from(AuditEvent event) {
-        return new AuditEventResponse(event.getId(), event.getActorId(), event.getActorType(),
-                event.getAction(), event.getAggregateType(), event.getAggregateId(), event.getOrderId(),
-                event.getTransactionId(), event.getCorrelationId(), event.getPreviousState(),
-                event.getNewState(), event.getResult(), event.getOccurredAt(), event.getMetadata(),
-                event.getEvidenceHash());
+        return new AuditEventResponse(event.getId(), event.getEventId(), event.getAggregateType(),
+                event.getAggregateId(), event.getOrderId(), event.getActor(), event.getAction(),
+                event.getResult(), event.getBeforeState(), event.getAfterState(), event.getCorrelationId(),
+                event.getCausationId(), event.getOccurredAt());
     }
 }

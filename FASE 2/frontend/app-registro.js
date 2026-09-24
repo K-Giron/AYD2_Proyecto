@@ -1,10 +1,10 @@
 "use strict";
 
-document.getElementById("registration-form").addEventListener("submit", event => {
+document.getElementById("registration-form").addEventListener("submit", async event => {
     event.preventDefault();
     const error = document.getElementById("registration-error");
     try {
-        const account = sgoRegisterClient(
+        const account = await sgoRegisterClient(
             document.getElementById("registration-name").value,
             document.getElementById("registration-email").value,
             document.getElementById("registration-password").value

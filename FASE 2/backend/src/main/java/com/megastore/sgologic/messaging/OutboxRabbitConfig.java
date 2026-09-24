@@ -7,9 +7,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class OutboxRabbitConfig {
+class MessagingConsumerRabbitConfig {
 
-    public static final String BUSINESS_EXCHANGE = "sgo.business.events.v1";
+    public static final String BUSINESS_EXCHANGE = "sgo.events";
 
     @Bean
     TopicExchange businessEventsExchange() {

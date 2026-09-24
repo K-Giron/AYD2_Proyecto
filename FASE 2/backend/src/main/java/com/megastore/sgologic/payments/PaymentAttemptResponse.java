@@ -4,27 +4,29 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-public record PaymentAttemptResponse(
+/** Vista pública del intento de pago (PAY-01). Nunca expone PAN ni CVV. */
+record PaymentAttemptResponse(
         UUID id,
         UUID orderId,
         String channel,
-        PaymentMethod method,
+        String method,
         BigDecimal amount,
         String currency,
-        PaymentStatus status,
+        String status,
         String providerReference,
-        String resultCode,
-        String resultMessage,
+        UUID providerAttemptId,
+        String failureCode,
+        String failureMessage,
         UUID correlationId,
         Instant createdAt,
-        Instant processedAt,
-        Instant reconciliationAt
+        Instant updatedAt
 ) {
+
     static PaymentAttemptResponse from(PaymentAttempt attempt) {
-        return new PaymentAttemptResponse(attempt.getId(), attempt.getOrderId(), attempt.getChannel(),
-                attempt.getMethod(), attempt.getAmount(), attempt.getCurrency(), attempt.getStatus(),
-                attempt.getProviderReference(), attempt.getResultCode(), attempt.getResultMessage(),
-                attempt.getCorrelationId(), attempt.getCreatedAt(), attempt.getProcessedAt(),
-                attempt.getReconciliationAt());
+        return new PaymentAttemptResponse(attempt.getId(), attempt.getOrderId(),
+                attempt.getChannel().name(), attempt.getMethod().name(), attempt.getAmount(),
+                attempt.getCurrency(), attempt.getStatus().name(), attempt.getProviderReference(),
+                attempt.getProviderAttemptId(), attempt.getFailureCode(), attempt.getFailureMessage(),
+                attempt.getCorrelationId(), attempt.getCreatedAt(), attempt.getUpdatedAt());
     }
 }

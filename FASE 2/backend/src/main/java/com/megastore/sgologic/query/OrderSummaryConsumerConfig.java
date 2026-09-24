@@ -1,6 +1,5 @@
 package com.megastore.sgologic.query;
 
-import com.megastore.sgologic.messaging.OutboxRabbitConfig;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -23,6 +22,6 @@ class OrderSummaryConsumerConfig {
     Binding orderSummaryBinding(Queue orderSummaryQueue, TopicExchange businessEventsExchange) {
         return BindingBuilder.bind(orderSummaryQueue)
                 .to(businessEventsExchange)
-                .with("order.order_status_changed");
+                .with("ORDER_STATUS_CHANGED");
     }
 }
