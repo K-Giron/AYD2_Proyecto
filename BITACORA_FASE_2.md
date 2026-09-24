@@ -377,6 +377,22 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendientes de registrar por Jairo.
 - Persona que quedaría bloqueada y acción temporal: nadie queda bloqueado localmente; el equipo debe basarse en el commit de integración para evitar reintroducir las implementaciones duplicadas.
 
+### Fecha: 2026-09-23 (continuación final) — Integrante: Jairo Gómez
+
+- Ayer: el flujo comercial integrado permitía crear órdenes y ejecutar manualmente reserva, pago y fiscal, pero todavía no existía una Saga única que coordinara el recorrido ni pruebas E2E automatizadas de extremo a extremo.
+- Trabajo realizado hoy:
+  - `[ORD-03]` se implementó `OrderSagaService` como coordinador reentrante e idempotente de carrito/orden → reserva → PayKlik → SAT → confirmación → despacho, consumiendo únicamente los puertos públicos de Inventory, Payments, Fiscal y Logistics.
+  - `[ORD-04]` se incorporó la cancelación desde Orders mediante puertos: una orden cancelable libera sus reservas activas; la repetición de la solicitud no duplica la compensación. Los estados posteriores a confirmación no se disfrazan como cancelación y deben seguir el flujo de devolución/reembolso de CUN-10.
+  - Se conectó una orden confirmada con `logistics.api.DispatchPort`; la Saga confirma el consumo de inventario, crea un único envío y lleva la orden a preparación sin acceder a repositorios internos de Logistics.
+  - El checkout del cliente usa `POST /api/v1/orders/{orderId}/saga`, conserva la misma llave idempotente y reanuda la operación cuando SAT permanece pendiente.
+  - `[ORD-05/QA-04]` se crearon datos deterministas y cinco recorridos E2E: compra web completa; recuperación omnicanal WEB→MOBILE; cancelación y liberación de inventario; compra y entrega; compra, entrega e incidencia resuelta administrativamente como `REFUNDED`.
+  - Se documentó la evidencia en `FASE 2/docs/evidence/functional/ORD-05-QA-04-cinco-flujos-e2e.md` y se mantuvo `Docs/DDA.md` sin modificaciones.
+- Resultado funcional o numérico: `OrderJourneysE2ETest` ejecutó **5 pruebas, 0 fallos y 0 errores** contra PostgreSQL y RabbitMQ reales mediante Testcontainers. La regresión completa `./mvnw test` terminó con **BUILD SUCCESS: 139 pruebas, 0 fallos, 0 errores y 0 omitidas**. Las pruebas verifican autenticación JWT, HTTP, persistencia, idempotencia, stock, fiscal, despacho, tracking e incidencia, sin sustituir los puertos por mocks.
+- Hoy y trazabilidad a CUN/EaC/restricción/ADR: ORD-03, ORD-04, ORD-05, QA-04; CUN-01 a CUN-04, CUN-07 a CUN-10; EaC-01, EaC-03, EaC-04, EaC-05, EaC-07, EaC-09, EaC-11 y EaC-12; ADR-001 a ADR-007, ADR-010 y ADR-012.
+- Impedimentos, responsable e impacto: el quinto flujo acredita la resolución administrativa `REFUNDED` disponible en INC-01, pero **no debe presentarse como CUN-10 completo**: siguen pendientes la nota de crédito fiscal, el reintegro de inventario y la orquestación de reembolso real. Es trabajo del módulo de postventa, no una cancelación de Orders.
+- Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
+- Persona que quedaría bloqueada y acción temporal: nadie queda bloqueado para demostrar ORD-05; la integración final a `main` queda deliberadamente fuera de este trabajo hasta que finalice el equipo.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.
@@ -448,6 +464,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | Seed A6 (idempotencia) | Dos corridas consecutivas de `tests/data/seed-load.sql` | 10 000 filas nuevas en la primera; la segunda no agrega ninguna | Conteo `actor='load-seed'` en PostgreSQL | El seed ya es idempotente |
 | 2026-09-23 | Integración `feature/carrito-ordenes` + `develop` | Java 25; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers; 16 migraciones Flyway | `BUILD SUCCESS`; 134 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local, `node --check`, `docker compose config --quiet` y verificación de conflictos | Flujo comercial, seguridad, pagos, auditoría y Outbox quedaron consolidados sin dependencias modulares inválidas |
 | 2026-09-23 | Merge de `develop` en `docs/rev-edson-cruzadas` | Conflictos resueltos en pagos (validación tipada + `PaymentMethod` del api), README y bitácora; Java 25 + Testcontainers | `BUILD SUCCESS`; 143 pruebas, 0 fallos, 0 errores, 0 omitidas; `docker compose config --quiet` correcto | Surefire y este registro | La rama queda con el carrito/órdenes de Jairo y los bugfixes A1/A4–A8 sin perder ninguna parte |
+| 2026-09-23 | ORD-05 / QA-04 — cinco recorridos E2E | JWT + MockMvc; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers; fixtures deterministas | E2E: 5 pruebas; suite completa: `BUILD SUCCESS`, 139 pruebas, 0 fallos, 0 errores, 0 omitidas | `OrderJourneysE2ETest` y `docs/evidence/functional/ORD-05-QA-04-cinco-flujos-e2e.md` | Saga completa, compensación, despacho, entrega y resolución administrativa de reembolso verificados por HTTP |
+| 2026-09-23 | Merge `feature/pruebas-e2e` → `develop` | Se conservaron Saga/E2E y correcciones A1/A4–A8; conflicto de bitácora resuelto; mensaje de validación sensible neutralizado y UUID excluido del detector de PAN | `BUILD SUCCESS`; 148 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire, `PaymentRequestTest`, `SensitiveDataLeakScanTest` y `OrderJourneysE2ETest` | `develop` reúne ambos trabajos sin fuga en logs ni falsos positivos del escaneo SEC-01 |
 
 ## 8. Retrospectiva individual
 

@@ -27,9 +27,11 @@ import java.util.UUID;
 public class OrdersController {
 
     private final OrdersService service;
+    private final OrderSagaService sagaService;
 
-    public OrdersController(OrdersService service) {
+    public OrdersController(OrdersService service, OrderSagaService sagaService) {
         this.service = service;
+        this.sagaService = sagaService;
     }
 
     @PostMapping("/carts")
@@ -146,6 +148,25 @@ public class OrdersController {
             HttpServletRequest httpRequest) {
         return OrderFiscalResponse.from(service.synchronizeFiscalStatus(
                 orderId, actor, correlationId(httpRequest)));
+    }
+
+    @PostMapping("/orders/{orderId}/saga")
+    public OrderSagaResponse runSaga(
+            @PathVariable UUID orderId,
+            @Valid @RequestBody RunOrderSagaRequest request,
+            @RequestHeader("Idempotency-Key") @NotBlank String sagaKey,
+            @RequestHeader(value = "X-Actor", defaultValue = "SAGA") String actor,
+            HttpServletRequest httpRequest) {
+        return sagaService.run(orderId, request, sagaKey, actor, correlationId(httpRequest));
+    }
+
+    @PostMapping("/orders/{orderId}/cancel")
+    public OrderResponse cancelOrder(
+            @PathVariable UUID orderId,
+            @RequestHeader(value = "X-Actor", defaultValue = "CUSTOMER") String actor,
+            @RequestParam(defaultValue = "Cancelación solicitada") String reason,
+            HttpServletRequest httpRequest) {
+        return OrderResponse.from(service.cancelOrder(orderId, actor, reason, correlationId(httpRequest)));
     }
 
     private UUID correlationId(HttpServletRequest request) {

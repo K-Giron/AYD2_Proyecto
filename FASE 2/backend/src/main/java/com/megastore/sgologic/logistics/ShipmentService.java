@@ -1,5 +1,9 @@
 package com.megastore.sgologic.logistics;
 
+import com.megastore.sgologic.logistics.api.DispatchPort;
+import com.megastore.sgologic.logistics.api.DispatchRequest;
+import com.megastore.sgologic.logistics.api.DispatchResult;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,7 +27,7 @@ import java.util.UUID;
  * servicio implementa exactamente esa forma.</p>
  */
 @Service
-public class ShipmentService {
+public class ShipmentService implements DispatchPort {
 
     private static final Logger log = LoggerFactory.getLogger(ShipmentService.class);
 
@@ -168,5 +172,23 @@ public class ShipmentService {
 
     public List<ShipmentTrackingEvent> getTrackingHistory(UUID shipmentId) {
         return trackingEventRepository.findByShipmentIdOrderByOccurredAtAsc(shipmentId);
+    }
+
+    @Override
+    public DispatchResult createDispatch(DispatchRequest request) {
+        DispatchOrigin origin = DispatchOrigin.valueOf(request.origin());
+        Shipment shipment = createDispatch(request.orderId(), origin, request.destination(),
+                request.correlationId(), request.idempotencyKey());
+        return toResult(shipment);
+    }
+
+    @Override
+    public Optional<DispatchResult> latestForOrder(UUID orderId) {
+        return getShipmentsForOrder(orderId).stream().findFirst().map(this::toResult);
+    }
+
+    private DispatchResult toResult(Shipment shipment) {
+        return new DispatchResult(shipment.getId(), shipment.getOrderId(),
+                shipment.getStatus().name(), shipment.getTrackingNumber());
     }
 }

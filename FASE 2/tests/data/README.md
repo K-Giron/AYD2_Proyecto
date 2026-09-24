@@ -1,6 +1,8 @@
 # Datos reproducibles de pruebas
 
-Este directorio alojará datos versionados de ORD-05. Actualmente no contiene datos de negocio porque BB-03, contratos y modelos propietarios siguen pendientes.
+Este directorio contiene los datos versionados y no sensibles de ORD-05.
+
+- `ord-05-deterministic-fixtures.json`: usuarios demo, productos semilla y valores estables de checkout usados por los cinco recorridos E2E.
 
 Cada conjunto futuro deberá indicar:
 

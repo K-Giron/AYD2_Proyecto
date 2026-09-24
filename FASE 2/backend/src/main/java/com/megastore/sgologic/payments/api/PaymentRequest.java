@@ -52,7 +52,7 @@ public record PaymentRequest(
         // de CVV/CVC (cvv, cvv2, cvc, cvc2, securityCode).
         String normalizedReference = paymentReference.replaceAll("[\\s\\-.]", "");
         if (normalizedReference.matches("\\d{13,}") || CVV_MARKER.matcher(normalizedReference).matches()) {
-            throw new InvalidPaymentRequestException("paymentReference no puede contener PAN ni CVV.");
+            throw new InvalidPaymentRequestException("paymentReference debe ser una referencia tokenizada segura.");
         }
         if (correlationId == null) {
             throw new InvalidPaymentRequestException("correlationId es obligatorio.");

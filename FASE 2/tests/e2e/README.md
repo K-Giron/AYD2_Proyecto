@@ -1,18 +1,27 @@
-# Plan preparatorio de E2E
+# Suite E2E de órdenes
 
-**Estado:** `PROPOSED`; no existe todavía una prueba E2E funcional.
+**Estado:** implementada en `OrderJourneysE2ETest` con PostgreSQL y RabbitMQ de Testcontainers.
 
 **Tarjetas relacionadas:** ORD-05 y QA-04.
 
-## Prerrequisitos para automatizar
+## Ejecución
 
-- Contratos de estados, eventos y errores aceptados.
-- BB-03 y migraciones reproducibles.
-- Capacidades P0 de Inventory, Payments, Fiscal y Logistics.
-- Datos de demostración versionados y no sensibles.
-- Estrategia de Outbox/idempotencia disponible cuando el flujo la necesite.
+```bash
+cd "FASE 2/backend"
+./mvnw -Dtest=OrderJourneysE2ETest test
+```
 
-## Camino feliz objetivo
+Los datos conocidos están en `tests/data/ord-05-deterministic-fixtures.json`.
+
+## Escenarios automatizados
+
+1. Login → carrito → compra → SAT → despacho.
+2. Recuperación del carrito en otro canal → compra → repetición idempotente de Saga.
+3. Login → carrito → reserva → cancelación → liberación idempotente.
+4. Login → compra → despacho → tránsito → entrega.
+5. Login → compra → entrega → devolución → reembolso administrativo.
+
+## Camino feliz cubierto
 
 1. Crear o recuperar un carrito desde un canal.
 2. Recuperar el mismo carrito desde un segundo canal.
@@ -25,11 +34,11 @@
 9. Registrar entrega y solicitud de notificación.
 10. Consultar la vista consolidada y evidencia correlacionada.
 
-## Reglas de la futura suite
+## Reglas de la suite
 
 - Se ejecutará desde ambiente limpio con un solo comando.
 - Usará IDs deterministas o capturados durante la ejecución, nunca IDs productivos.
 - Validará estados y efectos observables, no tablas privadas.
 - Conservará un correlation ID común.
 - Limpiará únicamente datos creados por la prueba mediante mecanismos acordados.
-- No se marcará como implementada hasta integrar todas las líneas requeridas.
+- Verifica estados y efectos observables mediante HTTP, sin leer tablas privadas.

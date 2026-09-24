@@ -14,7 +14,8 @@
                 "fiscal",
                 "messaging",
                 "audit :: audit-api",
-                "integration :: outbox"
+                "integration :: outbox",
+                "logistics :: logistics-api"
         }
 )
 package com.megastore.sgologic.orders;

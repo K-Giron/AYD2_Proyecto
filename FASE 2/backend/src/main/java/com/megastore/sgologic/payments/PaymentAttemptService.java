@@ -97,6 +97,11 @@ public class PaymentAttemptService implements PaymentPort {
         return repository.findByOrderIdOrderByCreatedAtDesc(orderId);
     }
 
+    @Override
+    public Optional<PaymentResult> latestForOrder(UUID orderId) {
+        return getAttemptsForOrder(orderId).stream().findFirst().map(this::toResult);
+    }
+
     private PaymentAttemptOutcome indeterminate(PaymentAttempt attempt, UUID orderId, String code, String message) {
         log.warn("Pago indeterminado para orderId={} (intento {}): {}. La orden no se pierde; "
                 + "la conciliación de PAY-03 lo resolverá.", orderId, attempt.getId(), code);

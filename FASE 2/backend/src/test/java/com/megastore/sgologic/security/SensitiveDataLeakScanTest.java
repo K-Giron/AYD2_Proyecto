@@ -53,6 +53,8 @@ class SensitiveDataLeakScanTest {
     private static final Pattern PAN_PATTERN =
             Pattern.compile("(?<![0-9.\\-])\\d(?:[ .\\-]?\\d){12,}(?![0-9.\\-])");
     private static final Pattern CVV_PATTERN = Pattern.compile("(?i)\\b(cvv2?|cvc2?|securitycode)\\b");
+    private static final Pattern UUID_PATTERN = Pattern.compile(
+            "(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b");
     private static final String PAN_SQL_REGEX = "(?<![0-9.\\-])[0-9]([ .\\-]?[0-9]){12,}(?![0-9.\\-])";
     private static final String CVV_SQL_REGEX = "(?i)\\y(cvv2?|cvc2?|securitycode)\\y";
 
@@ -257,7 +259,13 @@ class SensitiveDataLeakScanTest {
         List<String> findings = new ArrayList<>();
         for (ILoggingEvent event : events) {
             String message = event.getFormattedMessage();
-            if (message != null && (PAN_PATTERN.matcher(message).find() || CVV_PATTERN.matcher(message).find())) {
+            // Un UUID aleatorio puede contener trece o más dígitos unidos por
+            // guiones y parecer una tarjeta al regex. Se excluyen únicamente
+            // UUID completos antes de buscar datos de pago; las referencias
+            // numéricas, incluso separadas por guiones, siguen detectándose.
+            String scannable = message == null ? null : UUID_PATTERN.matcher(message).replaceAll("<uuid>");
+            if (scannable != null
+                    && (PAN_PATTERN.matcher(scannable).find() || CVV_PATTERN.matcher(scannable).find())) {
                 findings.add("log -> " + message);
             }
         }

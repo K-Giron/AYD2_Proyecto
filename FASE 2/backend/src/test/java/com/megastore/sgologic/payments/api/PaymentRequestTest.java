@@ -25,7 +25,7 @@ class PaymentRequestTest {
     void rejectsPanWithAndWithoutSeparators() {
         assertThatThrownBy(() -> request("4111111111111111"))
                 .isInstanceOf(InvalidPaymentRequestException.class)
-                .hasMessageContaining("PAN");
+                .hasMessageContaining("tokenizada segura");
         assertThatThrownBy(() -> request("4111-1111-1111-1111"))
                 .isInstanceOf(InvalidPaymentRequestException.class);
         assertThatThrownBy(() -> request("4111 1111 1111 1111"))

@@ -71,7 +71,8 @@ class ModularArchitectureTest {
                     .map(dependency -> dependency.getTargetModule().getIdentifier().toString())
                     .collect(Collectors.toSet());
             Set<String> allowed = switch (module.getIdentifier().toString()) {
-                case "orders" -> Set.of(SHARED_MODULE, "inventory", "payments", "fiscal", "integration", "audit");
+                case "orders" -> Set.of(SHARED_MODULE, "inventory", "payments", "fiscal",
+                        "integration", "audit", "logistics");
                 case "query" -> Set.of(SHARED_MODULE, "messaging");
                 case "notifications" -> Set.of(SHARED_MODULE, "messaging");
                 case "payments", "logistics" -> Set.of(SHARED_MODULE, "integration", "audit");

@@ -1,5 +1,8 @@
 package com.megastore.sgologic.payments.api;
 
+import java.util.Optional;
+import java.util.UUID;
+
 /**
  * Capacidad "autorización de pago" que la Saga (ORD-03) consume
  * (PAY-01, CDU-03). El módulo Payments conserva la propiedad de sus datos y
@@ -19,4 +22,7 @@ package com.megastore.sgologic.payments.api;
 public interface PaymentPort {
 
     PaymentResult requestPayment(PaymentRequest request);
+
+    /** Último intento observable para que una Saga interrumpida pueda reanudarse. */
+    Optional<PaymentResult> latestForOrder(UUID orderId);
 }
