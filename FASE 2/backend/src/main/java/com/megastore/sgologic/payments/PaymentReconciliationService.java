@@ -4,12 +4,14 @@ import com.megastore.sgologic.audit.api.AuditEntryRequest;
 import com.megastore.sgologic.audit.api.AuditRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -55,6 +57,7 @@ public class PaymentReconciliationService {
         if (!properties.isEnabled()) {
             return;
         }
+        recoverStalePending();
         List<PaymentReconciliation> due = reconciliationRepository.lockDueBatch(
                 clock.instant(), properties.getBatchSize());
         for (PaymentReconciliation reconciliation : due) {
@@ -62,6 +65,23 @@ public class PaymentReconciliationService {
         }
         if (!due.isEmpty()) {
             log.debug("Conciliación procesó {} trabajo(s) vencido(s).", due.size());
+        }
+    }
+
+    /**
+     * A5: un intento que quedó PENDING más allá del umbral (proceso caído o
+     * excepción entre la creación y el resultado) se marca INDETERMINATE y
+     * entra al circuito de conciliación, para no quedar huérfano.
+     */
+    private void recoverStalePending() {
+        Instant threshold = clock.instant().minus(properties.getStalePendingAfter());
+        List<PaymentAttempt> stale = attemptRepository.findByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
+                PaymentAttemptStatus.PENDING, threshold, PageRequest.of(0, properties.getBatchSize()));
+        for (PaymentAttempt attempt : stale) {
+            writer.markIndeterminate(attempt.getId(), "STALE_PENDING",
+                    "Intento pendiente sin resultado; recuperado por el barrido de conciliación.");
+            log.warn("Intento {} recuperado como INDETERMINATE por barrido de PENDING viejo (orderId={}).",
+                    attempt.getId(), attempt.getOrderId());
         }
     }
 

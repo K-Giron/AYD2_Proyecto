@@ -21,6 +21,7 @@ public class PaymentReconciliationProperties {
     private int batchSize = 20;
     private int maxAttempts = 4;
     private Duration firstDelay = Duration.ofSeconds(30);
+    private Duration stalePendingAfter = Duration.ofSeconds(60);
     private List<Duration> retryDelays =
             List.of(Duration.ofSeconds(60), Duration.ofSeconds(120), Duration.ofSeconds(240));
     private Duration alertAfter = Duration.ofMinutes(5);
@@ -35,6 +36,8 @@ public class PaymentReconciliationProperties {
     public void setMaxAttempts(int maxAttempts) { this.maxAttempts = maxAttempts; }
     public Duration getFirstDelay() { return firstDelay; }
     public void setFirstDelay(Duration firstDelay) { this.firstDelay = firstDelay; }
+    public Duration getStalePendingAfter() { return stalePendingAfter; }
+    public void setStalePendingAfter(Duration stalePendingAfter) { this.stalePendingAfter = stalePendingAfter; }
     public List<Duration> getRetryDelays() { return retryDelays; }
     public void setRetryDelays(List<Duration> retryDelays) { this.retryDelays = retryDelays; }
     public Duration getAlertAfter() { return alertAfter; }

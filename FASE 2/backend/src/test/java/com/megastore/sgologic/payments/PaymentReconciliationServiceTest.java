@@ -79,6 +79,19 @@ class PaymentReconciliationServiceTest {
     }
 
     @Test
+    void recoversStalePendingAttempts() {
+        PaymentAttempt stale = PaymentAttempt.create(UUID.randomUUID(), UUID.randomUUID(),
+                PaymentChannel.MOBILE, PaymentMethod.CARD, new BigDecimal("150.00"), "GTQ",
+                UUID.randomUUID(), "idem-stale", "tok_test_123", NOW.minusSeconds(300));
+        when(attemptRepository.findByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(any(), any(), any()))
+                .thenReturn(List.of(stale));
+
+        service.reconcileDue();
+
+        verify(writer).markIndeterminate(eq(stale.getId()), eq("STALE_PENDING"), anyString());
+    }
+
+    @Test
     void movesToDeadLetterAfterMaxAttempts() {
         properties.setMaxAttempts(1);
         PaymentAttempt attempt = indeterminateAttempt("idem-rec-3");

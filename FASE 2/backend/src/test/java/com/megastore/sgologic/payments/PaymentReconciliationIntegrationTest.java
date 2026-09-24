@@ -68,6 +68,23 @@ class PaymentReconciliationIntegrationTest {
     Clock clock;
 
     @Test
+    void recoversStalePendingAttempt() {
+        Instant now = clock.instant();
+        PaymentAttempt pending = PaymentAttempt.create(UUID.randomUUID(), UUID.randomUUID(),
+                PaymentChannel.MOBILE, PaymentMethod.CARD, new BigDecimal("150.00"), "GTQ",
+                UUID.randomUUID(), "it-stale-" + UUID.randomUUID(), "tok_test_123", now.minusSeconds(300));
+        attemptRepository.save(pending);
+
+        reconciliationService.reconcileDue();
+
+        PaymentAttempt recovered = attemptRepository.findById(pending.getId()).orElseThrow();
+        assertThat(recovered.getStatus()).isEqualTo(PaymentAttemptStatus.INDETERMINATE);
+        assertThat(recovered.getFailureCode()).isEqualTo("STALE_PENDING");
+        assertThat(reconciliationRepository.findByPaymentAttemptIdAndStatus(
+                pending.getId(), PaymentReconciliationStatus.PENDING)).isPresent();
+    }
+
+    @Test
     void reconcilesIndeterminateAttemptWithoutSecondCharge() {
         Instant now = clock.instant();
         PaymentAttempt attempt = PaymentAttempt.create(UUID.randomUUID(), UUID.randomUUID(),
