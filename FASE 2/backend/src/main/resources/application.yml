@@ -69,6 +69,7 @@ sgo:
   payments:
     payklik:
       timeout-ms: ${SGO_PAYKLIK_TIMEOUT_MS:5000}
+      call-pool-size: ${SGO_PAYKLIK_CALL_POOL_SIZE:8}
       failure-rate-threshold: ${SGO_PAYKLIK_FAILURE_RATE_THRESHOLD:50}
       sliding-window-size: ${SGO_PAYKLIK_SLIDING_WINDOW_SIZE:10}
       minimum-number-of-calls: ${SGO_PAYKLIK_MINIMUM_CALLS:5}
@@ -80,6 +81,7 @@ sgo:
       batch-size: ${SGO_PAYMENT_RECONCILIATION_BATCH_SIZE:20}
       max-attempts: ${SGO_PAYMENT_RECONCILIATION_MAX_ATTEMPTS:4}
       first-delay: ${SGO_PAYMENT_RECONCILIATION_FIRST_DELAY:30s}
+      stale-pending-after: ${SGO_PAYMENT_RECONCILIATION_STALE_PENDING_AFTER:60s}
       retry-delays: ${SGO_PAYMENT_RECONCILIATION_RETRY_DELAYS:60s,120s,240s}
       alert-after: ${SGO_PAYMENT_RECONCILIATION_ALERT_AFTER:5m}
   outbox:

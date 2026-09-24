@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,15 +32,16 @@ class ResilientPayKlikClient {
     private final PayKlikResilienceProperties properties;
     private final CircuitBreaker circuitBreaker;
     private final TimeLimiter timeLimiter;
-    private final ExecutorService callExecutor = Executors.newCachedThreadPool(task -> {
-        Thread thread = new Thread(task, "payklik-call");
-        thread.setDaemon(true);
-        return thread;
-    });
+    private final ExecutorService callExecutor;
 
     ResilientPayKlikClient(PayKlikGatewayPort delegate, PayKlikResilienceProperties properties) {
         this.delegate = delegate;
         this.properties = properties;
+        this.callExecutor = Executors.newFixedThreadPool(Math.max(1, properties.getCallPoolSize()), task -> {
+            Thread thread = new Thread(task, "payklik-call");
+            thread.setDaemon(true);
+            return thread;
+        });
         this.circuitBreaker = CircuitBreaker.of("payklik", CircuitBreakerConfig.custom()
                 .failureRateThreshold(properties.getFailureRateThreshold())
                 .slidingWindowSize(properties.getSlidingWindowSize())
@@ -58,8 +58,11 @@ class ResilientPayKlikClient {
     }
 
     PayKlikGatewayPort.AuthorizationResult authorize(PayKlikGatewayPort.AuthorizationRequest request) {
+        // submit devuelve un FutureTask: al expirar, el TimeLimiter hace
+        // cancel(true) y la tarea se interrumpe de verdad (CompletableFuture
+        // no interrumpe el hilo que ya está ejecutando).
         Callable<PayKlikGatewayPort.AuthorizationResult> timed = TimeLimiter.decorateFutureSupplier(
-                timeLimiter, () -> CompletableFuture.supplyAsync(() -> delegate.authorize(request), callExecutor));
+                timeLimiter, () -> callExecutor.submit(() -> delegate.authorize(request)));
         Callable<PayKlikGatewayPort.AuthorizationResult> guarded =
                 CircuitBreaker.decorateCallable(circuitBreaker, timed);
         try {

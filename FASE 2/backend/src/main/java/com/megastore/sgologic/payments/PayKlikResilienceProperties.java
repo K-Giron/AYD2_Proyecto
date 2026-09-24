@@ -15,6 +15,7 @@ import java.time.Duration;
 public class PayKlikResilienceProperties {
 
     private long timeoutMs = 5000L;
+    private int callPoolSize = 8;
     private float failureRateThreshold = 50f;
     private int slidingWindowSize = 10;
     private int minimumNumberOfCalls = 5;
@@ -23,6 +24,8 @@ public class PayKlikResilienceProperties {
 
     public long getTimeoutMs() { return timeoutMs; }
     public void setTimeoutMs(long timeoutMs) { this.timeoutMs = timeoutMs; }
+    public int getCallPoolSize() { return callPoolSize; }
+    public void setCallPoolSize(int callPoolSize) { this.callPoolSize = callPoolSize; }
     public float getFailureRateThreshold() { return failureRateThreshold; }
     public void setFailureRateThreshold(float failureRateThreshold) { this.failureRateThreshold = failureRateThreshold; }
     public int getSlidingWindowSize() { return slidingWindowSize; }

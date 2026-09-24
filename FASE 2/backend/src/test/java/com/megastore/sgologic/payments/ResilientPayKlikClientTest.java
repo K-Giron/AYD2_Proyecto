@@ -7,6 +7,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +36,32 @@ class ResilientPayKlikClientTest {
         try {
             assertThatThrownBy(() -> client.authorize(request()))
                     .isInstanceOf(PayKlikGatewayPort.PayKlikTimeoutException.class);
+        } finally {
+            client.shutdownExecutor();
+        }
+    }
+
+    @Test
+    void timeoutInterruptsTheProviderCall() throws Exception {
+        PayKlikResilienceProperties properties = new PayKlikResilienceProperties();
+        properties.setTimeoutMs(150L);
+        CountDownLatch interrupted = new CountDownLatch(1);
+        PayKlikGatewayPort hangingProvider = request -> {
+            try {
+                Thread.sleep(5_000L);
+            } catch (InterruptedException interruptedException) {
+                interrupted.countDown();
+                Thread.currentThread().interrupt();
+            }
+            return approved();
+        };
+        ResilientPayKlikClient client = new ResilientPayKlikClient(hangingProvider, properties);
+        try {
+            assertThatThrownBy(() -> client.authorize(request()))
+                    .isInstanceOf(PayKlikGatewayPort.PayKlikTimeoutException.class);
+            assertThat(interrupted.await(3, TimeUnit.SECONDS))
+                    .as("el timeout debe interrumpir la llamada al proveedor")
+                    .isTrue();
         } finally {
             client.shutdownExecutor();
         }
