@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -47,20 +50,33 @@ public class NotificationService {
      * Crea la solicitud desde el evento de negocio y devuelve de inmediato
      * en estado {@code PENDING}; el envío ocurre de forma asíncrona.
      */
+    @Transactional
     public NotificationRequest requestNotification(NotificationEventType eventType, NotificationChannel channel,
                                                      String recipient, UUID sourceAggregateId, UUID correlationId) {
         NotificationRequest request = NotificationRequest.create(
                 eventType, channel, recipient, sourceAggregateId, correlationId, clock.instant());
         repository.save(request);
         UUID id = request.getId();
-        dispatchExecutor.execute(() -> dispatch(id, true));
+        dispatchAfterCommit(id);
         return request;
+    }
+
+    private void dispatchAfterCommit(UUID notificationId) {
+        Runnable task = () -> dispatchExecutor.execute(() -> dispatch(notificationId, true));
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { task.run(); }
+            });
+        } else {
+            task.run();
+        }
     }
 
     void dispatch(UUID id, boolean allowRetry) {
         repository.findById(id).ifPresentOrElse(request -> {
             request.markAttempt(clock.instant());
-            repository.save(request);
+            request = repository.save(request);
             try {
                 provider.send(request.getChannel(), request.getRecipient(), request.getEventType());
                 request.markSent(clock.instant());

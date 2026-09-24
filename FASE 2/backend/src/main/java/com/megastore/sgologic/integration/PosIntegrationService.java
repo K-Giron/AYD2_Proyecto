@@ -3,6 +3,9 @@ package com.megastore.sgologic.integration;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
 import java.util.List;
@@ -34,14 +37,27 @@ public class PosIntegrationService {
         this.clock = clock;
     }
 
+    @Transactional
     public PosDelivery publish(UUID eventId, String eventType, UUID orderId, int storeNumber,
                                String payload, UUID correlationId) {
         Optional<PosDelivery> existing = repository.findByEventIdAndStoreNumber(eventId, storeNumber);
         if (existing.isPresent()) { return existing.get(); }
         PosDelivery delivery = repository.save(PosDelivery.create(eventId, eventType, orderId,
                 storeNumber, payload, correlationId, clock.instant()));
-        dispatchExecutor.execute(() -> deliver(delivery.getId()));
+        dispatchAfterCommit(delivery.getId());
         return delivery;
+    }
+
+    private void dispatchAfterCommit(UUID deliveryId) {
+        Runnable dispatch = () -> dispatchExecutor.execute(() -> deliver(deliveryId));
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                && TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override public void afterCommit() { dispatch.run(); }
+            });
+        } else {
+            dispatch.run();
+        }
     }
 
     void deliver(UUID deliveryId) {
@@ -54,7 +70,7 @@ public class PosIntegrationService {
             return;
         }
         delivery.markAttempt(clock.instant());
-        repository.save(delivery);
+        delivery = repository.save(delivery);
         try {
             PosGatewayPort.DeliveryResult result = gateway.deliver(delivery.getStoreNumber(),
                     delivery.getEventId(), delivery.getEventType(), delivery.getOrderId(),

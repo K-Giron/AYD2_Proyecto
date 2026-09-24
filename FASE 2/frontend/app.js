@@ -1,19 +1,10 @@
 "use strict";
 
-/**
- * UI-01: panel operativo de Kevin Girón. Llama a los endpoints reales de
- * logistics, notifications, query e incidents — los únicos módulos
- * funcionales de este incremento. No simula checkout: ver la tarjeta
- * "Checkout" y RESPONSABILIDADES_INTEGRANTES_FASE_2.md §8.3.
- *
- * Todo el estado por orden se recarga desde el backend en cada "Cargar";
- * localStorage solo recuerda el último Order ID escrito, como conveniencia
- * de este navegador — no es una fuente de verdad.
- */
+/** Centro de operaciones interno conectado a los módulos reales del prototipo. */
 
 // sgoRequireSession redirige a login.html si no hay sesión de personal interno;
 // la redirección es asíncrona, así que se protege el resto contra `session === null`.
-const session = sgoRequireSession("STAFF");
+const session = sgoRequireAnySession(["STAFF", "FINANCE", "SAT_AUDITOR"]);
 
 const CORRELATION_ID = crypto.randomUUID();
 document.getElementById("correlation-id").textContent = CORRELATION_ID;
@@ -24,6 +15,7 @@ if (session) {
 
 const ORDER_ID_STORAGE_KEY = "sgo-logic.lastOrderId";
 let currentOrderId = null;
+let currentAuditEntries = [];
 
 // ---------------------------------------------------------------------
 // Utilidades generales
@@ -41,7 +33,7 @@ function escapeHtml(value) {
 }
 
 function formatDate(iso) {
-    if (!iso) return "—";
+    if (!iso) return "Sin fecha";
     try {
         return new Date(iso).toLocaleString("es-GT", { dateStyle: "short", timeStyle: "medium" });
     } catch {
@@ -79,8 +71,8 @@ function formToObject(form) {
 }
 
 /** Cliente HTTP mínimo: siempre propaga X-Correlation-Id y, si se indica, Idempotency-Key. */
-async function apiCall(method, path, body, idempotencyKey) {
-    const headers = { "X-Correlation-Id": CORRELATION_ID };
+async function apiCall(method, path, body, idempotencyKey, additionalHeaders) {
+    const headers = { "X-Correlation-Id": CORRELATION_ID, ...(additionalHeaders || {}) };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
     const response = await fetch(path, {
@@ -89,7 +81,8 @@ async function apiCall(method, path, body, idempotencyKey) {
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     const text = await response.text();
-    const data = text ? JSON.parse(text) : null;
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = { message: text }; }
     if (!response.ok) {
         const error = new Error((data && data.message) || `HTTP ${response.status}`);
         error.status = response.status;
@@ -118,9 +111,11 @@ async function checkBackendStatus() {
         const status = await apiCall("GET", "/api/v1/platform/status");
         dot.className = "status-dot up";
         text.textContent = `Backend activo (${status.applicationName})`;
+        document.querySelectorAll(".integration-strip .status-dot").forEach(node => { node.className = "status-dot up"; });
     } catch {
         dot.className = "status-dot down";
         text.textContent = "Backend no responde";
+        document.querySelectorAll(".integration-strip .status-dot").forEach(node => { node.className = "status-dot down"; });
     }
 }
 
@@ -147,14 +142,56 @@ el("load-order-btn").addEventListener("click", () => loadOrder(el("order-id-inpu
 el("order-id-input").addEventListener("keydown", (event) => {
     if (event.key === "Enter") loadOrder(el("order-id-input").value);
 });
-el("new-order-btn").addEventListener("click", () => {
-    const id = crypto.randomUUID();
-    el("order-id-input").value = id;
-    loadOrder(id);
+
+function money(value) {
+    return new Intl.NumberFormat("es-GT", { style: "currency", currency: "GTQ" }).format(Number(value || 0));
+}
+
+const ATTENTION_STATUSES = new Set(["PAYMENT_REJECTED", "PAYMENT_INDETERMINATE", "FISCAL_REJECTED", "CANCELLED"]);
+const CONFIRMED_STATUSES = new Set(["CONFIRMED", "PREPARING", "IN_TRANSIT", "DELIVERED"]);
+
+async function loadOperationsOverview() {
+    const container = el("operations-orders");
+    try {
+        const orders = await apiCall("GET", "/api/v1/orders");
+        el("metric-orders").textContent = orders.length;
+        el("metric-confirmed").textContent = orders.filter(order => CONFIRMED_STATUSES.has(order.status)).length;
+        el("metric-attention").textContent = orders.filter(order => ATTENTION_STATUSES.has(order.status)).length;
+        el("metric-revenue").textContent = money(orders.reduce((sum, order) => sum + Number(order.total || 0), 0));
+        container.innerHTML = orders.length ? `<div class="operations-table" role="table">
+            <div class="operations-row operations-row-head" role="row"><span>Orden</span><span>Canal</span><span>Fecha</span><span>Total</span><span>Estado</span><span></span></div>
+            ${orders.slice(0, 12).map(order => `<div class="operations-row" role="row">
+                <span data-label="Orden"><strong>${escapeHtml(order.id.slice(0, 8))}</strong><small>${escapeHtml(order.customerId.slice(0, 8))}</small></span>
+                <span data-label="Canal">${escapeHtml(order.channel)}</span>
+                <span data-label="Fecha">${formatDate(order.createdAt)}</span>
+                <span data-label="Total">${money(order.total)}</span>
+                <span data-label="Estado">${badge(order.status)}</span>
+                <span><button class="btn btn-ghost btn-sm" data-admin-order="${order.id}">Gestionar</button></span>
+            </div>`).join("")}</div>` : `<p class="empty-state">Todavía no hay órdenes. Las compras realizadas desde la tienda aparecerán aquí.</p>`;
+    } catch (error) {
+        container.innerHTML = `<p class="empty-state">No fue posible cargar la operación: ${escapeHtml(error.message)}</p>`;
+    }
+}
+
+el("operations-orders").addEventListener("click", event => {
+    const button = event.target.closest("[data-admin-order]");
+    if (!button) return;
+    el("order-id-input").value = button.dataset.adminOrder;
+    loadOrder(button.dataset.adminOrder);
+    el("order-id-input").scrollIntoView({ behavior: "smooth", block: "center" });
 });
+el("refresh-operations-btn").addEventListener("click", loadOperationsOverview);
 
 function refreshAll() {
-    return Promise.all([refreshSummary(), refreshDispatch(), refreshNotifications(), refreshIncidents()]);
+    return Promise.all([refreshSummary(), refreshDispatch(), refreshNotifications(), refreshIncidents(), refreshAuditHistory()]);
+}
+
+async function transitionOrderStatus(status, reason) {
+    return apiCall("PATCH", `/api/v1/orders/${currentOrderId}/status`, {
+        status,
+        actor: `staff:${session?.email || "internal"}`,
+        reason,
+    });
 }
 
 // ---------------------------------------------------------------------
@@ -173,48 +210,43 @@ async function refreshSummary() {
     const body = el("summary-body");
     if (!currentOrderId) return;
     try {
-        const summary = await apiCall("GET", `/api/v1/orders/${encodeURIComponent(currentOrderId)}/summary`);
+        const [orderResult, paymentsResult, shipmentsResult, incidentsResult] = await Promise.allSettled([
+            apiCall("GET", `/api/v1/orders/${encodeURIComponent(currentOrderId)}`),
+            apiCall("GET", `/api/v1/payment-attempts?orderId=${encodeURIComponent(currentOrderId)}`),
+            apiCall("GET", `/api/v1/shipments?orderId=${encodeURIComponent(currentOrderId)}`),
+            apiCall("GET", `/api/v1/incidents?orderId=${encodeURIComponent(currentOrderId)}`),
+        ]);
+        if (orderResult.status === "rejected") throw orderResult.reason;
+        const order = orderResult.value;
+        const payments = paymentsResult.status === "fulfilled" ? paymentsResult.value : [];
+        const shipments = shipmentsResult.status === "fulfilled" ? shipmentsResult.value : [];
+        const incidents = incidentsResult.status === "fulfilled" ? incidentsResult.value : [];
+        const latestShipment = shipments[0];
+        const values = {
+            orderStatus: order.status,
+            paymentStatus: payments[0]?.status,
+            dispatchStatus: latestShipment?.status,
+            deliveryStatus: latestShipment?.status === "DELIVERED" ? "DELIVERED" : null,
+            incidentStatus: incidents[0]?.status,
+        };
         const tiles = SUMMARY_FIELDS.map(([key, label]) => {
-            const field = summary[key];
-            const value = field && field.status !== null ? escapeHtml(field.status) : "Sin dato";
-            const staleBadge = field && field.status !== null
-                ? (field.stale
-                    ? '<span class="badge badge-stale">desactualizado</span>'
-                    : '<span class="badge badge-ok">al día</span>')
-                : "";
+            const value = values[key] ? escapeHtml(values[key]) : "Sin dato";
             return `
                 <div class="summary-tile">
                     <div class="summary-tile-label">${label}</div>
                     <div class="summary-tile-value">${value}</div>
-                    ${staleBadge}
+                    ${values[key] ? badge(values[key]) : '<span class="badge badge-muted">pendiente</span>'}
                 </div>`;
         }).join("");
-        body.innerHTML = `<div class="summary-grid">${tiles}</div>`;
+        body.innerHTML = `<div class="order-context"><span>Orden ${escapeHtml(order.id)}</span><strong>${money(order.total)}</strong></div><div class="summary-grid">${tiles}</div>`;
     } catch (error) {
         if (error.status === 404) {
-            body.innerHTML = `<p class="empty-state">
-                Sin resumen todavía para esta orden. Esto se llenará automáticamente cuando exista un
-                consumidor del Outbox (BB-04); mientras tanto puedes usar "Alimentar resumen manualmente"
-                abajo.
-            </p>`;
+            body.innerHTML = `<p class="empty-state">No existe una orden con ese identificador.</p>`;
         } else {
             body.innerHTML = `<p class="empty-state">Error al consultar el resumen: ${escapeHtml(error.message)}</p>`;
         }
     }
 }
-
-el("summary-ingest-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const { source, status } = formToObject(event.target);
-    try {
-        await apiCall("POST", "/api/v1/query/order-summary", { orderId: currentOrderId, source, status });
-        toast("Resumen actualizado.", "ok");
-        event.target.reset();
-        await refreshSummary();
-    } catch (error) {
-        toast(`No se pudo actualizar el resumen: ${error.message}`, "error");
-    }
-});
 
 document.querySelector('[data-action="refresh-summary"]').addEventListener("click", refreshSummary);
 
@@ -281,8 +313,20 @@ el("dispatch-list").addEventListener("click", async (event) => {
         } else if (action === "in-transit" || action === "delivered") {
             const status = action === "in-transit" ? "IN_TRANSIT" : "DELIVERED";
             await apiCall("POST", `/api/v1/shipments/${shipmentId}/tracking-events`, { status });
+            const order = await apiCall("GET", `/api/v1/orders/${currentOrderId}`);
+            if (status === "IN_TRANSIT" && order.status === "PREPARING") {
+                await transitionOrderStatus("IN_TRANSIT", "LogiExpress confirmó la salida del despacho");
+            }
+            if (status === "DELIVERED") {
+                if (order.status === "PREPARING") {
+                    await transitionOrderStatus("IN_TRANSIT", "Despacho sincronizado antes de confirmar la entrega");
+                }
+                if (["PREPARING", "IN_TRANSIT"].includes(order.status)) {
+                    await transitionOrderStatus("DELIVERED", "LogiExpress confirmó la entrega al cliente");
+                }
+            }
             toast("Evento de tracking registrado.", "ok");
-            await refreshDispatch();
+            await Promise.all([refreshDispatch(), refreshSummary(), loadOperationsOverview()]);
         }
     } catch (error) {
         toast(`No se pudo completar la acción: ${error.message}`, "error");
@@ -293,16 +337,23 @@ el("dispatch-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const values = formToObject(event.target);
     try {
+        const order = await apiCall("GET", `/api/v1/orders/${currentOrderId}`);
+        if (order.status !== "CONFIRMED" && order.status !== "PREPARING") {
+            throw new Error(`La orden debe estar CONFIRMED para iniciar despacho; estado actual: ${order.status}.`);
+        }
         await apiCall(
             "POST",
             "/api/v1/shipments",
             { orderId: currentOrderId, origin: values.origin, destination: values.destination },
             crypto.randomUUID()
         );
+        if (order.status === "CONFIRMED") {
+            await transitionOrderStatus("PREPARING", "Despacho creado y enviado a LogiExpress");
+        }
         toast("Despacho creado.", "ok");
         event.target.reset();
         event.target.closest("details").open = false;
-        await refreshDispatch();
+        await Promise.all([refreshDispatch(), refreshSummary(), loadOperationsOverview()]);
     } catch (error) {
         toast(`No se pudo crear el despacho: ${error.message}`, "error");
     }
@@ -449,10 +500,91 @@ el("incident-form").addEventListener("submit", async (event) => {
 document.querySelector('[data-action="refresh-incidents"]').addEventListener("click", refreshIncidents);
 
 // ---------------------------------------------------------------------
+// ERP / POS y evidencia de auditoría
+// ---------------------------------------------------------------------
+
+async function refreshAuditHistory() {
+    if (!currentOrderId) return;
+    const container = el("audit-list");
+    if (!["FINANCE", "SAT_AUDITOR"].includes(session?.role)) {
+        currentAuditEntries = [];
+        container.innerHTML = `<p class="empty-state">La evidencia transversal requiere una sesión de Finanzas o Auditor SAT. El personal operativo conserva acceso al historial básico de la orden.</p>`;
+        return;
+    }
+    try {
+        currentAuditEntries = await apiCall("GET",
+            `/api/v1/audit/events?orderId=${encodeURIComponent(currentOrderId)}`,
+            undefined, undefined,
+            { "X-Actor-Id": session.email, "X-Actor-Role": session.role });
+        renderList(container, currentAuditEntries, entry => `<div class="item-row audit-entry">
+            <div class="item-row-head"><div><div class="item-row-title">${escapeHtml(entry.action)}</div>
+            <div class="item-row-meta">${escapeHtml(entry.actorId)} · ${formatDate(entry.occurredAt)}</div></div>${badge(entry.result)}</div>
+            <p>${escapeHtml(entry.previousState?.status || "INICIO")} → ${escapeHtml(entry.newState?.status || "SIN CAMBIO")} · ${escapeHtml(entry.metadata?.reason || "Sin descripción")}</p>
+            <code>correlationId=${escapeHtml(entry.correlationId)} · hash=${escapeHtml(entry.evidenceHash)}</code>
+        </div>`, "No existe evidencia para esta orden.");
+    } catch (error) {
+        currentAuditEntries = [];
+        container.innerHTML = `<p class="empty-state">No fue posible recuperar la evidencia: ${escapeHtml(error.message)}</p>`;
+    }
+}
+
+el("export-audit-btn").addEventListener("click", async () => {
+    if (!currentOrderId) { toast("Carga una orden antes de exportar.", "error"); return; }
+    if (!["FINANCE", "SAT_AUDITOR"].includes(session?.role)) {
+        toast("La exportación requiere una sesión de Finanzas o Auditor SAT.", "error");
+        return;
+    }
+    try {
+        const entries = await apiCall("GET",
+            `/api/v1/audit/exports?orderId=${encodeURIComponent(currentOrderId)}`,
+            undefined, undefined,
+            { "X-Actor-Id": session.email, "X-Actor-Role": session.role });
+        const payload = { orderId: currentOrderId, exportedAt: new Date().toISOString(), correlationId: CORRELATION_ID, entries };
+        const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+        const link = document.createElement("a");
+        link.href = url; link.download = `auditoria-${currentOrderId}.json`; link.click();
+        URL.revokeObjectURL(url);
+        toast("Evidencia exportada y acceso registrado.", "ok");
+    } catch (error) {
+        toast(`No se pudo exportar la evidencia: ${error.message}`, "error");
+    }
+});
+
+el("erp-sync-btn").addEventListener("click", async () => {
+    if (!currentOrderId) { toast("Selecciona una orden.", "error"); return; }
+    try {
+        const order = await apiCall("GET", `/api/v1/orders/${currentOrderId}`);
+        if (!CONFIRMED_STATUSES.has(order.status)) throw new Error("ERP solo recibe ventas confirmadas.");
+        const grandTotal = Number(order.total);
+        const netTotal = Number((grandTotal / 1.12).toFixed(2));
+        const taxTotal = Number((grandTotal - netTotal).toFixed(2));
+        const sale = await apiCall("POST", "/api/v1/integrations/erp/sales", { orderId: order.id, netTotal, taxTotal, grandTotal, currency: "GTQ", confirmedAt: order.updatedAt });
+        el("legacy-result").innerHTML = `<div class="integration-success"><strong>Venta registrada en ERP-Core</strong><span>Estado ${escapeHtml(sale.status)} · ${escapeHtml(sale.id)}</span></div>`;
+        toast("Venta disponible para el siguiente lote ERP.", "ok");
+    } catch (error) { toast(error.message, "error"); }
+});
+
+el("pos-publish-btn").addEventListener("click", async () => {
+    if (!currentOrderId) { toast("Selecciona una orden.", "error"); return; }
+    const storeNumber = Number(el("pos-store-number").value);
+    if (storeNumber < 1 || storeNumber > 32) { toast("La tienda POS debe estar entre 1 y 32.", "error"); return; }
+    try {
+        const order = await apiCall("GET", `/api/v1/orders/${currentOrderId}`);
+        const eventKey = `sgo.pos-event.${order.id}.${storeNumber}.${order.status}`;
+        let eventId = localStorage.getItem(eventKey);
+        if (!eventId) { eventId = crypto.randomUUID(); localStorage.setItem(eventKey, eventId); }
+        const delivery = await apiCall("POST", "/api/v1/integrations/pos/events", { eventId, eventType: "ORDER_STATUS_CHANGED", orderId: order.id, storeNumber, payload: { orderId: order.id, status: order.status, updatedAt: order.updatedAt } });
+        el("legacy-result").innerHTML = `<div class="integration-success"><strong>Evento publicado a tienda ${storeNumber}</strong><span>Estado ${escapeHtml(delivery.status)} · intento ${delivery.attempts}</span></div>`;
+        toast("Evento POS en proceso de entrega.", "ok");
+    } catch (error) { toast(error.message, "error"); }
+});
+
+// ---------------------------------------------------------------------
 // Arranque
 // ---------------------------------------------------------------------
 
 checkBackendStatus();
+loadOperationsOverview();
 
 const savedOrderId = localStorage.getItem(ORDER_ID_STORAGE_KEY);
 if (savedOrderId) {

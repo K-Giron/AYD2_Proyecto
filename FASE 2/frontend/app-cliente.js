@@ -1,392 +1,317 @@
 "use strict";
 
-/**
- * Vista de cliente (UI-01, Kevin Girón). El catálogo y el carrito son una
- * vitrina de referencia sin backend (no existe INV-01 todavía); el
- * seguimiento de pedido, las notificaciones y las devoluciones sí llaman a
- * los endpoints reales de logistics/notifications/query/incidents.
- */
-
-// sgoRequireSession redirige a login.html si no hay sesión de cliente; la
-// redirección es asíncrona, así que se protege el resto contra `session === null`.
 const session = sgoRequireSession("CLIENTE");
-
 const CORRELATION_ID = crypto.randomUUID();
-document.getElementById("correlation-id").textContent = CORRELATION_ID;
-if (session) {
-    document.getElementById("session-name").textContent = session.name;
-    document.getElementById("logout-btn").addEventListener("click", sgoLogout);
+const CUSTOMER_ID = session?.customerId || "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const CART_CONTEXT_KEY = `sgo.megastore.active-cart.${CUSTOMER_ID}`;
+const LAST_ORDER_KEY = `sgo.megastore.last-order.${CUSTOMER_ID}`;
+const PURCHASE_INTENT_KEY = "sgo.purchaseIntent";
+const FAVORITES_KEY = "sgo.megastore.favorites";
+
+let CATALOG = [];
+
+let activeCart = null;
+let catalogAvailability = new Map();
+
+function el(id) { return document.getElementById(id); }
+function escapeHtml(value) { return String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function money(value) { return new Intl.NumberFormat("es-GT", { style: "currency", currency: "GTQ" }).format(Number(value || 0)); }
+function formatDate(iso) { return iso ? new Date(iso).toLocaleString("es-GT", { dateStyle: "medium", timeStyle: "short" }) : "Sin fecha"; }
+function isValidUuid(value) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value).trim()); }
+function productById(id) { return CATALOG.find(product => product.id === id); }
+function getFavorites() { try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []); } catch { return new Set(); } }
+function saveFavorites(favorites) { localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites])); }
+
+async function loadCatalogDefinition() {
+    const response = await fetch("catalog.json", { cache: "no-store" });
+    if (!response.ok) throw new Error("No se pudo cargar el catálogo de MegaStore.");
+    CATALOG = await response.json();
 }
 
-// ---------------------------------------------------------------------
-// Utilidades (mismas convenciones que app.js, self-contenidas)
-// ---------------------------------------------------------------------
-
-function el(id) {
-    return document.getElementById(id);
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-}
-
-function formatDate(iso) {
-    if (!iso) return "—";
-    try {
-        return new Date(iso).toLocaleString("es-GT", { dateStyle: "short", timeStyle: "short" });
-    } catch {
-        return iso;
-    }
-}
-
-function toast(message, type) {
-    const stack = el("toast-stack");
+function toast(message, type = "") {
     const node = document.createElement("div");
-    node.className = `toast ${type || ""}`.trim();
+    node.className = `toast ${type}`.trim();
     node.textContent = message;
-    stack.appendChild(node);
-    setTimeout(() => node.remove(), 5000);
+    el("toast-stack").appendChild(node);
+    setTimeout(() => node.remove(), 4500);
 }
 
-const STATUS_TONE = {
-    DELIVERED: "ok", SENT: "ok", REFUNDED: "ok", LABEL_ISSUED: "ok", APPROVED: "ok", CONFIRMED: "ok",
-    PENDING: "warn", PREPARING: "warn", REGISTERED: "warn", IN_TRANSIT: "warn", ASSIGNED: "warn",
-    LABEL_REQUESTED: "warn", READY_FOR_PICKUP: "warn", EVALUATING: "warn",
-    FAILED: "error", REJECTED: "error", LABEL_FAILED: "error", CANCELLED: "error", RETURNED: "error",
-};
-
-function badge(status) {
-    if (!status) return `<span class="badge badge-muted">sin dato</span>`;
-    const tone = STATUS_TONE[status] || "muted";
-    return `<span class="badge badge-${tone}">${escapeHtml(status)}</span>`;
-}
-
-function isValidUuid(value) {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
-}
-
-async function apiCall(method, path, body) {
-    const headers = { "X-Correlation-Id": CORRELATION_ID };
+async function apiCall(method, path, body, extraHeaders = {}) {
+    const headers = { "X-Correlation-Id": CORRELATION_ID, ...extraHeaders };
     if (body !== undefined) headers["Content-Type"] = "application/json";
-    const response = await fetch(path, {
-        method,
-        headers,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    const response = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
     const text = await response.text();
-    const data = text ? JSON.parse(text) : null;
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = { message: text }; }
     if (!response.ok) {
-        const error = new Error((data && data.message) || `HTTP ${response.status}`);
+        const error = new Error(data?.message || `Error HTTP ${response.status}`);
         error.status = response.status;
-        error.body = data;
         throw error;
     }
     return data;
 }
 
-// ---------------------------------------------------------------------
-// Navegación por pestañas
-// ---------------------------------------------------------------------
+function storedCartContext() {
+    try { return JSON.parse(localStorage.getItem(CART_CONTEXT_KEY)) || null; } catch { return null; }
+}
 
-document.querySelectorAll(".store-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-        document.querySelectorAll(".store-tab").forEach((t) => t.classList.toggle("active", t === tab));
-        document.querySelectorAll(".store-view").forEach((view) => {
-            view.classList.toggle("active", view.id === `view-${tab.dataset.view}`);
-        });
+async function ensureCart() {
+    if (activeCart?.status === "ACTIVE") return activeCart;
+    let context = storedCartContext();
+    if (!context) {
+        context = { idempotencyKey: `cart-${crypto.randomUUID()}` };
+        localStorage.setItem(CART_CONTEXT_KEY, JSON.stringify(context));
+    }
+    activeCart = await apiCall("POST", "/api/v1/carts", { customerId: CUSTOMER_ID, channel: "WEB" }, { "Idempotency-Key": context.idempotencyKey });
+    renderCatalog(); renderCart();
+    return activeCart;
+}
+
+async function loadAvailability() {
+    const results = await Promise.allSettled(CATALOG.map(product => apiCall("GET", `/api/v1/inventory/stock?productId=${product.id}`)));
+    results.forEach((result, index) => {
+        if (result.status === "fulfilled") catalogAvailability.set(CATALOG[index].id, result.value.reduce((sum, stock) => sum + Number(stock.quantityAvailable ?? stock.availableQuantity ?? 0), 0));
     });
-});
+    const connected = results.filter(result => result.status === "fulfilled").length;
+    el("catalog-status").textContent = connected === CATALOG.length ? "Inventario en línea" : "Disponibilidad parcial";
+    renderCatalog();
+}
 
-// ---------------------------------------------------------------------
-// Catálogo (mock, decorativo) + carrito (localStorage, solo en este navegador)
-// ---------------------------------------------------------------------
+function cartQuantity(productId) { return activeCart?.items?.find(item => item.productId === productId)?.quantity || 0; }
+function renderCartCount() {
+    const count = activeCart?.itemCount || 0;
+    el("cart-count").textContent = `${count} producto${count === 1 ? "" : "s"}`;
+}
 
-const CATALOG = [
-    { id: "SKU-1001", name: "Licuadora 10 velocidades", price: 349.0, emoji: "🥤" },
-    { id: "SKU-1002", name: "Set de sartenes antiadherentes", price: 599.0, emoji: "🍳" },
-    { id: "SKU-1003", name: "Audífonos inalámbricos", price: 249.0, emoji: "🎧" },
-    { id: "SKU-1004", name: "Mochila para laptop", price: 189.0, emoji: "🎒" },
-    { id: "SKU-1005", name: "Cafetera de goteo", price: 279.0, emoji: "☕" },
-    { id: "SKU-1006", name: "Lámpara de escritorio LED", price: 129.0, emoji: "💡" },
-];
+function productCard(product) {
+        const quantity = cartQuantity(product.id);
+        const stock = catalogAvailability.get(product.id);
+        const favorite = getFavorites().has(product.id);
+        return `<article class="product-card commerce-product-card">
+            <a class="product-card-image" href="producto.html?id=${encodeURIComponent(product.id)}"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" width="900" height="900" loading="lazy" /></a>
+            <button class="favorite-button ${favorite ? "active" : ""}" data-favorite-product="${product.id}" aria-label="${favorite ? "Quitar de favoritos" : "Agregar a favoritos"}" aria-pressed="${favorite}">♡</button>
+            <div class="product-meta"><span class="product-kicker">${escapeHtml(product.category)} · ${product.sku}</span><a class="product-title-link" href="producto.html?id=${encodeURIComponent(product.id)}"><h3 class="product-name">${escapeHtml(product.name)}</h3></a>
+            <div class="product-row"><div><span class="product-price">${money(product.price)}</span><span class="product-stock">${stock === undefined ? "Validación al reservar" : stock > 0 ? `${stock} disponibles` : "Agotado"}</span></div>
+            <div class="product-actions"><a href="producto.html?id=${encodeURIComponent(product.id)}">Ver detalle</a><button class="btn btn-primary btn-sm" data-add="${product.id}" ${stock === 0 ? "disabled" : ""}>${quantity ? `Agregar otro (${quantity})` : "Agregar"}</button></div></div></div>
+        </article>`;
+}
 
-const CART_STORAGE_KEY = "sgo-store.cart";
+function renderCatalog(filter = el("catalog-search")?.value || "") {
+    const normalized = filter.trim().toLowerCase();
+    const products = CATALOG.filter(product => `${product.name} ${product.category} ${product.sku}`.toLowerCase().includes(normalized));
+    el("product-grid").innerHTML = products.length ? products.map(productCard).join("") : `<p class="empty-state">No encontramos productos para esa búsqueda.</p>`;
+    renderCartCount();
+}
 
-function getCart() {
+function renderFavorites() {
+    const favorites = getFavorites();
+    const products = CATALOG.filter(product => favorites.has(product.id));
+    el("favorites-grid").innerHTML = products.length ? products.map(productCard).join("") : `<div class="empty-favorites"><span aria-hidden="true">♡</span><h2>Aún no guardas productos</h2><p>Marca el corazón de cualquier producto para encontrarlo aquí.</p><button class="btn btn-primary" data-empty-catalog>Explorar catálogo</button></div>`;
+}
+
+function toggleFavorite(productId) {
+    const favorites = getFavorites();
+    favorites.has(productId) ? favorites.delete(productId) : favorites.add(productId);
+    saveFavorites(favorites);
+    renderCatalog();
+    renderFavorites();
+}
+
+async function setQuantity(productId, quantity) {
+    const product = productById(productId);
+    if (!product) throw new Error("El producto seleccionado ya no está disponible en el catálogo.");
+    const cart = await ensureCart();
+    activeCart = quantity <= 0
+        ? await apiCall("DELETE", `/api/v1/carts/${cart.id}/items/${productId}`)
+        : await apiCall("PUT", `/api/v1/carts/${cart.id}/items/${productId}`, { productName: product.name, unitPrice: product.price, quantity });
+    renderCatalog(); renderCart();
+}
+
+async function consumePurchaseIntent() {
+    let productId = null;
+    try { productId = JSON.parse(sessionStorage.getItem(PURCHASE_INTENT_KEY))?.productId; } catch { productId = null; }
+    if (!productId || !productById(productId)) return;
     try {
-        return JSON.parse(localStorage.getItem(CART_STORAGE_KEY)) || {};
-    } catch {
-        return {};
+        await setQuantity(productId, cartQuantity(productId) + 1);
+        sessionStorage.removeItem(PURCHASE_INTENT_KEY);
+        selectView("checkout");
+        toast("Producto agregado. Revisa tu carrito para continuar.", "ok");
+    } catch (error) {
+        toast(error.message, "error");
     }
 }
-
-function saveCart(cart) {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-    renderCartCount(cart);
-}
-
-function renderCartCount(cart) {
-    const count = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-    const badgeEl = el("cart-count");
-    badgeEl.textContent = String(count);
-    badgeEl.classList.toggle("hidden", count === 0);
-}
-
-function renderCatalog() {
-    const cart = getCart();
-    el("product-grid").innerHTML = CATALOG.map((product) => `
-        <div class="product-card">
-            <div class="product-thumb">${product.emoji}</div>
-            <div class="product-name">${escapeHtml(product.name)}</div>
-            <div class="product-price">Q${product.price.toFixed(2)}</div>
-            <button class="btn btn-primary btn-sm" data-add-to-cart="${product.id}">
-                ${cart[product.id] ? `En el carrito (${cart[product.id]})` : "Agregar al carrito"}
-            </button>
-            <div class="product-note">Catálogo de referencia — no conectado a INV-01 todavía.</div>
-        </div>`).join("");
-}
-
-el("product-grid").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-add-to-cart]");
-    if (!button) return;
-    const cart = getCart();
-    const productId = button.dataset.addToCart;
-    cart[productId] = (cart[productId] || 0) + 1;
-    saveCart(cart);
-    renderCatalog();
-    toast("Agregado al carrito.", "ok");
-});
 
 function renderCart() {
-    const cart = getCart();
-    const entries = Object.entries(cart).filter(([, qty]) => qty > 0);
-    const container = el("cart-items");
-    if (entries.length === 0) {
-        container.innerHTML = `<p class="empty-state">Tu carrito está vacío. Ve al catálogo para agregar productos.</p>`;
-    } else {
-        container.innerHTML = entries.map(([productId, qty]) => {
-            const product = CATALOG.find((p) => p.id === productId);
-            return `
-                <div class="cart-line">
-                    <div>
-                        <div class="cart-line-name">${escapeHtml(product.name)}</div>
-                        <div class="cart-line-price">Q${product.price.toFixed(2)} c/u</div>
-                    </div>
-                    <div class="qty-control">
-                        <button data-qty="-1" data-product="${productId}">−</button>
-                        <span>${qty}</span>
-                        <button data-qty="1" data-product="${productId}">+</button>
-                    </div>
-                </div>`;
-        }).join("");
-    }
-
-    const subtotal = entries.reduce((sum, [productId, qty]) => {
-        const product = CATALOG.find((p) => p.id === productId);
-        return sum + product.price * qty;
-    }, 0);
-    const shipping = subtotal > 0 ? 35 : 0;
-    el("checkout-totals").innerHTML = `
-        <div class="totals-row"><span>Subtotal</span><span>Q${subtotal.toFixed(2)}</span></div>
-        <div class="totals-row"><span>Envío estimado</span><span>Q${shipping.toFixed(2)}</span></div>
-        <div class="totals-row total"><span>Total</span><span>Q${(subtotal + shipping).toFixed(2)}</span></div>`;
-    el("confirm-purchase-btn").disabled = entries.length === 0;
+    const items = activeCart?.items || [];
+    el("cart-items").innerHTML = items.length ? items.map(item => {
+        const product = productById(item.productId) || { mark: "MS" };
+        return `<div class="cart-line"><div class="cart-swatch" aria-hidden="true">${product.mark}</div><div><div class="cart-line-name">${escapeHtml(item.productName)}</div><div class="cart-line-price">${money(item.unitPrice)} por unidad</div></div><div class="qty-control"><button aria-label="Restar uno" data-quantity="${item.quantity - 1}" data-product="${item.productId}">−</button><span>${item.quantity}</span><button aria-label="Sumar uno" data-quantity="${item.quantity + 1}" data-product="${item.productId}">+</button></div></div>`;
+    }).join("") : `<p class="empty-state">Tu carrito está vacío. Elige una pieza de la colección para comenzar.</p>`;
+    const total = Number(activeCart?.total || 0);
+    el("checkout-totals").innerHTML = `<div class="totals-row"><span>Productos</span><span>${money(total)}</span></div><div class="totals-row"><span>Entrega</span><span>Se calcula al despachar</span></div><div class="totals-row total"><span>Total de productos</span><span>${money(total)}</span></div>`;
+    el("confirm-purchase-btn").disabled = !items.length;
+    renderCartCount();
 }
 
-el("cart-items").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-qty]");
-    if (!button) return;
-    const cart = getCart();
-    const productId = button.dataset.product;
-    const delta = Number(button.dataset.qty);
-    cart[productId] = Math.max(0, (cart[productId] || 0) + delta);
-    if (cart[productId] === 0) delete cart[productId];
-    saveCart(cart);
-    renderCart();
-});
-
-el("confirm-purchase-btn").addEventListener("click", () => {
-    const delivery = document.querySelector('input[name="delivery"]:checked').value;
-    const destination = el("checkout-destination").value.trim() || "(sin especificar)";
-    el("checkout-result").innerHTML = `
-        <div class="notice">
-            <strong>Así se vería tu confirmación de compra.</strong>
-            Elegiste <em>${escapeHtml(deliveryLabel(delivery))}</em> hacia <em>${escapeHtml(destination)}</em>.
-            El checkout real (carrito recuperable, cobro y factura) depende de <code>ORD-01</code>
-            (Jairo Gómez), <code>PAY-01</code> (Edson Sosa) y <code>FIS-01</code> (Andy Sánchez), que
-            todavía no existen en el backend — por eso ningún cargo ni orden se generó ahora.
-            Ve a "Mis pedidos" para ver despacho, notificaciones y devoluciones funcionando con datos
-            reales sobre una orden ya existente.
-        </div>`;
-});
-
-function deliveryLabel(value) {
-    return { CUSTOMER_PICKUP: "recoger en tienda", DISTRIBUTION_CENTER: "envío a domicilio", STORE: "envío desde tienda" }[value] || value;
+function selectView(name) {
+    document.querySelectorAll(".store-tab").forEach(tab => tab.classList.toggle("active", tab.dataset.view === name));
+    document.querySelectorAll(".store-view").forEach(view => view.classList.toggle("active", view.id === `view-${name}`));
+    if (name === "favorites") renderFavorites();
+    if (name === "checkout") renderCart();
+    if (name === "tracking") loadRecentOrders();
+    if (location.hash !== `#${name}`) history.replaceState(null, "", `#${name}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// ---------------------------------------------------------------------
-// Mis pedidos — QRY-01 (real) + LOG-02 (real) + NOT-01 (real)
-// ---------------------------------------------------------------------
+const FLOW_STEPS = ["Orden creada", "Inventario reservado", "Pago procesado", "Documento fiscal", "Orden confirmada"];
+function renderFlow(current, completed = false) {
+    el("checkout-result").innerHTML = `<div class="flow-status">${FLOW_STEPS.map((label, index) => `<div class="flow-step ${completed || index < current ? "done" : index === current ? "current" : ""}">${label}</div>`).join("")}</div>`;
+}
 
-const TRACKING_ORDER_KEY = "sgo-store.lastTrackedOrderId";
-
-const STEP_DEFS = [
-    { key: "confirmed", label: "Confirmado" },
-    { key: "preparing", label: "Preparando" },
-    { key: "transit", label: "En tránsito" },
-    { key: "delivered", label: "Entregado" },
-];
-
-function stepIndexFromShipmentStatus(status) {
-    switch (status) {
-        case "DELIVERED": return 3;
-        case "IN_TRANSIT": return 2;
-        case "LABEL_ISSUED":
-        case "READY_FOR_PICKUP":
-        case "LABEL_REQUESTED":
-        case "LABEL_FAILED": return 1;
-        case "ASSIGNED":
-        default: return 0;
+function sleep(milliseconds) { return new Promise(resolve => setTimeout(resolve, milliseconds)); }
+async function waitForFiscal(documentId) {
+    for (let attempt = 0; attempt < 12; attempt++) {
+        const document = await apiCall("GET", `/api/v1/fiscal-documents/${documentId}`);
+        if (document.status !== "FISCAL_PENDING") return document;
+        await sleep(500);
     }
+    return null;
+}
+
+async function completePurchase() {
+    const button = el("confirm-purchase-btn");
+    const fiscalName = el("fiscal-name").value.trim();
+    const taxIdentifier = el("fiscal-tax-id").value.trim();
+    if (!fiscalName || !taxIdentifier) { toast("Completa los datos fiscales.", "error"); return; }
+    button.disabled = true;
+    try {
+        const cart = await ensureCart();
+        const checkoutKey = `checkout-${cart.id}`;
+        renderFlow(0);
+        const order = await apiCall("POST", `/api/v1/carts/${cart.id}/checkout`, undefined, { "Idempotency-Key": checkoutKey, "X-Actor": `customer:${CUSTOMER_ID}` });
+        localStorage.setItem(LAST_ORDER_KEY, order.id);
+        renderFlow(1);
+        await apiCall("POST", `/api/v1/orders/${order.id}/inventory-reservations`, undefined, { "Idempotency-Key": `reserve-${order.id}`, "X-Actor": "SAGA" });
+        renderFlow(2);
+        const payment = await apiCall("POST", `/api/v1/orders/${order.id}/payment-attempts`, { method: "CARD", currency: "GTQ", paymentReference: "tok_demo_4242" }, { "Idempotency-Key": `payment-${order.id}`, "X-Actor": `customer:${CUSTOMER_ID}` });
+        if (payment.paymentStatus !== "APPROVED") throw new Error(payment.paymentStatus === "INDETERMINATE" ? "PayKlik no confirmó el cobro. La orden quedó guardada para conciliación." : "PayKlik rechazó el pago.");
+        renderFlow(3);
+        const fiscal = await apiCall("POST", `/api/v1/orders/${order.id}/fiscal-documents`, { paymentAttemptId: payment.paymentAttemptId, taxIdentifier, customerName: fiscalName, currency: "GTQ" }, { "Idempotency-Key": `fiscal-${order.id}`, "X-Actor": "SAGA" });
+        const resolvedFiscal = await waitForFiscal(fiscal.documentId);
+        if (!resolvedFiscal) throw new Error("SAT sigue procesando el documento. La orden permanece en estado fiscal pendiente.");
+        const synchronized = await apiCall("POST", `/api/v1/orders/${order.id}/fiscal-synchronization`, undefined, { "X-Actor": "SAGA" });
+        if (synchronized.order.status !== "CONFIRMED") throw new Error(`SAT devolvió el estado ${synchronized.fiscalStatus}.`);
+        renderFlow(5, true);
+        el("checkout-result").innerHTML += `<div class="checkout-success"><strong>Compra confirmada</strong><br />Orden ${escapeHtml(order.id)}<br />CUI ${escapeHtml(synchronized.cui)} · Serie ${escapeHtml(synchronized.series)}</div>`;
+        localStorage.removeItem(CART_CONTEXT_KEY); activeCart = null; await loadRecentOrders(); renderCatalog(); renderCart();
+    } catch (error) {
+        el("checkout-result").innerHTML = `<div class="checkout-error"><strong>No se completó el flujo.</strong><br />${escapeHtml(error.message)}</div>`;
+        button.disabled = false;
+    }
+}
+
+const STATUS_TONE = { DELIVERED:"ok",APPROVED:"ok",CONFIRMED:"ok",FISCAL_APPROVED:"ok",SENT:"ok",IN_TRANSIT:"warn",PREPARING:"warn",FISCAL_PENDING:"warn",PAYMENT_INDETERMINATE:"warn",PAYMENT_REJECTED:"error",REJECTED:"error",CANCELLED:"error",FAILED:"error" };
+function badge(status) { return `<span class="badge badge-${STATUS_TONE[status] || "muted"}">${escapeHtml(status || "SIN DATO")}</span>`; }
+const ORDER_STEPS = ["Confirmado", "Preparando", "En tránsito", "Entregado"];
+function trackingIndex(order, shipments) {
+    const shipment = shipments[0];
+    if (shipment?.status === "DELIVERED" || order?.status === "DELIVERED") return 3;
+    if (shipment?.status === "IN_TRANSIT" || order?.status === "IN_TRANSIT") return 2;
+    if (["PREPARING","LABEL_REQUESTED","LABEL_ISSUED","READY_FOR_PICKUP"].includes(shipment?.status || order?.status)) return 1;
+    return 0;
+}
+
+async function loadRecentOrders() {
+    try {
+        const orders = await apiCall("GET", `/api/v1/orders?customerId=${CUSTOMER_ID}`);
+        el("recent-orders").innerHTML = orders.length ? orders.map(order => `<button class="order-chip" data-order="${order.id}">${order.id.slice(0,8)} · ${escapeHtml(order.status)}</button>`).join("") : `<p class="empty-state">Aún no tienes pedidos.</p>`;
+    } catch { el("recent-orders").innerHTML = ""; }
 }
 
 async function loadTracking(orderId) {
-    if (!isValidUuid(orderId)) {
-        toast("Ese número de orden no parece válido.", "error");
-        return;
-    }
-    localStorage.setItem(TRACKING_ORDER_KEY, orderId);
-    const container = el("tracking-result");
-    container.innerHTML = `<p class="empty-state">Buscando tu pedido…</p>`;
-
-    const [summaryResult, shipmentsResult, notificationsResult] = await Promise.allSettled([
-        apiCall("GET", `/api/v1/orders/${encodeURIComponent(orderId)}/summary`),
-        apiCall("GET", `/api/v1/shipments?orderId=${encodeURIComponent(orderId)}`),
-        apiCall("GET", `/api/v1/notifications?sourceAggregateId=${encodeURIComponent(orderId)}`),
+    if (!isValidUuid(orderId)) { toast("Ingresa un identificador de orden válido.", "error"); return; }
+    localStorage.setItem(LAST_ORDER_KEY, orderId); el("tracking-result").innerHTML = `<p class="empty-state">Consultando el recorrido completo.</p>`;
+    const [orderResult, shipmentsResult, notificationsResult, paymentsResult, fiscalResult] = await Promise.allSettled([
+        apiCall("GET", `/api/v1/orders/${orderId}`), apiCall("GET", `/api/v1/shipments?orderId=${orderId}`), apiCall("GET", `/api/v1/notifications?sourceAggregateId=${orderId}`), apiCall("GET", `/api/v1/payment-attempts?orderId=${orderId}`), apiCall("GET", `/api/v1/fiscal-documents/orders/${orderId}`)
     ]);
-
-    const summary = summaryResult.status === "fulfilled" ? summaryResult.value : null;
+    const order = orderResult.status === "fulfilled" ? orderResult.value : null;
     const shipments = shipmentsResult.status === "fulfilled" ? shipmentsResult.value : [];
     const notifications = notificationsResult.status === "fulfilled" ? notificationsResult.value : [];
-
-    if (!summary && shipments.length === 0 && notifications.length === 0) {
-        container.innerHTML = `<p class="empty-state">No encontramos información para ese número de orden todavía.</p>`;
-        return;
-    }
-
-    const mostRecentShipment = shipments[0];
-    const stepIndex = mostRecentShipment ? stepIndexFromShipmentStatus(mostRecentShipment.status) : 0;
-    const stepperHtml = STEP_DEFS.map((step, index) => {
-        const cls = index < stepIndex ? "done" : index === stepIndex ? "current" : "";
-        return `<div class="step ${cls}"><div class="step-dot"></div>${step.label}</div>`;
-    }).join("");
-
-    const shipmentHtml = shipments.length
-        ? shipments.map((shipment) => `
-            <div class="track-event">
-                <span>${escapeHtml(shipment.destination)} ${shipment.trackingNumber ? `· guía ${escapeHtml(shipment.trackingNumber)}` : ""}</span>
-                ${badge(shipment.status)}
-            </div>`).join("")
-        : `<p class="empty-state">Sin despacho registrado todavía.</p>`;
-
-    const notificationsHtml = notifications.length
-        ? notifications.map((n) => `
-            <div class="track-event">
-                <span>Te avisamos por ${escapeHtml(n.channel)} — ${escapeHtml(n.eventType)}</span>
-                ${badge(n.status)}
-            </div>`).join("")
-        : `<p class="empty-state">Sin notificaciones registradas todavía.</p>`;
-
-    const summaryHtml = summary
-        ? `<p class="hint">Última actualización: ${formatDate(summary.updatedAt)}</p>`
-        : `<p class="hint">Sin resumen consolidado todavía para esta orden.</p>`;
-
-    container.innerHTML = `
-        <div class="order-track-card">
-            <h2>Pedido ${escapeHtml(orderId)}</h2>
-            <div class="stepper">${stepperHtml}</div>
-            ${summaryHtml}
-            <h3>Despacho</h3>
-            <div class="track-events">${shipmentHtml}</div>
-            <h3>Notificaciones</h3>
-            <div class="track-events">${notificationsHtml}</div>
-        </div>`;
+    const payments = paymentsResult.status === "fulfilled" ? paymentsResult.value : [];
+    const fiscal = fiscalResult.status === "fulfilled" ? fiscalResult.value : [];
+    if (!order) { el("tracking-result").innerHTML = `<p class="empty-state">No encontramos esa orden.</p>`; return; }
+    const index = trackingIndex(order, shipments);
+    const events = [
+        `<div class="track-event"><span>Orden · ${formatDate(order.createdAt)}</span>${badge(order.status)}</div>`,
+        ...payments.map(item => `<div class="track-event"><span>PayKlik · ${formatDate(item.processedAt)}</span>${badge(item.status)}</div>`),
+        ...fiscal.map(item => `<div class="track-event"><span>SAT · ${escapeHtml(item.cui)}</span>${badge(item.status)}</div>`),
+        ...shipments.map(item => `<div class="track-event"><span>Despacho · ${escapeHtml(item.destination || "Destino registrado")}</span>${badge(item.status)}</div>`),
+        ...notifications.map(item => `<div class="track-event"><span>${escapeHtml(item.channel)} · ${escapeHtml(item.eventType)}</span>${badge(item.status)}</div>`)
+    ];
+    el("tracking-result").innerHTML = `<article class="order-track-card"><p class="eyebrow">Orden trazable</p><h2>${escapeHtml(order.id)}</h2><div class="stepper">${ORDER_STEPS.map((label,i) => `<div class="step ${i < index ? "done" : i === index ? "current" : ""}"><div class="step-dot"></div>${label}</div>`).join("")}</div><h3>Actividad consolidada</h3><div class="track-events">${events.join("")}</div></article>`;
 }
 
-el("tracking-load-btn").addEventListener("click", () => loadTracking(el("tracking-order-input").value));
-el("tracking-order-input").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") loadTracking(el("tracking-order-input").value);
-});
-
-// ---------------------------------------------------------------------
-// Devoluciones — INC-01 (real)
-// ---------------------------------------------------------------------
-
-el("return-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.target;
-    const values = Object.fromEntries(new FormData(form).entries());
-    if (!isValidUuid(values.orderId)) {
-        toast("Ese número de orden no parece válido.", "error");
-        return;
-    }
-    const payload = {
-        orderId: values.orderId,
-        type: values.type,
-        reason: values.reason,
-        partial: form.elements.partial.checked,
-        items: [{ sku: values.sku, quantity: Number(values.quantity) }],
-    };
+async function submitReturn(event) {
+    event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form).entries());
+    if (!isValidUuid(values.orderId)) { toast("Ingresa un identificador de orden válido.", "error"); return; }
     try {
-        await apiCall("POST", "/api/v1/incidents", payload);
-        toast("Solicitud enviada. Te avisaremos del resultado.", "ok");
-        form.reset();
-        el("returns-order-input").value = values.orderId;
-        await loadReturns(values.orderId);
-    } catch (error) {
-        toast(`No se pudo enviar la solicitud: ${error.message}`, "error");
-    }
-});
+        await apiCall("POST", "/api/v1/incidents", { orderId: values.orderId, type: values.type, reason: values.reason, partial: form.elements.partial.checked, items: [{ sku: values.sku, quantity: Number(values.quantity) }] });
+        toast("Solicitud registrada.", "ok"); el("returns-order-input").value = values.orderId; form.reset(); await loadReturns(values.orderId);
+    } catch (error) { toast(error.message, "error"); }
+}
 
 async function loadReturns(orderId) {
-    if (!isValidUuid(orderId)) {
-        toast("Ese número de orden no parece válido.", "error");
+    if (!isValidUuid(orderId)) { toast("Ingresa un identificador de orden válido.", "error"); return; }
+    try {
+        const incidents = await apiCall("GET", `/api/v1/incidents?orderId=${orderId}`);
+        el("returns-list").innerHTML = incidents.length ? incidents.map(item => `<div class="track-event"><span>${escapeHtml(item.reason)} · ${formatDate(item.createdAt)}</span>${badge(item.status)}</div>`).join("") : `<p class="empty-state">No hay solicitudes para esta orden.</p>`;
+    } catch (error) { el("returns-list").innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`; }
+}
+
+function bindEvents() {
+    document.querySelectorAll("[data-view]").forEach(tab => tab.addEventListener("click", () => selectView(tab.dataset.view)));
+    [el("product-grid"), el("favorites-grid")].forEach(grid => grid.addEventListener("click", async event => {
+        const favoriteButton = event.target.closest("[data-favorite-product]");
+        if (favoriteButton) { toggleFavorite(favoriteButton.dataset.favoriteProduct); return; }
+        const catalogButton = event.target.closest("[data-empty-catalog]");
+        if (catalogButton) { selectView("catalog"); return; }
+        const button = event.target.closest("[data-add]");
+        if (!button) return;
+        button.disabled = true;
+        try { await setQuantity(button.dataset.add, cartQuantity(button.dataset.add) + 1); toast("Producto agregado.", "ok"); }
+        catch (error) { toast(error.message, "error"); }
+        finally { button.disabled = false; }
+    }));
+    el("cart-items").addEventListener("click", async event => { const button = event.target.closest("[data-quantity]"); if (!button) return; button.disabled = true; try { await setQuantity(button.dataset.product, Number(button.dataset.quantity)); } catch (error) { toast(error.message, "error"); } });
+    el("catalog-search").addEventListener("input", event => renderCatalog(event.target.value));
+    el("client-search-btn").addEventListener("click", () => { selectView("catalog"); el("catalog-start").scrollIntoView({ behavior: "smooth" }); });
+    document.querySelector("[data-scroll-products]").addEventListener("click", () => el("catalog-start").scrollIntoView({ behavior: "smooth" }));
+    el("confirm-purchase-btn").addEventListener("click", completePurchase);
+    el("tracking-load-btn").addEventListener("click", () => loadTracking(el("tracking-order-input").value));
+    el("tracking-order-input").addEventListener("keydown", event => { if (event.key === "Enter") loadTracking(event.currentTarget.value); });
+    el("recent-orders").addEventListener("click", event => { const button = event.target.closest("[data-order]"); if (button) { el("tracking-order-input").value = button.dataset.order; loadTracking(button.dataset.order); } });
+    el("return-form").addEventListener("submit", submitReturn);
+    el("returns-load-btn").addEventListener("click", () => loadReturns(el("returns-order-input").value));
+}
+
+async function initialize() {
+    el("correlation-id").textContent = CORRELATION_ID;
+    if (!session) return;
+    el("session-name").textContent = session.name;
+    el("logout-btn").addEventListener("click", sgoLogout);
+    bindEvents();
+    try {
+        await loadCatalogDefinition();
+    } catch (error) {
+        toast(error.message, "error");
         return;
     }
-    const container = el("returns-list");
-    try {
-        const incidents = await apiCall("GET", `/api/v1/incidents?orderId=${encodeURIComponent(orderId)}`);
-        container.innerHTML = incidents.length
-            ? incidents.map((incident) => `
-                <div class="item-row">
-                    <div class="item-row-head">
-                        <div>
-                            <div class="item-row-title">${escapeHtml(incident.reason)}</div>
-                            <div class="item-row-meta">${formatDate(incident.createdAt)}${incident.refundAmount ? ` · reembolso Q${incident.refundAmount}` : ""}</div>
-                        </div>
-                        ${badge(incident.status)}
-                    </div>
-                </div>`).join("")
-            : `<p class="empty-state">Sin solicitudes todavía para esta orden.</p>`;
-    } catch (error) {
-        container.innerHTML = `<p class="empty-state">Error al consultar: ${escapeHtml(error.message)}</p>`;
-    }
+    renderCatalog(); renderFavorites(); renderCart();
+    const lastOrderId = localStorage.getItem(LAST_ORDER_KEY); if (lastOrderId) el("tracking-order-input").value = lastOrderId;
+    await Promise.allSettled([ensureCart(), loadAvailability(), loadRecentOrders()]);
+    await consumePurchaseIntent();
+    const requestedView = location.hash.slice(1);
+    if (["catalog", "favorites", "checkout", "tracking", "returns"].includes(requestedView)) selectView(requestedView);
 }
 
-el("returns-load-btn").addEventListener("click", () => loadReturns(el("returns-order-input").value));
-
-// ---------------------------------------------------------------------
-// Arranque
-// ---------------------------------------------------------------------
-
-renderCatalog();
-renderCartCount(getCart());
-renderCart();
-
-const lastOrderId = localStorage.getItem(TRACKING_ORDER_KEY);
-if (lastOrderId) {
-    el("tracking-order-input").value = lastOrderId;
-}
+initialize();

@@ -18,3 +18,10 @@ management:
   health:
     rabbit:
       enabled: true
+
+sgo:
+  messaging:
+    outbox:
+      enabled: false
+    consumers:
+      enabled: false

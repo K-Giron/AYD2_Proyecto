@@ -21,6 +21,7 @@ class ModularArchitectureTest {
             "query",
             "audit",
             "security",
+            "messaging",
             "integration",
             "shared"
     );
@@ -63,10 +64,15 @@ class ModularArchitectureTest {
             Set<String> dependencyIds = module.getDirectDependencies(modules).stream()
                     .map(dependency -> dependency.getTargetModule().getIdentifier().toString())
                     .collect(Collectors.toSet());
+            Set<String> allowed = switch (module.getIdentifier().toString()) {
+                case "orders" -> Set.of(SHARED_MODULE, "inventory", "payments", "fiscal", "messaging", "audit");
+                case "query" -> Set.of(SHARED_MODULE, "messaging");
+                case "notifications" -> Set.of(SHARED_MODULE, "messaging");
+                default -> Set.of(SHARED_MODULE);
+            };
             assertThat(dependencyIds)
-                    .as("El módulo %s solo puede depender de shared hasta que el equipo apruebe otro contrato",
-                            module.getIdentifier())
-                    .isSubsetOf(Set.of(SHARED_MODULE));
+                    .as("El módulo %s solo puede depender de contratos aprobados", module.getIdentifier())
+                    .isSubsetOf(allowed);
         });
     }
 }

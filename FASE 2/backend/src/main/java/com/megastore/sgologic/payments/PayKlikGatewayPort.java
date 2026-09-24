@@ -2,12 +2,16 @@ package com.megastore.sgologic.payments;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /** Contrato simulado de PayKlik entregado por BB-06 para PAY-01/PAY-02. */
 public interface PayKlikGatewayPort {
 
     AuthorizationResult authorize(AuthorizationRequest request);
+
+    /** Consulta previa a cualquier eventual reintento para evitar doble cobro. */
+    Optional<AuthorizationResult> findByIdempotencyKey(String idempotencyKey);
 
     record AuthorizationRequest(
             UUID orderId,

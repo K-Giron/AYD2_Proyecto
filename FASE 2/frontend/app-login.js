@@ -36,7 +36,9 @@ document.getElementById("login-form").addEventListener("submit", (event) => {
         errorEl.classList.remove("hidden");
         return;
     }
-    if (account.role !== selectedRole) {
+    const selectedInternal = selectedRole === "STAFF";
+    const accountIsInternal = ["STAFF", "FINANCE", "SAT_AUDITOR"].includes(account.role);
+    if ((selectedInternal && !accountIsInternal) || (!selectedInternal && account.role !== "CLIENTE")) {
         const otherLabel = account.role === "CLIENTE" ? "Cliente" : "Personal interno";
         errorEl.textContent = `Esa cuenta pertenece al perfil "${otherLabel}". Cambia la pestaña de arriba.`;
         errorEl.classList.remove("hidden");

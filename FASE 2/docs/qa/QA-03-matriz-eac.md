@@ -4,7 +4,7 @@
 |---|---|
 | Responsable | Kevin Girón (PO-QA) |
 | Fuente | [`Docs/DDA.md`](../../../Docs/DDA.md), §4.2 |
-| Corte | 2026-09-22 |
+| Corte | 2026-09-23 |
 | Estado | Instantánea viva — se actualiza conforme el equipo entrega evidencia, no una medición final |
 
 ## 1. Criterio de uso
@@ -19,29 +19,29 @@
 
 | ID | Atributo (DDA) | Medida de respuesta (DDA) | Estado | Evidencia | Responsable del pendiente |
 |---|---|---|---|---|---|
-| EaC-01 | Rendimiento — consulta de orden | 100 % de consultas ≤ 5 s, con p50/p95/p99 | **Parcial** | `GET /api/v1/orders/{orderId}/summary` implementado (QRY-01) y probado funcionalmente: `docker compose up` real, respuesta en un solo salto de base de datos indexada por PK, `HTTP 200` en la prueba de humo del 2026-09-22. Falta el escenario de validación con datos reales de Orders/Payments/Fiscal y medición p50/p95/p99 bajo carga. | Kevin (medición formal) junto con QA-02 (Edson, ambiente de carga) |
-| EaC-02 | Rendimiento/Auditabilidad — evidencia de transacción | < 1 s | **Bloqueado** | AUD-01 (registro de auditoría) no existe todavía en el repositorio. | Edson Sosa (AUD-01) |
+| EaC-01 | Rendimiento — consulta de orden | 100 % de consultas ≤ 5 s, con p50/p95/p99 | **Parcial** | La proyección QRY-01 recibe estados de Orders mediante RabbitMQ e Inbox idempotente, y la UI complementa temporalmente con las demás API. Falta conectar pagos/despacho/entrega/incidencias por eventos y medir p50/p95/p99. | Kevin (medición formal) junto con QA-02 |
+| EaC-02 | Rendimiento/Auditabilidad — evidencia de transacción | < 1 s | **Parcial** | `audit_events` conserva actor, instante, cambio, resultado, correlación y hash; `GET /api/v1/audit/events` consulta por orden/transacción y `audit_evidence_access` registra búsqueda/exportación. Falta medición formal menor a un segundo y ampliar productores más allá de las transiciones de orden. | Equipo: ampliar AUD-01 y QA de rendimiento |
 | EaC-03 | Escalabilidad — Black Friday 8x | Soportar 8x sin degradar EaC-01/EaC-02 | **Bloqueado** | Requiere plataforma estable con todos los módulos P0 y la prueba de carga `T`/`8T` (QA-02). No hay ambiente para ejercitarlo. | Edson Sosa (QA-02), equipo completo |
-| EaC-04 | Disponibilidad/Resiliencia — falla de PayKlik | 0 órdenes perdidas; reintento/conciliación ≤ 60 s | **Bloqueado** | PAY-01/PAY-02 (Edson) no existen en el repositorio. | Edson Sosa |
-| EaC-05 | Confiabilidad — timeout LogiExpress (2 %) | 0 pedidos bloqueados; hasta 3 reintentos (2/8/32 s) antes de mensajes fallidos | **Cubierto** | `SimulatedLogiExpressAdapter` reproduce ~2 % de timeout; `ShipmentServiceTest.exhaustsThreeRetriesThenSendsToDeadLetterQueue` verifica 1 intento inicial + 3 reintentos exactamente en la secuencia 2/8/32 s y el registro en `shipment_dead_letters`. Prueba en verde dentro de `./mvnw clean verify` (24/24, 2026-09-22). El adaptador ahora comparte los modos configurables de BB-06. | Kevin/Andy — revisión cruzada pendiente |
+| EaC-04 | Disponibilidad/Resiliencia — falla de PayKlik | 0 órdenes perdidas; reintento/conciliación ≤ 60 s | **Parcial** | `PaymentService` persiste el intento antes de invocar PayKlik, conserva `INDETERMINATE`, aplica Circuit Breaker y programa conciliación; `PaymentServiceTest` y `SimulatedPayKlikAdapterTest` están verdes. Falta evidencia temporal de la ventana completa de 60 s bajo falla sostenida. | QA de resiliencia |
+| EaC-05 | Confiabilidad — timeout LogiExpress (2 %) | 0 pedidos bloqueados; hasta 3 reintentos (2/8/32 s) antes de mensajes fallidos | **Cubierto** | `SimulatedLogiExpressAdapter` reproduce ~2 % de timeout; `ShipmentServiceTest.exhaustsThreeRetriesThenSendsToDeadLetterQueue` verifica 1 intento inicial + 3 reintentos exactamente en la secuencia 2/8/32 s y el registro en `shipment_dead_letters`. La suite completa terminó con 87 pruebas verdes el 2026-09-23. | Kevin/Andy — revisión cruzada pendiente |
 | EaC-06 | Confiabilidad — entrega eventual a 32 POS | Acuse ≤ 5 min; reintento persistente, alerta antes de 24 h | **Parcial** | POS-01 persiste entrega, acuse, intentos y deduplicación para tiendas 1–32; `PosIntegrationServiceTest` verifica éxito y 3 reintentos hasta `DEAD_LETTER`. Falta probar el límite de 5 minutos con infraestructura real, la alerta antes de 24 h y la recuperación durable mediante BB-04. | Andy (infraestructura/alerta) y Edson (BB-04) |
-| EaC-07 | Auditabilidad — reconstrucción SAT | Reconstruir quién/cuándo/qué; evidencia < 1 s (EaC-02) | **Bloqueado** | Depende de AUD-01 (Edson). `query` guarda `asOf` por campo, pero no es el registro de auditoría formal que exige el DDA. | Edson Sosa (AUD-01) |
+| EaC-07 | Auditabilidad — reconstrucción SAT | Reconstruir quién/cuándo/qué; evidencia < 1 s (EaC-02) | **Parcial** | `order_status_history` y `audit_events` reconstruyen las transiciones de orden con estados previo/nuevo, resultado y hash SHA-256; `audit_evidence_access` registra búsquedas fallidas y exportaciones. Falta incorporar como productores directos pagos, fiscal, despacho e incidencias, y medir latencia. | Equipo: ampliar AUD-01 transversal |
 | EaC-08 | Disponibilidad parcial — falla del proveedor de notificaciones | 0 operaciones principales bloqueadas | **Cubierto** | `NotificationService.requestNotification` responde `202 Accepted` de inmediato y despacha en un `Executor` propio; `NotificationServiceTest` verifica el reintento único ante `NotificationProviderUnavailableException`. Prueba de humo real: `POST /api/v1/notifications` devolvió `202` sin esperar al proveedor simulado (2026-09-22). | Kevin — cerrado en este incremento |
 | EaC-09 | Mantenibilidad — equipo interno | Despliegue con runbook ≤ 2 h; diagnóstico de falla inyectada ≤ 30 min | **Parcial** | `docker compose up --build` reproducible con health checks verdes (Jairo, BB-01/BB-05) y ahora incluye `frontend` (Kevin). No se ha cronometrado un despliegue por una persona no autora ni un diagnóstico de falla inyectada. | Jorge Pumay (EAC-09, tarea explícita en su tabla) |
 | EaC-10 | Costo — infraestructura ≤ $1,200/mes | Costo operativo ≤ límite o excepción documentada | **No evaluado** | No existe despliegue en un ambiente medible con costo real; solo Docker Compose local. No se inventa una cifra. | Equipo, al planificar el despliegue real |
 | EaC-11 | Portabilidad — on-premises a nube | Mismo artefacto contenedorizado en nube equivalente, sin reescribir el núcleo | **No evaluado** | El backend ya es un artefacto Docker único (BB-05), condición necesaria pero no ejercitada contra un entorno de nube. | Jairo Gómez (release/infra) |
-| EaC-12 | Seguridad — datos de pago | 0 apariciones de PAN/CVV en BD, mensajes o logs | **Parcial** | El contrato simulado PayKlik solo acepta referencias seguras y `SimulatedPayKlikAdapterTest` verifica que rechaza PAN de 13–19 dígitos o texto con CVV. PAY-01 y el escaneo completo de BD/mensajes/logs siguen pendientes. | Edson Sosa (PAY-01, BB-07, SEC-01) |
+| EaC-12 | Seguridad — datos de pago | 0 apariciones de PAN/CVV en BD, mensajes o logs | **Parcial** | `payment_attempts` conserva únicamente `payment_reference`; el adaptador rechaza PAN de 13–19 dígitos y texto con CVV mediante pruebas automatizadas. Falta escaneo completo de BD/mensajes/logs y seguridad backend por roles. | Equipo: BB-07 y SEC-01 |
 
 ## 3. Resumen
 
 | Estado | Cantidad |
 |---|---:|
 | Cubierto | 2 (EaC-05, EaC-08) |
-| Parcial | 4 (EaC-01, EaC-06, EaC-09, EaC-12) |
-| Bloqueado | 4 (EaC-02, EaC-03, EaC-04, EaC-07) |
+| Parcial | 7 (EaC-01, EaC-02, EaC-04, EaC-06, EaC-07, EaC-09, EaC-12) |
+| Bloqueado | 1 (EaC-03) |
 | No evaluado | 2 (EaC-10, EaC-11) |
 
-EaC-05 y EaC-08 permanecen cubiertos. La entrega local de Andy aporta evidencia parcial a EaC-06 y EaC-12, pero no se marcan cubiertos sin infraestructura real, alertas y los módulos de Edson. Esta matriz debe releerse después de revisión e integración.
+EaC-05 y EaC-08 permanecen cubiertos. Órdenes, pagos y el historial auditable ya eliminan bloqueos documentales anteriores, pero no se marcan completamente cubiertos sin mediciones, Outbox, auditoría transversal y seguridad backend. La revisión contra penalizaciones se mantiene en `QA-06-gate-trazabilidad-penalizaciones.md`.
 
 ## 4. Próxima actualización
 

@@ -4,10 +4,13 @@
 # cliente (tienda omnicanal) y staff (consola operativa).
 FROM nginx:1.29-alpine
 
-COPY index.html login.html cliente.html staff.html /usr/share/nginx/html/
-COPY session.js app.js app-cliente.js app-login.js /usr/share/nginx/html/
+COPY index.html login.html registro.html cliente.html producto.html staff.html /usr/share/nginx/html/
+COPY session.js app.js app-cliente.js app-login.js app-producto.js /usr/share/nginx/html/
+COPY app-landing.js catalog.json /usr/share/nginx/html/
+COPY app-registro.js /usr/share/nginx/html/
 COPY styles.css landing.css store.css /usr/share/nginx/html/
 COPY favicon.svg /usr/share/nginx/html/
+COPY assets/ /usr/share/nginx/html/assets/
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 EXPOSE 8080

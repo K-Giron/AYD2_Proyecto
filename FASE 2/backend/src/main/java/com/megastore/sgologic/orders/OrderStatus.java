@@ -1,0 +1,19 @@
+package com.megastore.sgologic.orders;
+
+/** Estados observables derivados de CDU-02 a CDU-09. */
+public enum OrderStatus {
+    CREATED,
+    INVENTORY_RESERVED,
+    PAYMENT_PENDING,
+    PAYMENT_APPROVED,
+    PAYMENT_REJECTED,
+    PAYMENT_INDETERMINATE,
+    FISCAL_PENDING,
+    FISCAL_APPROVED,
+    FISCAL_REJECTED,
+    CONFIRMED,
+    PREPARING,
+    IN_TRANSIT,
+    DELIVERED,
+    CANCELLED
+}

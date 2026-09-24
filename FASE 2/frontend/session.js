@@ -12,10 +12,12 @@
  */
 
 const SGO_SESSION_KEY = "sgo.session";
+const SGO_REGISTERED_ACCOUNTS_KEY = "sgo.registeredAccounts";
 
 const SGO_ACCOUNTS = {
     CLIENTE: {
         role: "CLIENTE",
+        customerId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
         email: "cliente@megastore.com",
         password: "Cliente123",
         name: "Cliente de prueba",
@@ -26,15 +28,38 @@ const SGO_ACCOUNTS = {
         password: "Staff123",
         name: "Personal interno de prueba",
     },
+    FINANCE: {
+        role: "FINANCE",
+        email: "finanzas@megastore.com",
+        password: "Finanzas123",
+        name: "Finanzas de prueba",
+    },
 };
 
 function sgoFindAccount(email, password) {
     const normalized = String(email || "").trim().toLowerCase();
+    let registered = [];
+    try { registered = JSON.parse(localStorage.getItem(SGO_REGISTERED_ACCOUNTS_KEY)) || []; } catch { registered = []; }
     return (
-        Object.values(SGO_ACCOUNTS).find(
+        [...Object.values(SGO_ACCOUNTS), ...registered].find(
             (account) => account.email === normalized && account.password === password
         ) || null
     );
+}
+
+function sgoRegisterClient(name, email, password) {
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    if (sgoFindAccount(normalizedEmail, password)
+            || Object.values(SGO_ACCOUNTS).some(account => account.email === normalizedEmail)) {
+        throw new Error("Ya existe una cuenta con ese correo.");
+    }
+    let accounts = [];
+    try { accounts = JSON.parse(localStorage.getItem(SGO_REGISTERED_ACCOUNTS_KEY)) || []; } catch { accounts = []; }
+    if (accounts.some(account => account.email === normalizedEmail)) throw new Error("Ya existe una cuenta con ese correo.");
+    const account = { role: "CLIENTE", customerId: crypto.randomUUID(), email: normalizedEmail, password, name: String(name).trim() };
+    accounts.push(account);
+    localStorage.setItem(SGO_REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
+    return account;
 }
 
 /**
@@ -45,6 +70,7 @@ function sgoFindAccount(email, password) {
 function sgoCreateSession(account, remember) {
     const payload = JSON.stringify({
         role: account.role,
+        customerId: account.customerId || null,
         email: account.email,
         name: account.name,
         loggedInAt: new Date().toISOString(),
@@ -81,6 +107,16 @@ function sgoLogout() {
 function sgoRequireSession(expectedRole) {
     const session = sgoGetSession();
     if (!session || session.role !== expectedRole) {
+        location.href = "login.html";
+        return null;
+    }
+    return session;
+}
+
+/** Admite un conjunto explícito de roles internos sin convertirlos entre sí. */
+function sgoRequireAnySession(expectedRoles) {
+    const session = sgoGetSession();
+    if (!session || !expectedRoles.includes(session.role)) {
         location.href = "login.html";
         return null;
     }
