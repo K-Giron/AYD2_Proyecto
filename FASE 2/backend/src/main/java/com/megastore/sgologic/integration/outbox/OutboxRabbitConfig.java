@@ -1,5 +1,7 @@
 package com.megastore.sgologic.integration.outbox;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -19,6 +21,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 class OutboxRabbitConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(OutboxRabbitConfig.class);
 
     @Bean
     TopicExchange outboxExchange(OutboxProperties properties) {
@@ -50,7 +54,15 @@ class OutboxRabbitConfig {
     ApplicationRunner outboxTopologyInitializer(AmqpAdmin amqpAdmin) {
         return args -> {
             if (amqpAdmin instanceof RabbitAdmin rabbitAdmin) {
-                rabbitAdmin.initialize();
+                try {
+                    rabbitAdmin.initialize();
+                } catch (Exception unavailable) {
+                    // El broker puede no estar disponible al arrancar; la
+                    // topología se declarará cuando se establezca la primera
+                    // conexión (RabbitAdmin escucha las conexiones).
+                    log.warn("No se pudo declarar la topología del Outbox al arrancar; "
+                            + "se declarará al establecer conexión: {}", unavailable.getMessage());
+                }
             }
         };
     }
