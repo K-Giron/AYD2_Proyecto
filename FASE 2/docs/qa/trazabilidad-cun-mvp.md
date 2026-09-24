@@ -54,7 +54,7 @@ respaldo documental previo.
 | PAY-03 Conciliación idempotente ≤ 60 s | CDU-03 E1 ("antes de reintentar debe consultar o conciliar") | `payment_reconciliations` (**implementado**, `V3004`, modelo §3.8) | Broker, cola de conciliación/reintentos | EaC-04 | ADR-003 |
 | AUD-01 Registro auditable | CDU-12 pasos 2 y 3; postcondición de toda operación relevante | `audit_events` (**implementado**, `V3002`, modelo §3.7) | Registro y lectura de auditoría | EaC-02, EaC-07 | ADR-002, ADR-006, ADR-007 |
 | AUD-02 Consulta indexada < 1 s | CDU-12 paso 5 y 6 (registrar acceso); A1 exportación; E1 búsqueda fallida | `audit_events` con índices por orden, agregado y correlación (**implementado**, `V3002`) | Registro y lectura de auditoría | EaC-02 | ADR-006 |
-| SEC-01 Pruebas 401/403 y fuga | CDU-12 precondición; CDU-03 paso 3 | `audit_events`, `payment_attempts` | Entrada segura, SGO-Logic | EaC-12 | ADR-013 |
+| SEC-01 Pruebas 401/403 y fuga | CDU-12 precondición; CDU-03 paso 3 | `audit_events`, `payment_attempts`, `outbox_event` (**escaneados**, evidencia en `docs/evidence/security/SEC-01-scan-pan-cvv.md`) | Entrada segura, SGO-Logic | EaC-12 | ADR-013 |
 | QA-02 Línea base `T` y carga `8T` | EaC-01, EaC-02, EaC-03 | Datos de prueba controlados | SGO-Logic `N` instancias, Broker | EaC-01, EaC-02, EaC-03 | ADR-001, ADR-006; DEC-02 |
 
 ## 4. Elementos técnicos sin CUN de negocio (justificación)
@@ -92,16 +92,17 @@ planificación, sección 12).
 
 - `./mvnw clean verify` con Java 25 (`eclipse-temurin:25.0.4_7-jdk-alpine-3.23`)
   y Testcontainers (PostgreSQL 17.11 + RabbitMQ 4.3.5): **BUILD SUCCESS**,
-  31 clases, **116 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
+  32 clases, **118 pruebas, 0 fallos, 0 errores, 0 omitidas** (2026-09-23),
   incluida la regresión `AsyncIntegrationPersistenceTest` (bloqueo optimista
   de flujos asíncronos, ver REV-EDSON §7), las pruebas de Outbox
   (`OutboxEventTest`, `OutboxDispatcherTest` y `OutboxIntegrationTest`), las
-  de seguridad (`SecurityAuthorizationTest` y `SensitiveDataSanitizerTest`),
-  las de auditoría (`AuditIntegrationTest` y `AuditQueryIntegrationTest`,
-  esta última con la medida de EaC-02) y las de pagos
-  (`PaymentAttemptServiceTest`, `PaymentIntegrationTest`,
-  `ResilientPayKlikClientTest`, `PaymentIndeterminateIntegrationTest`,
-  `PaymentReconciliationServiceTest` y `PaymentReconciliationIntegrationTest`).
+  de seguridad (`SecurityAuthorizationTest`, `SensitiveDataSanitizerTest` y
+  `SensitiveDataLeakScanTest` para SEC-01), las de auditoría
+  (`AuditIntegrationTest` y `AuditQueryIntegrationTest`, esta última con la
+  medida de EaC-02) y las de pagos (`PaymentAttemptServiceTest`,
+  `PaymentIntegrationTest`, `ResilientPayKlikClientTest`,
+  `PaymentIndeterminateIntegrationTest`, `PaymentReconciliationServiceTest` y
+  `PaymentReconciliationIntegrationTest`).
 - Migraciones Flyway ejecutadas contra PostgreSQL real durante la suite de
   integración: `V1`, `V2`, `V1001`–`V1004`, `V2001`–`V2003`.
 - El detalle de la revisión cruzada está en

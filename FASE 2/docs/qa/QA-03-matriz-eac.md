@@ -30,14 +30,14 @@
 | EaC-09 | Mantenibilidad — equipo interno | Despliegue con runbook ≤ 2 h; diagnóstico de falla inyectada ≤ 30 min | **Parcial** | `docker compose up --build` reproducible con health checks verdes (Jairo, BB-01/BB-05) y ahora incluye `frontend` (Kevin). No se ha cronometrado un despliegue por una persona no autora ni un diagnóstico de falla inyectada. | Jorge Pumay (EAC-09, tarea explícita en su tabla) |
 | EaC-10 | Costo — infraestructura ≤ $1,200/mes | Costo operativo ≤ límite o excepción documentada | **No evaluado** | No existe despliegue en un ambiente medible con costo real; solo Docker Compose local. No se inventa una cifra. | Equipo, al planificar el despliegue real |
 | EaC-11 | Portabilidad — on-premises a nube | Mismo artefacto contenedorizado en nube equivalente, sin reescribir el núcleo | **No evaluado** | El backend ya es un artefacto Docker único (BB-05), condición necesaria pero no ejercitada contra un entorno de nube. | Jairo Gómez (release/infra) |
-| EaC-12 | Seguridad — datos de pago | 0 apariciones de PAN/CVV en BD, mensajes o logs | **Parcial** | El contrato simulado PayKlik y `PaymentRequest` rechazan PAN de 13–19 dígitos o texto con CVV; `PaymentIntegrationTest` verifica que el intento persistido no contiene PAN/CVV y BB-07 aporta JWT, roles y sanitización. Falta el escaneo completo de BD, mensajes y logs (SEC-01). | Edson Sosa (SEC-01) |
+| EaC-12 | Seguridad — datos de pago | 0 apariciones de PAN/CVV en BD, mensajes o logs | **Cubierto** | SEC-01: `SensitiveDataLeakScanTest` genera actividad real (pago, incidencia, despacho, notificación, fiscal, auditoría y 401), rechaza PAN/CVV con `400` y escanea todas las columnas de texto/JSON del esquema público, los payloads del Outbox, los estados de auditoría y los logs capturados: 0 apariciones. `SecurityAuthorizationTest` cubre la matriz 401/403 y `SensitiveDataSanitizerTest` el enmascarado. Evidencia en `docs/evidence/security/SEC-01-scan-pan-cvv.md`. | Edson Sosa — cerrado en este incremento |
 
 ## 3. Resumen
 
 | Estado | Cantidad |
 |---|---:|
-| Cubierto | 4 (EaC-02, EaC-04, EaC-05, EaC-08) |
-| Parcial | 5 (EaC-01, EaC-06, EaC-07, EaC-09, EaC-12) |
+| Cubierto | 5 (EaC-02, EaC-04, EaC-05, EaC-08, EaC-12) |
+| Parcial | 4 (EaC-01, EaC-06, EaC-07, EaC-09) |
 | Bloqueado | 1 (EaC-03) |
 | No evaluado | 2 (EaC-10, EaC-11) |
 
