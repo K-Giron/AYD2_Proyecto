@@ -2,6 +2,7 @@ package com.megastore.sgologic.payments.api;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * Solicitud de autorización de pago (CDU-03, paso 2 y 3).
@@ -21,33 +22,46 @@ public record PaymentRequest(
         String idempotencyKey
 ) {
 
+    private static final Pattern CVV_MARKER =
+            Pattern.compile("(?i).*(cvv2?|cvc2?|securitycode).*");
+
     public PaymentRequest {
         if (orderId == null) {
-            throw new IllegalArgumentException("orderId es obligatorio.");
+            throw new InvalidPaymentRequestException("orderId es obligatorio.");
         }
         if (amount == null || amount.signum() <= 0) {
-            throw new IllegalArgumentException("amount debe ser mayor que cero.");
+            throw new InvalidPaymentRequestException("amount debe ser mayor que cero.");
         }
         if (currency == null || !currency.matches("[A-Za-z]{3}")) {
-            throw new IllegalArgumentException("currency debe tener tres letras.");
+            throw new InvalidPaymentRequestException("currency debe tener tres letras.");
         }
         if (channel == null || channel.isBlank()) {
-            throw new IllegalArgumentException("channel es obligatorio.");
+            throw new InvalidPaymentRequestException("channel es obligatorio.");
         }
         if (method == null || method.isBlank()) {
-            throw new IllegalArgumentException("method es obligatorio.");
+            throw new InvalidPaymentRequestException("method es obligatorio.");
         }
         if (paymentReference == null || paymentReference.isBlank()) {
-            throw new IllegalArgumentException("paymentReference es obligatoria.");
+            throw new InvalidPaymentRequestException("paymentReference es obligatoria.");
         }
-        if (paymentReference.matches(".*\\d{13,}.*") || paymentReference.toLowerCase().contains("cvv")) {
-            throw new IllegalArgumentException("paymentReference no puede contener PAN ni CVV.");
+        if (paymentReference.length() > 128) {
+            throw new InvalidPaymentRequestException("paymentReference no puede superar 128 caracteres.");
+        }
+        // Se normalizan separadores (espacios, guiones, puntos) para detectar
+        // PAN formateados como 4111-1111-1111-1111, y se rechazan variantes
+        // de CVV/CVC (cvv, cvv2, cvc, cvc2, securityCode).
+        String normalizedReference = paymentReference.replaceAll("[\\s\\-.]", "");
+        if (normalizedReference.matches("\\d{13,}") || CVV_MARKER.matcher(normalizedReference).matches()) {
+            throw new InvalidPaymentRequestException("paymentReference no puede contener PAN ni CVV.");
         }
         if (correlationId == null) {
-            throw new IllegalArgumentException("correlationId es obligatorio.");
+            throw new InvalidPaymentRequestException("correlationId es obligatorio.");
         }
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
-            throw new IllegalArgumentException("idempotencyKey es obligatoria.");
+            throw new InvalidPaymentRequestException("idempotencyKey es obligatoria.");
+        }
+        if (idempotencyKey.length() > 128) {
+            throw new InvalidPaymentRequestException("idempotencyKey no puede superar 128 caracteres.");
         }
     }
 }

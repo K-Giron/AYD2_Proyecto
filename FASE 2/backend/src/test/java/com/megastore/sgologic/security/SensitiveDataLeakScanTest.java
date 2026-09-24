@@ -48,10 +48,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = "sgo.security.enabled=true")
 class SensitiveDataLeakScanTest {
 
-    private static final Pattern PAN_PATTERN = Pattern.compile("\\d{13,19}");
-    private static final Pattern CVV_PATTERN = Pattern.compile("(?i)\\b(cvv|cvc)\\b");
-    private static final String PAN_SQL_REGEX = "[0-9]{13,19}";
-    private static final String CVV_SQL_REGEX = "(?i)\\y(cvv|cvc)\\y";
+    // PAN de 13-19 digitos con separadores opcionales (espacio, punto o
+    // guion), sin consumir separadores finales ni tocar segmentos de UUID.
+    private static final Pattern PAN_PATTERN =
+            Pattern.compile("(?<![0-9.\\-])\\d(?:[ .\\-]?\\d){12,}(?![0-9.\\-])");
+    private static final Pattern CVV_PATTERN = Pattern.compile("(?i)\\b(cvv2?|cvc2?|securitycode)\\b");
+    private static final String PAN_SQL_REGEX = "(?<![0-9.\\-])[0-9]([ .\\-]?[0-9]){12,}(?![0-9.\\-])";
+    private static final String CVV_SQL_REGEX = "(?i)\\y(cvv2?|cvc2?|securitycode)\\y";
 
     @Container
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
@@ -135,9 +138,18 @@ class SensitiveDataLeakScanTest {
         postJson("/api/v1/payments/attempts", client, "sec-pay-pan", Map.of(
                 "orderId", orderId, "amount", 150.00, "currency", "GTQ", "channel", "MOBILE",
                 "method", "CARD", "paymentReference", "4111111111111111")).andExpect(status().isBadRequest());
+        postJson("/api/v1/payments/attempts", client, "sec-pay-pan-dashes", Map.of(
+                "orderId", orderId, "amount", 150.00, "currency", "GTQ", "channel", "MOBILE",
+                "method", "CARD", "paymentReference", "4111-1111-1111-1111")).andExpect(status().isBadRequest());
+        postJson("/api/v1/payments/attempts", client, "sec-pay-pan-spaces", Map.of(
+                "orderId", orderId, "amount", 150.00, "currency", "GTQ", "channel", "MOBILE",
+                "method", "CARD", "paymentReference", "4111 1111 1111 1111")).andExpect(status().isBadRequest());
         postJson("/api/v1/payments/attempts", client, "sec-pay-cvv", Map.of(
                 "orderId", orderId, "amount", 150.00, "currency", "GTQ", "channel", "MOBILE",
                 "method", "CARD", "paymentReference", "cvv=123")).andExpect(status().isBadRequest());
+        postJson("/api/v1/payments/attempts", client, "sec-pay-cvc2", Map.of(
+                "orderId", orderId, "amount", 150.00, "currency", "GTQ", "channel", "MOBILE",
+                "method", "CARD", "paymentReference", "cvc2=123")).andExpect(status().isBadRequest());
 
         // Incidencia registrada por el cliente y resuelta por soporte.
         String incident = mockMvc.perform(post("/api/v1/incidents")

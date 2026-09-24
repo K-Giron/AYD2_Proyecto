@@ -1,5 +1,6 @@
 package com.megastore.sgologic.payments;
 
+import com.megastore.sgologic.payments.api.InvalidPaymentRequestException;
 import com.megastore.sgologic.payments.api.PaymentPort;
 import com.megastore.sgologic.payments.api.PaymentRequest;
 import com.megastore.sgologic.payments.api.PaymentResult;
@@ -137,13 +138,13 @@ class PaymentIntegrationTest {
     void panOrCvvReferenceIsRejectedBeforePersisting() {
         UUID orderId = UUID.randomUUID();
 
-        assertThatThrownBy(() -> new PaymentRequest(orderId, new BigDecimal("10.00"), "GTQ", "WEB", "CARD",
-                "4111111111111111", UUID.randomUUID(), "it-pay-4"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("PAN");
-        assertThatThrownBy(() -> new PaymentRequest(orderId, new BigDecimal("10.00"), "GTQ", "WEB", "CARD",
-                "cvv=123", UUID.randomUUID(), "it-pay-5"))
-                .isInstanceOf(IllegalArgumentException.class);
+        for (String unsafe : new String[]{"4111111111111111", "4111-1111-1111-1111",
+                "4111 1111 1111 1111", "cvv=123", "cvc2=123", "securityCode=123"}) {
+            assertThatThrownBy(() -> new PaymentRequest(orderId, new BigDecimal("10.00"), "GTQ", "WEB", "CARD",
+                    unsafe, UUID.randomUUID(), "it-pay-" + UUID.randomUUID()))
+                    .as("referencia insegura: %s", unsafe)
+                    .isInstanceOf(InvalidPaymentRequestException.class);
+        }
         assertThat(repository.findByOrderIdOrderByCreatedAtDesc(orderId)).isEmpty();
     }
 

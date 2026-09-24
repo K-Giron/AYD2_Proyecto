@@ -1,5 +1,6 @@
 package com.megastore.sgologic.payments;
 
+import com.megastore.sgologic.payments.api.InvalidPaymentRequestException;
 import com.megastore.sgologic.payments.api.PaymentPort;
 import com.megastore.sgologic.payments.api.PaymentRequest;
 import com.megastore.sgologic.payments.api.PaymentResult;

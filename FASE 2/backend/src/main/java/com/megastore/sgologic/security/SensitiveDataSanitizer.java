@@ -19,12 +19,12 @@ public class SensitiveDataSanitizer {
             "(?i)\\b(?:cvv2?|cvc2?|securitycode|security-code)\\b\\s*[:=]?\\s*\\d{3,4}");
 
     /**
-     * 13 a 19 dígitos con separadores simples, sin consumir separadores
-     * finales y sin tocar segmentos de un UUID (precedidos o seguidos por
-     * guion o dígito).
+     * 13 o más dígitos con separadores simples (espacio, punto o guion), sin
+     * consumir separadores finales y sin tocar segmentos de un UUID
+     * (precedidos o seguidos por guion, punto o dígito).
      */
     private static final Pattern PAN_PATTERN =
-            Pattern.compile("(?<![0-9-])\\d(?:[ -]?\\d){12,18}(?![0-9-])");
+            Pattern.compile("(?<![0-9.\\-])\\d(?:[ .\\-]?\\d){12,}(?![0-9.\\-])");
 
     public String mask(String value) {
         if (value == null || value.isBlank()) {

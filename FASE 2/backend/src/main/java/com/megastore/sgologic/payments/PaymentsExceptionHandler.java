@@ -1,5 +1,6 @@
 package com.megastore.sgologic.payments;
 
+import com.megastore.sgologic.payments.api.InvalidPaymentRequestException;
 import com.megastore.sgologic.shared.http.ApiError;
 import com.megastore.sgologic.shared.http.CorrelationIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,8 +20,8 @@ class PaymentsExceptionHandler {
         return build(HttpStatus.NOT_FOUND, "PAYMENT_ATTEMPT_NOT_FOUND", exception.getMessage(), request);
     }
 
-    @ExceptionHandler({InvalidPaymentRequestException.class, IllegalArgumentException.class})
-    public ResponseEntity<ApiError> handleInvalidRequest(RuntimeException exception,
+    @ExceptionHandler(InvalidPaymentRequestException.class)
+    public ResponseEntity<ApiError> handleInvalidRequest(InvalidPaymentRequestException exception,
                                                           HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, "INVALID_PAYMENT_REQUEST", exception.getMessage(), request);
     }
