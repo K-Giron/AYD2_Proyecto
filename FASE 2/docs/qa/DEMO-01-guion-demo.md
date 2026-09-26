@@ -17,6 +17,16 @@ docker compose ps
 
 Los cuatro servicios deben quedar `healthy`. Abrir `http://localhost:8081`.
 
+Para iniciar la evaluación con órdenes coherentes en varios estados:
+
+```bash
+./tests/data/seed-demo-mvp.sh | tee /tmp/sgo-demo.json
+```
+
+Conserve los `orderId` impresos: el primero muestra el camino feliz, el
+segundo el seguimiento en tránsito y el tercero una entrega con devolución
+aprobada. El cargador usa la API y puede ejecutarse en una base recién creada.
+
 Credenciales de demostración:
 
 - Cliente: `cliente@megastore.com` / `Cliente123`

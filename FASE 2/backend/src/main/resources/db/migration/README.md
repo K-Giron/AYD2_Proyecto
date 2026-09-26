@@ -74,3 +74,9 @@ salidas de inventario fuera del flujo de reserva de venta en línea
 (recepción de mercadería, merma, ajuste de tienda/POS), con el mismo patrón
 de escritura atómica de `InventoryItemRepository#tryReserve` y publicación
 al Outbox en la misma transacción.
+
+`V4__inventory_seed_demo_catalog.sql` amplía la semilla académica a diez
+productos (cinco de Moda y accesorios y cinco de Hogar), con existencias en
+centros de distribución y tiendas. Los nombres, precios, descripciones y
+fotografías viven en `frontend/catalog.json`; Inventory conserva únicamente
+los `product_id` y cantidades, de acuerdo con el límite del DDA.
