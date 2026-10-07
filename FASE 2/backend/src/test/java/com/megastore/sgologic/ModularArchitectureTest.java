@@ -23,6 +23,12 @@ class ModularArchitectureTest {
             "security",
             "messaging",
             "integration",
+            "inventorysync",
+            "customers",
+            "onlinestore",
+            "legacyfeed",
+            "salesreport",
+            "fulfillment",
             "shared"
     );
 
@@ -74,10 +80,15 @@ class ModularArchitectureTest {
                 case "orders" -> Set.of(SHARED_MODULE, "inventory", "payments", "fiscal",
                         "integration", "audit", "logistics");
                 case "query" -> Set.of(SHARED_MODULE, "messaging");
-                case "notifications" -> Set.of(SHARED_MODULE, "messaging");
+                case "notifications" -> Set.of(SHARED_MODULE, "messaging", "customers");
                 case "payments", "logistics" -> Set.of(SHARED_MODULE, "integration", "audit");
                 case "incidents" -> Set.of(SHARED_MODULE, "audit", "integration");
                 case "inventory" -> Set.of(SHARED_MODULE, "integration");
+                case "inventorysync" -> Set.of(SHARED_MODULE, "orders", "messaging", "onlinestore");
+                case "onlinestore" -> Set.of(SHARED_MODULE, "inventory");
+                case "legacyfeed" -> Set.of(SHARED_MODULE, "messaging", "orders", "logistics", "integration");
+                case "fulfillment" -> Set.of(SHARED_MODULE, "messaging", "orders");
+                case "salesreport" -> Set.of(SHARED_MODULE, "orders", "payments", "fiscal", "integration", "audit");
                 default -> Set.of(SHARED_MODULE);
             };
             assertThat(dependencyIds)

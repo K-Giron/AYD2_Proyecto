@@ -58,13 +58,32 @@ class SecurityConfig {
                             .requestMatchers("/api/v1/auth/login", "/actuator/health", "/actuator/health/**",
                                     "/actuator/info", "/api/v1/platform/**")
                             .permitAll()
-                            .requestMatchers(HttpMethod.GET, "/api/v1/inventory/stock")
+                            .requestMatchers(HttpMethod.GET, "/api/v1/inventory/stock",
+                                    "/api/v1/online-catalog", "/api/v1/online-catalog/**")
                             .permitAll()
+                            // Administración de la tienda online (onlinestore, ADR-015).
+                            // La consola interna también consulta el inventario y el kárdex de la tienda online.
+                            .requestMatchers(HttpMethod.GET, "/api/v1/online-store/inventory",
+                                    "/api/v1/online-store/movements")
+                            .hasAnyRole("ONLINE_STORE", "SUPPORT", "LOGISTICS", "FINANCE")
+                            // El almacén central entrega aquí los eventos de stock de POS-ONLINE (cuenta de servicio).
+                            .requestMatchers(HttpMethod.POST, "/api/v1/online-store/stock-events")
+                            .hasRole("POS_EVENTS")
+                            .requestMatchers("/api/v1/online-store/**")
+                            .hasRole("ONLINE_STORE")
+                            // Factura del cliente (CUI, serie, XML), sin datos internos del documento fiscal.
+                            .requestMatchers(HttpMethod.GET, "/api/v1/invoices/orders/*")
+                            .hasAnyRole("CLIENT", "FINANCE", "ONLINE_STORE")
+                            .requestMatchers("/api/v1/reports/**")
+                            .hasRole("FINANCE")
                             .requestMatchers("/api/v1/fiscal-documents/**", "/api/v1/integrations/erp/**",
                                     "/api/v1/simulators/**", "/api/v1/audit/**")
                             .hasRole("FINANCE")
                             // El seguimiento es visible para el cliente (CDU-09); solo
                             // Logística crea despachos, guías y cambios de método.
+                            // La tienda de retiro confirma la entrega al cliente (sistema de tienda, ADR-015).
+                            .requestMatchers(HttpMethod.POST, "/api/v1/store-pickups/*/handoff")
+                            .hasRole("STORE")
                             .requestMatchers(HttpMethod.GET, "/api/v1/shipments/**")
                             .hasAnyRole("CLIENT", "SUPPORT", "LOGISTICS")
                             .requestMatchers("/api/v1/shipments/**", "/api/v1/integrations/pos/**")

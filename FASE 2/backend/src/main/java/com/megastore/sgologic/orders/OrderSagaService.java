@@ -54,6 +54,17 @@ public class OrderSagaService {
             payment = outcome.payment();
             order = outcome.order();
         }
+        if (order.getStatus() == OrderStatus.PAYMENT_INDETERMINATE && payment != null) {
+            // PAY-03: la conciliación con PayKlik ya resolvió el intento (sin segundo cobro);
+            // la Saga retoma desde ese resultado en vez de quedarse esperando.
+            if ("APPROVED".equals(payment.status())) {
+                order = orders.transition(orderId, OrderStatus.PAYMENT_APPROVED, actor,
+                        "Pago conciliado con PayKlik (" + payment.providerReference() + ")", correlationId);
+            } else if ("REJECTED".equals(payment.status())) {
+                order = orders.transition(orderId, OrderStatus.PAYMENT_REJECTED, actor,
+                        "PayKlik confirmó el rechazo al conciliar", correlationId);
+            }
+        }
         if (order.getStatus() == OrderStatus.PAYMENT_REJECTED) {
             order = orders.cancelOrder(orderId, "SAGA", "Pago rechazado; reserva liberada", correlationId);
             return response(order, payment, document, shipment, "COMPENSATED", "Pago rechazado sin perder stock.");

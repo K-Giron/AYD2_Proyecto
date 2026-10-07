@@ -1,0 +1,90 @@
+spring:
+  application:
+    name: inventory-service
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: UTC
+  datasource:
+    url: jdbc:postgresql://${INVENTORY_POSTGRES_HOST:localhost}:${INVENTORY_POSTGRES_PORT:5432}/${INVENTORY_POSTGRES_DB:inventory_service_local}
+    username: ${INVENTORY_POSTGRES_USER:inventory_local}
+    password: ${INVENTORY_POSTGRES_PASSWORD:local_only_change_me}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    baseline-on-migrate: false
+    clean-disabled: true
+    out-of-order: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
+          no-store: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+inventory:
+  # Eventos de stock hacia el sistema de cada punto de venta (Comunicación
+  # POS local). Un punto de venta sin URL acumula sus eventos como
+  # SIN_TERMINAL hasta que se conecte.
+  pos-events:
+    enabled: ${INVENTORY_POS_EVENTS_ENABLED:true}
+    interval: ${INVENTORY_POS_EVENTS_INTERVAL:PT3S}
+    timeout-ms: ${INVENTORY_POS_EVENTS_TIMEOUT_MS:5000}
+    terminals:
+      POS-01:
+        url: ${INVENTORY_POS01_EVENTS_URL:}
+      # La tienda online vive en SGO-Logic: el central inicia sesión con su
+      # cuenta de servicio para entregarle los eventos.
+      POS-ONLINE:
+        url: ${INVENTORY_POS_ONLINE_EVENTS_URL:}
+        login-url: ${INVENTORY_POS_ONLINE_LOGIN_URL:}
+        username: ${INVENTORY_POS_ONLINE_EVENTS_USER:central-eventos@megastore.com}
+        password: ${INVENTORY_POS_ONLINE_EVENTS_PASSWORD:CentralEventos123}
+  security:
+    jwt:
+      secret: ${INVENTORY_JWT_SECRET:local_dev_only_inventory_jwt_secret_32b!}
+      issuer: ${INVENTORY_JWT_ISSUER:inventory-service}
+      ttl: ${INVENTORY_JWT_TTL:PT8H}
+    users:
+      - username: ${INVENTORY_ALMACEN_USER:almacen@almacencentral.local}
+        password: ${INVENTORY_ALMACEN_PASSWORD:Almacen123}
+        roles: [ALMACEN]
+      - username: ${INVENTORY_FINANZAS_USER:finanzas@almacencentral.local}
+        password: ${INVENTORY_FINANZAS_PASSWORD:Finanzas123}
+        roles: [FINANZAS]
+      - username: ${INVENTORY_LOGISTICA_USER:logistica@almacencentral.local}
+        password: ${INVENTORY_LOGISTICA_PASSWORD:Logistica123}
+        roles: [LOGISTICA]
+      # Sistema de tienda física (store-service) de POS-01: baja recepciones,
+      # sube facturas y registra traslados. Cuenta de equipo, no de persona.
+      - username: ${INVENTORY_STORE_POS01_USER:tienda-pos01@almacencentral.local}
+        password: ${INVENTORY_STORE_POS01_PASSWORD:TiendaPos01}
+        roles: [TIENDA]
+        point-of-sale-code: POS-01
+      # Tienda online (módulo onlinestore del monolito): recibe por folio lo
+      # que el central envía a POS-ONLINE. Misma cuenta de equipo que una tienda.
+      - username: ${INVENTORY_STORE_ONLINE_USER:tienda-online@almacencentral.local}
+        password: ${INVENTORY_STORE_ONLINE_PASSWORD:TiendaOnline123}
+        roles: [TIENDA]
+        point-of-sale-code: POS-ONLINE
+      - username: ${INVENTORY_WEB_SYNC_USER:integracion-web@almacencentral.local}
+        password: ${INVENTORY_WEB_SYNC_PASSWORD:IntegracionWeb123}
+        roles: [LOGISTICA]

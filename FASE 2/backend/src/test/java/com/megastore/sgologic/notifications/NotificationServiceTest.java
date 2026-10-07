@@ -13,6 +13,7 @@ import java.util.concurrent.Executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -51,8 +52,8 @@ class NotificationServiceTest {
                 sourceId, UUID.randomUUID());
 
         assertThat(created.getStatus()).isEqualTo(NotificationStatus.PENDING);
-        verify(provider, times(1)).send(NotificationChannel.EMAIL, "cliente@example.com",
-                NotificationEventType.ORDER_CONFIRMED);
+        verify(provider, times(1)).send(eq(NotificationChannel.EMAIL), eq("cliente@example.com"),
+                eq(NotificationEventType.ORDER_CONFIRMED), any());
     }
 
     @Test
@@ -65,12 +66,12 @@ class NotificationServiceTest {
         // devolver null ocultaba el manejo real de la version de la entidad.
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         doThrow(new NotificationProviderUnavailableException("caído"))
-                .when(provider).send(any(), any(), any());
+                .when(provider).send(any(), any(), any(), any());
 
         service.dispatch(id);
 
         // 1 intento inicial + 3 reintentos (2/8/32 s) = 4 llamadas al proveedor.
-        verify(provider, times(4)).send(any(), any(), any());
+        verify(provider, times(4)).send(any(), any(), any(), any());
         assertThat(request.getStatus()).isEqualTo(NotificationStatus.FAILED);
         ArgumentCaptor<NotificationDeadLetter> captor = ArgumentCaptor.forClass(NotificationDeadLetter.class);
         verify(deadLetterRepository).save(captor.capture());

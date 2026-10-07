@@ -16,6 +16,8 @@ interface InventoryItemRepository extends JpaRepository<InventoryItem, UUID> {
 
     Optional<InventoryItem> findByProductIdAndLocationId(UUID productId, UUID locationId);
 
+    List<InventoryItem> findByLocationId(UUID locationId);
+
     /**
      * CDU-02: intenta comprometer {@code quantity} unidades en una sola
      * sentencia {@code UPDATE ... WHERE disponible >= quantity}, sin leer

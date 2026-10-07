@@ -14,6 +14,9 @@ class OrderSummaryConsumerConfig {
     static final String QUEUE = "sgo.query.order-status.v1";
     static final String SHIPMENT_QUEUE = "sgo.query.shipment-status.v1";
     static final String INCIDENT_QUEUE = "sgo.query.incident-registered.v1";
+    static final String PAYMENT_QUEUE = "sgo.query.payment-status.v1";
+    /** Deben coincidir con los tipos que publica {@code PaymentAttemptWriter} (payments). */
+    static final java.util.Set<String> PAYMENT_EVENTS = java.util.Set.of("PaymentApproved", "PaymentRejected", "PaymentIndeterminate");
 
     /** Debe coincidir exactamente con {@code ShipmentService.SHIPMENT_STATUS_CHANGED} (logistics). */
     static final String SHIPMENT_STATUS_CHANGED_EVENT = "SHIPMENT_STATUS_CHANGED";
@@ -54,5 +57,25 @@ class OrderSummaryConsumerConfig {
         return BindingBuilder.bind(querySummaryIncidentQueue)
                 .to(businessEventsExchange)
                 .with(INCIDENT_REGISTERED_EVENT);
+    }
+
+    @Bean
+    Queue querySummaryPaymentQueue() {
+        return QueueBuilder.durable(PAYMENT_QUEUE).build();
+    }
+
+    @Bean
+    Binding querySummaryPaymentApprovedBinding(Queue querySummaryPaymentQueue, TopicExchange businessEventsExchange) {
+        return BindingBuilder.bind(querySummaryPaymentQueue).to(businessEventsExchange).with("PaymentApproved");
+    }
+
+    @Bean
+    Binding querySummaryPaymentRejectedBinding(Queue querySummaryPaymentQueue, TopicExchange businessEventsExchange) {
+        return BindingBuilder.bind(querySummaryPaymentQueue).to(businessEventsExchange).with("PaymentRejected");
+    }
+
+    @Bean
+    Binding querySummaryPaymentIndeterminateBinding(Queue querySummaryPaymentQueue, TopicExchange businessEventsExchange) {
+        return BindingBuilder.bind(querySummaryPaymentQueue).to(businessEventsExchange).with("PaymentIndeterminate");
     }
 }

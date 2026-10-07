@@ -28,16 +28,33 @@ class OrderSummaryQueryServiceTest {
     @Test
     void upsertMergesMultipleSourcesIntoOneProjection() {
         UUID orderId = UUID.randomUUID();
-        when(repository.findById(orderId)).thenReturn(Optional.empty(), Optional.empty());
+        OrderSummaryProjection row = OrderSummaryProjection.blank(orderId, clock.instant());
+        when(repository.findForUpdate(orderId)).thenReturn(Optional.of(row));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        OrderSummaryProjection afterOrder = service.upsert(orderId, ProjectionSource.ORDER, "CONFIRMED", clock.instant());
-        when(repository.findById(orderId)).thenReturn(Optional.of(afterOrder));
+        service.upsert(orderId, ProjectionSource.ORDER, "CONFIRMED", clock.instant());
+        service.upsert(orderId, ProjectionSource.PAYMENT, "APPROVED", clock.instant());
         OrderSummaryProjection afterDispatch =
                 service.upsert(orderId, ProjectionSource.DISPATCH, "PREPARING", clock.instant());
 
+        // La fila se crea con ON CONFLICT: dos consumidores a la vez ya no chocan por clave duplicada.
+        org.mockito.Mockito.verify(repository, org.mockito.Mockito.times(3)).insertIfAbsent(orderId, clock.instant());
         assertThat(afterDispatch.getOrderStatus()).isEqualTo("CONFIRMED");
+        assertThat(afterDispatch.getPaymentStatus()).isEqualTo("APPROVED");
         assertThat(afterDispatch.getDispatchStatus()).isEqualTo("PREPARING");
+    }
+
+    @Test
+    void anOlderEventArrivingLateDoesNotOverwriteANewerOne() {
+        UUID orderId = UUID.randomUUID();
+        OrderSummaryProjection row = OrderSummaryProjection.blank(orderId, clock.instant());
+        when(repository.findForUpdate(orderId)).thenReturn(Optional.of(row));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.upsert(orderId, ProjectionSource.DISPATCH, "IN_TRANSIT", clock.instant());
+        service.upsert(orderId, ProjectionSource.DISPATCH, "PREPARING", clock.instant().minusSeconds(30));
+
+        assertThat(row.getDispatchStatus()).isEqualTo("IN_TRANSIT");
     }
 
     @Test

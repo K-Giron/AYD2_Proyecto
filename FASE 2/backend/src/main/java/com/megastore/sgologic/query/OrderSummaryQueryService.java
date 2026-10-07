@@ -27,10 +27,12 @@ public class OrderSummaryQueryService {
      * su consumidor RabbitMQ; el endpoint manual sigue disponible para las
      * fuentes cuyos productores de eventos aún están pendientes.
      */
+    @org.springframework.transaction.annotation.Transactional
     public OrderSummaryProjection upsert(UUID orderId, ProjectionSource source, String status, Instant asOf) {
         Instant now = clock.instant();
-        OrderSummaryProjection projection = repository.findById(orderId)
-                .orElseGet(() -> OrderSummaryProjection.blank(orderId, now));
+        repository.insertIfAbsent(orderId, now);
+        OrderSummaryProjection projection = repository.findForUpdate(orderId)
+                .orElseThrow(() -> new IllegalStateException("La proyección de " + orderId + " no se pudo crear."));
         projection.apply(source, status, asOf == null ? now : asOf, now);
         return repository.save(projection);
     }

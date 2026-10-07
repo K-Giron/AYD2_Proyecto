@@ -1,0 +1,91 @@
+// NUEVO (Fase 2, Kevin Girón, 2026-10-07): despliegue real de docker-compose.yml.
+// No sustituye a Docs/diagramas/despliegue.dot (vista objetivo de Fase 1).
+digraph SGO_Despliegue_Fase2 {
+  graph [label=<<B>NUEVO · SGO-Logic Fase 2 — Vista de despliegue real (docker-compose, 12 contenedores)</B><BR/><FONT POINT-SIZE="10">Cada sistema tiene su propia base; se integran solo por API, eventos o archivos (ADR-009, ADR-015)</FONT>>,
+         labelloc=t, rankdir=LR, bgcolor="#F8FAFC", fontname="Arial", fontsize=14, pad=0.3, nodesep=0.35, ranksep=0.9, compound=true];
+  node [shape=box3d, style=filled, fillcolor="#FFFFFF", color="#94A3B8", fontname="Arial", fontsize=8.5, margin="0.12,0.08"];
+  edge [color="#64748B", fontcolor="#334155", fontname="Arial", fontsize=7.2, arrowsize=0.6];
+
+  subgraph cluster_usuarios {
+    label="Usuarios (navegador)"; style="rounded,filled"; fillcolor="#EFF6FF"; color="#93C5FD"; fontname="Arial";
+    u_cliente [shape=box, style="rounded,filled", label="Cliente\nweb / móvil"];
+    u_personal [shape=box, style="rounded,filled", label="Personal MegaStore\nconsola, call center,\nFinanzas, tienda online"];
+    u_almacen [shape=box, style="rounded,filled", label="Almacén central\nALMACEN / FINANZAS / LOGISTICA"];
+    u_vendedor [shape=box, style="rounded,filled", label="Vendedor\nTienda Centro (POS-01)"];
+    u_mensajero [shape=box, style="rounded,filled", label="Mensajero / supervisor\nLogiExpress"];
+    u_comercio [shape=box, style="rounded,filled", label="Operador de pagos\nPayKlik"];
+  }
+
+  subgraph cluster_host {
+    label="<<node>> Host Docker — red interna sgo-internal"; style="rounded,filled"; fillcolor="#F1F5F9"; color="#64748B"; fontname="Arial";
+
+    subgraph cluster_sgo {
+      label="SGO-Logic (monolito modular)"; style="rounded,filled"; fillcolor="#EEF2FF"; color="#818CF8"; fontname="Arial";
+      frontend [fillcolor="#E0E7FF", label="<<container>> frontend\nnginx :8081\ntienda web, Mis pedidos,\nconsola interna, tienda online"];
+      backend [fillcolor="#DBEAFE", penwidth=2, label="<<container>> backend\nSpring Boot :8080\nmódulos: orders, payments, fiscal,\nlogistics, query, notifications,\nincidents, audit, integration,\nonlinestore, inventorysync, legacyfeed,\nsalesreport, fulfillment, customers"];
+      postgres [shape=cylinder, fillcolor="#D1FAE5", label="postgres :5433\nbase operacional\n(esquemas por módulo)"];
+      rabbit [fillcolor="#FEF3C7", label="rabbitmq\nOutbox → colas por consumidor\nDLQ (ADR-002)"];
+      erp_vol [shape=folder, fillcolor="#D1FAE5", label="volumen erp-outbox\n/var/sgo/erp-outbox\nventas_AAAAMMDD_HHMMSS.csv|xml"];
+    }
+
+    subgraph cluster_central {
+      label="Almacén central (sistema propio)"; style="rounded,filled"; fillcolor="#ECFDF5"; color="#10B981"; fontname="Arial";
+      inventory [fillcolor="#D1FAE5", label="<<container>> inventory-service\nSpring Boot :8082\nartículos, existencias, folios,\nstock por punto de venta,\neventos de stock a los POS"];
+      inventory_db [shape=cylinder, fillcolor="#D1FAE5", label="inventory-db :5434"];
+    }
+
+    subgraph cluster_tienda {
+      label="Tienda física POS-01 (POS local)"; style="rounded,filled"; fillcolor="#FFF7ED"; color="#F97316"; fontname="Arial";
+      store [fillcolor="#FFEDD5", label="<<container>> store-service\nSpring Boot :8084\nventa CF/NIT, facturas, recepción,\ntraslados, pedidos web, bitácora"];
+      store_db [shape=cylinder, fillcolor="#FFEDD5", label="store-db :5435"];
+    }
+
+    subgraph cluster_logi {
+      label="LogiExpress (sistema del transportista)"; style="rounded,filled"; fillcolor="#FEF9C3"; color="#EAB308"; fontname="Arial";
+      logi [fillcolor="#FEF08A", label="<<container>> logiexpress-service\nSpring Boot :8085\nAPI de guías y rastreo,\nportal de mensajeros"];
+      logi_db [shape=cylinder, fillcolor="#FEF08A", label="logiexpress-db :5436"];
+    }
+
+    subgraph cluster_pay {
+      label="PayKlik (sistema de la pasarela)"; style="rounded,filled"; fillcolor="#F5F3FF"; color="#8B5CF6"; fontname="Arial";
+      payklik [fillcolor="#EDE9FE", label="<<container>> payklik-service\nSpring Boot :8086\nAPI de autorizaciones idempotente,\nportal de comercios"];
+      payklik_db [shape=cylinder, fillcolor="#EDE9FE", label="payklik-db :5437"];
+    }
+  }
+
+  subgraph cluster_ext {
+    label="Fuera del host (sin modificar)"; style="rounded,filled"; fillcolor="#FEF2F2"; color="#FCA5A5"; fontname="Arial";
+    erp [label="ERP AS/400\nlee la carpeta cada 30 min"];
+    pos31 [label="POS de las tiendas 2..32\n(simulador BB-06)"];
+    sat [label="SAT\n(simulador BB-06)"];
+    gmail [label="Gmail SMTP\ncorreo real al cliente"];
+  }
+
+  u_cliente -> frontend [label="HTTPS"];
+  u_personal -> frontend [label="HTTPS"];
+  u_almacen -> inventory [label="HTTPS"];
+  u_vendedor -> store [label="HTTPS"];
+  u_mensajero -> logi [label="HTTPS (portal)"];
+  u_comercio -> payklik [label="HTTPS (portal)"];
+
+  frontend -> backend [label="/api (proxy)\nJWT"];
+  backend -> postgres [dir=both, label="JPA / Flyway"];
+  backend -> rabbit [dir=both, label="Outbox / Inbox"];
+  inventory -> inventory_db [dir=both];
+  store -> store_db [dir=both];
+  logi -> logi_db [dir=both];
+  payklik -> payklik_db [dir=both];
+
+  backend -> payklik [color="#7C3AED", label="REST + X-Api-Key\nautorizar / conciliar\ntimeout 5 s + circuit breaker"];
+  backend -> logi [color="#CA8A04", label="REST + X-Api-Key\nguía (reintentos 2/8/32 s)\nrastreo cada 10 s"];
+  backend -> erp_vol [label="lote CSV/XML\ncada 30 min + registro de control"];
+  erp_vol -> erp [label="archivo"];
+  backend -> inventory [color="#059669", label="REST + JWT\nventa web en POS-ONLINE, recepción\nde la tienda online, facturas de tienda"];
+  backend -> store [color="#EA580C", label="HTTP eventos de órdenes (POS-01)\nreintentos + DLQ"];
+  backend -> pos31 [label="eventos de órdenes"];
+  backend -> sat [label="XML fiscal"];
+  backend -> gmail [label="SMTP/TLS"];
+  store -> inventory [color="#059669", dir=both, xlabel="→ REST + JWT (TIENDA): recepciones,\nfacturas, traslados\n← eventos de stock (reintentos 2/8/32 s)"];
+  store -> backend [color="#EA580C", label="REST + JWT (STORE)\ncarrito web, entrega en tienda"];
+  inventory -> backend [color="#059669", style=dashed, label="eventos de stock POS-ONLINE\n(cuenta POS_EVENTS)"];
+}

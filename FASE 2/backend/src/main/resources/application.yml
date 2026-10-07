@@ -1,4 +1,19 @@
 spring:
+  # Correo real de notificaciones (NOT-01). Con Gmail: usuario = la cuenta y
+  # contraseña = una "contraseña de aplicación" de Google (no la normal).
+  # Sin credenciales, el correo sigue en el simulador.
+  mail:
+    host: ${SGO_MAIL_HOST:smtp.gmail.com}
+    port: ${SGO_MAIL_PORT:587}
+    username: ${SGO_MAIL_USERNAME:}
+    password: ${SGO_MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
   application:
     name: sgo-logic
   profiles:
@@ -22,6 +37,11 @@ server:
   port: ${SERVER_PORT:8080}
 
 management:
+  health:
+    # El servidor de correo es externo: si falla, la notificación reintenta;
+    # nunca debe marcar el backend como no saludable.
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
@@ -62,11 +82,65 @@ sgo:
       mode: ${SGO_SIMULATORS_NOTIFICATIONS_MODE:RANDOM}
       latency-ms: ${SGO_SIMULATORS_NOTIFICATIONS_LATENCY_MS:500}
       failure-rate: ${SGO_SIMULATORS_NOTIFICATIONS_FAILURE_RATE:0.05}
+  notifications:
+    email:
+      provider: ${SGO_NOTIFICATIONS_EMAIL_PROVIDER:auto}
+      from: ${SGO_MAIL_FROM:}
+      from-name: ${SGO_MAIL_FROM_NAME:MegaStore}
+      site-url: ${SGO_PUBLIC_SITE_URL:http://localhost:8081}
   integrations:
+    # PayKlik (payklik-service) por REST con llave de comercio. Sin URL
+    # (pruebas automáticas) se usa el simulador BB-06.
+    payklik:
+      base-url: ${SGO_PAYKLIK_BASE_URL:}
+      api-key: ${SGO_PAYKLIK_API_KEY:local_only_payklik_key}
+      read-timeout-ms: ${SGO_PAYKLIK_READ_TIMEOUT_MS:15000}
+    # LogiExpress (logiexpress-service) por REST: guías y rastreo incremental.
+    logiexpress:
+      base-url: ${SGO_LOGIEXPRESS_BASE_URL:}
+      api-key: ${SGO_LOGIEXPRESS_API_KEY:local_only_logiexpress_key}
+      timeout-ms: ${SGO_LOGIEXPRESS_TIMEOUT_MS:5000}
+      tracking-interval-ms: ${SGO_LOGIEXPRESS_TRACKING_INTERVAL_MS:10000}
+      tracking-enabled: ${SGO_LOGIEXPRESS_TRACKING_ENABLED:true}
+    pos:
+      # POS locales con sistema real: número de tienda → endpoint de eventos.
+      # La tienda 1 es POS-01 (store-service); las demás usan el simulador.
+      store-endpoints:
+        1: ${SGO_POS_STORE_01_ENDPOINT:}
+      timeout-ms: ${SGO_POS_TIMEOUT_MS:5000}
     erp:
+      # Carpeta de entrada del ERP AS/400 donde se deja cada lote CSV/XML.
+      outbox-dir: ${SGO_ERP_OUTBOX_DIR:/var/sgo/erp-outbox}
       format: ${SGO_ERP_FORMAT:CSV}
       interval-ms: ${SGO_ERP_INTERVAL_MS:1800000}
       initial-delay-ms: ${SGO_ERP_INITIAL_DELAY_MS:1800000}
+    inventory-service:
+      base-url: ${SGO_INTEGRATIONS_INVENTORY_BASE_URL:http://inventory-service:8080}
+      username: ${SGO_INTEGRATIONS_INVENTORY_USERNAME:integracion-web@almacencentral.local}
+      password: ${SGO_INTEGRATIONS_INVENTORY_PASSWORD:IntegracionWeb123}
+      timeout-ms: ${SGO_INTEGRATIONS_INVENTORY_TIMEOUT_MS:5000}
+    # Tienda online (POS-ONLINE): cuenta de equipo TIENDA en el almacén central
+    # y ubicación de inventario donde entra lo recibido por folio.
+    online-store:
+      base-url: ${SGO_INTEGRATIONS_INVENTORY_BASE_URL:http://inventory-service:8080}
+      username: ${SGO_INTEGRATIONS_ONLINE_STORE_USERNAME:tienda-online@almacencentral.local}
+      password: ${SGO_INTEGRATIONS_ONLINE_STORE_PASSWORD:TiendaOnline123}
+      point-of-sale-code: POS-ONLINE
+      location-code: CD-WEB
+      timeout-ms: ${SGO_INTEGRATIONS_INVENTORY_TIMEOUT_MS:5000}
+      sync-enabled: ${SGO_ONLINE_STORE_SYNC_ENABLED:true}
+      pull-interval-ms: ${SGO_ONLINE_STORE_PULL_INTERVAL_MS:15000}
+      # Ubicaciones físicas activas donde el cliente puede recoger su compra
+      # web (las que hoy operan: el almacén central y la tienda física POS-01).
+      pickup-points:
+        - code: ALM-CENTRAL
+          name: Almacén central
+          address: Calzada Roosevelt 22-43, Zona 11, Ciudad de Guatemala
+          hours: Lunes a sábado, 8:00 a 17:00
+        - code: POS-01
+          name: Tienda Centro (tienda física 1)
+          address: 6a. Avenida 10-25, Zona 1, Ciudad de Guatemala
+          hours: Todos los días, 9:00 a 20:00
   payments:
     payklik:
       timeout-ms: ${SGO_PAYKLIK_TIMEOUT_MS:5000}
@@ -115,3 +189,26 @@ sgo:
       - username: ${SGO_SECURITY_FINANCE_USER:finanzas@megastore.com}
         password: ${SGO_SECURITY_FINANCE_PASSWORD:Finanzas123}
         roles: [FINANCE]
+      # Credencial del equipo de la tienda física (store-service),
+      # no de una persona: el vendedor solo escribe su usuario, que queda
+      # como actor (X-Actor) en cada operación.
+      # Administración de la tienda online: recibe por folio, decide qué se
+      # publica y además administra la web completa (atención, despacho y
+      # finanzas), por eso acumula esos roles (onlinestore, ADR-015).
+      - username: ${SGO_SECURITY_ONLINE_STORE_USER:tienda-online@megastore.com}
+        password: ${SGO_SECURITY_ONLINE_STORE_PASSWORD:TiendaOnline123}
+        roles: [ONLINE_STORE, SUPPORT, LOGISTICS, FINANCE]
+      - username: ${SGO_SECURITY_STORE_TERMINAL_USER:terminal-pos01@megastore.com}
+        password: ${SGO_SECURITY_STORE_TERMINAL_PASSWORD:TerminalPos01}
+        roles: [SUPPORT, STORE]
+      # Almacén central: entrega los eventos de stock de POS-ONLINE (cuenta de servicio, no de persona).
+      - username: ${SGO_SECURITY_CENTRAL_EVENTS_USER:central-eventos@megastore.com}
+        password: ${SGO_SECURITY_CENTRAL_EVENTS_PASSWORD:CentralEventos123}
+        roles: [POS_EVENTS]
+
+# Temporizador de reservas (INV-03, Jorge): cuánto dura una reserva sin pagar
+# y cada cuánto se barren las vencidas. Antes solo tenía valor por defecto en código.
+sgo-logic:
+  inventory:
+    reservation-ttl: ${SGO_INVENTORY_RESERVATION_TTL:PT15M}
+    expiration-sweep-interval: ${SGO_INVENTORY_EXPIRATION_SWEEP_INTERVAL:PT1M}

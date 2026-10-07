@@ -20,6 +20,10 @@ management:
       enabled: true
 
 sgo:
+  integrations:
+    erp:
+      outbox-dir: ${java.io.tmpdir}/sgo-erp-outbox-test
+      store-sales-feed-enabled: false
   messaging:
     outbox:
       enabled: false

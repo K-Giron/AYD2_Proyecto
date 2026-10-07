@@ -9,4 +9,8 @@ import java.util.UUID;
 interface PosDeliveryRepository extends JpaRepository<PosDelivery, UUID> {
     Optional<PosDelivery> findByEventIdAndStoreNumber(UUID eventId, int storeNumber);
     List<PosDelivery> findByEventIdOrderByStoreNumberAsc(UUID eventId);
+
+    List<PosDelivery> findByOrderIdOrderByCreatedAtAscStoreNumberAsc(UUID orderId);
+
+    List<PosDelivery> findTop200ByOrderByCreatedAtDesc();
 }

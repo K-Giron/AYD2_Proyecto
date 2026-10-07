@@ -19,7 +19,8 @@
             </div>
         </div>
         <div class="app-bar-actions">
-            <a href="login.html" class="btn btn-ghost btn-sm">Ver como cliente</a>
+            <a href="tienda-online.html" id="online-admin-link" class="btn btn-ghost btn-sm hidden">Tienda online</a>
+            <a href="index.html" class="btn btn-ghost btn-sm">Ver la tienda</a>
             <div class="app-bar-status">
                 <span id="backend-status-dot" class="status-dot unknown"></span>
                 <span id="backend-status-text">Verificando servicios...</span>
@@ -49,7 +50,7 @@
         </section>
 
         <section class="operations-table-panel">
-            <header><div><h2>Órdenes recientes</h2><p>Selecciona una orden para operar su ciclo completo.</p></div><span class="environment-badge">Ambiente simulado controlado</span></header>
+            <header><div><h2>Órdenes recientes</h2><p>Selecciona una orden para operar su ciclo completo.</p></div><span class="environment-badge">Ambiente de pruebas</span></header>
             <div id="operations-orders" class="operations-orders"><p class="empty-state">Cargando órdenes...</p></div>
         </section>
 
@@ -63,29 +64,61 @@
         </section>
 
         <section class="operations-table-panel" id="inventory-panel">
-            <header><div><h2>Inventario — entradas y salidas</h2><p>Recepción de mercadería, mermas y ajustes de tienda/POS, independientes de una orden.</p></div></header>
-            <form id="inventory-movement-form" class="form-grid compact">
-                <label>Producto
-                    <select name="productId" id="inventory-product-select" required></select>
-                </label>
-                <label>Ubicación
-                    <select name="locationId" id="inventory-location-select" required></select>
-                </label>
-                <label>Tipo
-                    <select name="type" required>
-                        <option value="INBOUND">Entrada</option>
-                        <option value="OUTBOUND">Salida</option>
-                    </select>
-                </label>
-                <label>Cantidad
-                    <input type="number" name="quantity" min="1" value="1" required />
-                </label>
-                <label class="full-field">Motivo
-                    <input type="text" name="reason" placeholder="Ej. recepción de proveedor, merma, ajuste POS" />
-                </label>
-                <button type="submit" class="btn btn-primary btn-sm">Registrar movimiento</button>
+            <header>
+                <div><h2>Inventario de la tienda online — existencias y kárdex</h2><p>Almacén CD-WEB: lo que entra por folio del almacén central, lo que sale por traslado y cada reserva de venta (activa, vendida o liberada por el temporizador).</p></div>
+                <button id="refresh-inventory-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+            </header>
+            <div id="online-stock-summary" class="kardex-summary"><p class="empty-state">Cargando…</p></div>
+            <div class="form-inline kardex-filters">
+                <select id="kardex-kind-filter" aria-label="Tipo de movimiento">
+                    <option value="">Todos los movimientos</option>
+                    <option value="ENTRADA">Entradas (folio del central)</option>
+                    <option value="SALIDA">Salidas (traslados)</option>
+                    <option value="RESERVA">Reservas de venta</option>
+                </select>
+                <input type="search" id="kardex-search" placeholder="SKU, artículo u orden" aria-label="Buscar en el kárdex" />
+            </div>
+            <div id="kardex-table" class="kardex-table"><p class="empty-state">Cargando…</p></div>
+            <p class="hint kardex-hint">Las entradas y salidas se registran por folio (almacén central → recepción en Tienda online; Tienda online → Traslados). La vista general de todos los almacenes está en el almacén central.</p>
+        </section>
+
+        <!-- CDU-01: mismo carrito recuperable desde cualquier canal (aquí, call center) -->
+        <section class="operations-table-panel" id="customer-lookup-panel">
+            <header><div><h2>Atención al cliente — call center (omnicanal)</h2><p>Busca al cliente por su correo: ves su carrito activo (el mismo de la web), lo atiendes por teléfono agregando o quitando productos, y consultas su historial de compras y atenciones.</p></div></header>
+            <form id="customer-search-form" class="order-picker-row">
+                <input type="email" id="customer-email-input" placeholder="Correo del cliente (ej. cliente@megastore.com)" required />
+                <button type="submit" class="btn btn-primary">Buscar cliente</button>
             </form>
-            <div id="inventory-movement-result" class="integration-result"><p class="empty-state">Registra un movimiento para ver el saldo actualizado.</p></div>
+            <div id="customer-result" class="customer-result"><p class="empty-state">Busca un cliente para ver su carrito y su historial.</p></div>
+        </section>
+
+        <!-- Sistemas legados: ERP AS/400 y POS de las 32 tiendas (ERP-01/02, POS-01) -->
+        <section class="operations-table-panel" id="legacy-panel">
+            <header>
+                <div><h2>ERP AS/400 y POS de tiendas</h2><p>Lotes de ventas (CSV/XML) que se dejan en la carpeta del ERP cada 30 min, y eventos enviados a los POS de las 32 tiendas.</p></div>
+                <div class="form-inline">
+                    <button id="erp-run-btn" class="btn btn-primary btn-sm">Generar lote ERP ahora</button>
+                    <button id="legacy-refresh-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                </div>
+            </header>
+            <div class="legacy-columns">
+                <div><h3 class="panel-subtitle">Lotes al ERP</h3><div id="erp-batches" class="kardex-table"><p class="empty-state">Cargando…</p></div></div>
+                <div><h3 class="panel-subtitle">Eventos a los POS</h3><div id="pos-events" class="kardex-table"><p class="empty-state">Cargando…</p></div></div>
+            </div>
+        </section>
+
+        <!-- Informe de ventas conciliado (Finanzas) -->
+        <section class="operations-table-panel" id="sales-report-panel">
+            <header>
+                <div><h2>Informe de ventas conciliado</h2><p>Cada venta (web y tiendas físicas) cruzada con su pago, su factura SAT y su envío al ERP. Cada consulta y exportación queda en auditoría.</p></div>
+                <form id="sales-report-form" class="form-inline">
+                    <label class="inline-label">Desde<input type="date" id="report-from" /></label>
+                    <label class="inline-label">Hasta<input type="date" id="report-to" /></label>
+                    <button type="submit" class="btn btn-primary btn-sm">Generar</button>
+                    <button type="button" id="report-export-btn" class="btn btn-ghost btn-sm">Exportar CSV</button>
+                </form>
+            </header>
+            <div id="sales-report" class="sales-report"><p class="empty-state">Elige un rango y genera el informe.</p></div>
         </section>
 
         <section id="dashboard" class="dashboard hidden">
@@ -236,13 +269,8 @@
                     <div class="card-title"><span class="card-icon">32</span><div><h2>ERP y puntos de venta</h2><p class="card-subtitle">Sincronización con sistemas legados sin modificarlos</p></div></div>
                 </header>
                 <div class="card-body">
-                    <p class="integration-help">Registra la venta confirmada en la ventana de ERP-Core o publica el cambio a una de las 32 tiendas.</p>
-                    <div class="legacy-actions">
-                        <button id="erp-sync-btn" class="btn btn-primary btn-sm">Registrar en ERP</button>
-                        <label>Tienda POS<input id="pos-store-number" type="number" min="1" max="32" value="1" /></label>
-                        <button id="pos-publish-btn" class="btn btn-ghost btn-sm">Publicar a POS</button>
-                    </div>
-                    <div id="legacy-result" class="integration-result"><p class="empty-state">Selecciona una orden para operar las integraciones.</p></div>
+                    <p class="integration-help">Automático: al confirmarse, la venta queda para el siguiente lote del ERP AS/400, y cada cambio de la orden se avisa a los POS de las 32 tiendas (con reintentos).</p>
+                    <div id="legacy-result" class="integration-result"><p class="empty-state">Selecciona una orden para ver su sincronización.</p></div>
                 </div>
             </article>
 
@@ -262,7 +290,7 @@
                         </span>
                         <div>
                             <h2>Cadena de integración</h2>
-                            <p class="card-subtitle">Servicios externos representados con simuladores configurables y trazables</p>
+                            <p class="card-subtitle">PayKlik y LogiExpress son sistemas propios conectados por REST; SAT y SMS/push siguen con su simulador</p>
                         </div>
                     </div>
                     <span class="badge badge-warn">Entorno académico</span>

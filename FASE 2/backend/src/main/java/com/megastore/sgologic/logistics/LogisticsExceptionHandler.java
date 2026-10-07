@@ -30,4 +30,11 @@ class LogisticsExceptionHandler {
                 correlationId == null ? "unavailable" : correlationId.toString());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
+
+    @ExceptionHandler(PickupHandoffException.class)
+    public ResponseEntity<ApiError> handleHandoff(PickupHandoffException exception, HttpServletRequest request) {
+        Object correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError("PICKUP_NOT_READY", exception.getMessage(),
+                Instant.now(), request.getRequestURI(), correlationId == null ? "unavailable" : correlationId.toString()));
+    }
 }

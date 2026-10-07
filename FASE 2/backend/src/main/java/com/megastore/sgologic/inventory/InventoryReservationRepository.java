@@ -13,6 +13,8 @@ interface InventoryReservationRepository extends JpaRepository<InventoryReservat
 
     List<InventoryReservation> findByOrderId(UUID orderId);
 
+    List<InventoryReservation> findTop200ByLocationIdOrderByCreatedAtDesc(UUID locationId);
+
     /** Soporta el barrido de INV-03: reservas activas ya vencidas. */
     List<InventoryReservation> findByStatusAndExpiresAtBefore(InventoryReservationStatus status, Instant cutoff);
 }

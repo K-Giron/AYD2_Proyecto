@@ -107,6 +107,14 @@ public class PosIntegrationService {
                 .orElseThrow(() -> new IntegrationResourceNotFoundException("la entrega POS", id));
     }
 
+    public List<PosDelivery> getDeliveriesForOrder(UUID orderId) {
+        return repository.findByOrderIdOrderByCreatedAtAscStoreNumberAsc(orderId);
+    }
+
+    public List<PosDelivery> recentDeliveries() {
+        return repository.findTop200ByOrderByCreatedAtDesc();
+    }
+
     public List<PosDelivery> getDeliveriesForEvent(UUID eventId) {
         return repository.findByEventIdOrderByStoreNumberAsc(eventId);
     }

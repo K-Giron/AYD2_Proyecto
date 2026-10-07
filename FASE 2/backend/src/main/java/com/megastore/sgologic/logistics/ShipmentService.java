@@ -77,6 +77,13 @@ public class ShipmentService implements DispatchPort {
     @Transactional
     public Shipment createDispatch(UUID orderId, DispatchOrigin origin, String destination,
                                     UUID correlationId, String idempotencyKey) {
+        return createDispatch(orderId, origin, null, destination, correlationId, idempotencyKey);
+    }
+
+    /** Igual que el anterior, indicando además el almacén concreto de origen ({@code originCode}). */
+    @Transactional
+    public Shipment createDispatch(UUID orderId, DispatchOrigin origin, String originCode, String destination,
+                                   UUID correlationId, String idempotencyKey) {
         Optional<Shipment> existing = shipmentRepository.findByIdempotencyKey(idempotencyKey);
         if (existing.isPresent()) {
             log.info("Solicitud de despacho repetida para orderId={} con idempotencyKey conocida; "
@@ -84,7 +91,8 @@ public class ShipmentService implements DispatchPort {
             return existing.get();
         }
 
-        Shipment shipment = Shipment.assign(orderId, origin, destination, correlationId, idempotencyKey, clock.instant());
+        Shipment shipment = Shipment.assign(orderId, origin, originCode, destination, correlationId, idempotencyKey,
+                clock.instant());
         shipmentRepository.save(shipment);
         publishStatusChanged(shipment, "PREPARING", correlationId);
 
@@ -120,8 +128,13 @@ public class ShipmentService implements DispatchPort {
      * LABEL_ISSUED, LABEL_FAILED) no generan ruido al cliente.
      */
     private void publishStatusChanged(Shipment shipment, String notifiableStatus, UUID correlationId) {
+        publishStatusChanged(shipment, notifiableStatus, correlationId, "SGO-LOGIC");
+    }
+
+    /** {@code source}: quién reportó el hecho (LOGIEXPRESS, la tienda de retiro, la consola). */
+    private void publishStatusChanged(Shipment shipment, String notifiableStatus, UUID correlationId, String source) {
         if (!("PREPARING".equals(notifiableStatus) || "IN_TRANSIT".equals(notifiableStatus)
-                || "DELIVERED".equals(notifiableStatus))) {
+                || "READY_FOR_PICKUP".equals(notifiableStatus) || "DELIVERED".equals(notifiableStatus))) {
             return;
         }
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -129,6 +142,8 @@ public class ShipmentService implements DispatchPort {
         payload.put("orderId", shipment.getOrderId());
         payload.put("status", notifiableStatus);
         payload.put("trackingNumber", shipment.getTrackingNumber());
+        payload.put("destination", shipment.getDestination());
+        payload.put("source", source);
         eventPublisher.publish(new OutboxEventRequest(AGGREGATE_TYPE, shipment.getId(),
                 SHIPMENT_STATUS_CHANGED, 1, correlationId, correlationId, payload));
     }
@@ -146,14 +161,18 @@ public class ShipmentService implements DispatchPort {
             return;
         }
         Shipment shipment = maybeShipment.get();
+        if (shipment.getTrackingNumber() != null) {
+            // La guía ya existe (la respuesta tardía la trajo el rastreo): no se vuelve a pedir.
+            return;
+        }
         shipment.markLabelRequested(clock.instant());
         // Reasignar la copia gestionada: conserva la version vigente para el
         // siguiente save y evita el bloqueo optimista del objeto desconectado.
         shipment = shipmentRepository.save(shipment);
 
         try {
-            LogiExpressLabelResult result = logiExpressGateway.requestLabel(
-                    shipment.getId(), shipment.getOrderId(), shipment.getDestination(), shipment.getCorrelationId());
+            LogiExpressLabelResult result = logiExpressGateway.requestLabel(shipment.getId(), shipment.getOrderId(),
+                    originLabel(shipment), shipment.getDestination(), shipment.getCorrelationId());
             shipment.markLabelIssued(result.trackingNumber(), clock.instant());
             shipmentRepository.save(shipment);
             trackingEventRepository.save(ShipmentTrackingEvent.of(
@@ -164,6 +183,11 @@ public class ShipmentService implements DispatchPort {
     }
 
     private void handleLabelFailure(Shipment shipment, String reason) {
+        Shipment current = shipmentRepository.findById(shipment.getId()).orElse(shipment);
+        if (current.getTrackingNumber() != null) {
+            // Mientras esperábamos, el rastreo de LogiExpress asoció la guía: la falla ya no aplica.
+            return;
+        }
         int attemptsSoFar = shipment.getLabelAttempts();
         int nextRetryIndex = attemptsSoFar - 1;
         if (nextRetryIndex < RETRY_DELAYS_SECONDS.length) {
@@ -192,8 +216,75 @@ public class ShipmentService implements DispatchPort {
         shipment.applyTrackingStatus(newStatus, clock.instant());
         shipmentRepository.save(shipment);
         trackingEventRepository.save(ShipmentTrackingEvent.of(shipmentId, newStatus, source, clock.instant()));
-        publishStatusChanged(shipment, newStatus.name(), shipment.getCorrelationId());
+        publishStatusChanged(shipment, newStatus.name(), shipment.getCorrelationId(), source);
         return shipment;
+    }
+
+    /**
+     * Conciliación con LogiExpress: si la guía se emitió pero la respuesta no
+     * llegó (timeout), el rastreo la trae después y se asocia al despacho.
+     */
+    @Transactional
+    public boolean reconcileLabel(UUID shipmentId, String trackingNumber) {
+        Shipment shipment = shipmentRepository.findById(shipmentId).orElse(null);
+        if (shipment == null || (shipment.getTrackingNumber() != null && shipment.getStatus() != ShipmentStatus.LABEL_FAILED)) {
+            return false;
+        }
+        shipment.markLabelIssued(trackingNumber, clock.instant());
+        shipmentRepository.save(shipment);
+        trackingEventRepository.save(ShipmentTrackingEvent.of(shipmentId, ShipmentStatus.LABEL_ISSUED,
+                "LOGIEXPRESS-CONCILIADA", clock.instant()));
+        return true;
+    }
+
+    /**
+     * Retiro en tienda: el cliente recoge en la tienda que eligió el pedido que
+     * LogiExpress ya dejó ahí. Solo esa tienda puede entregarlo, y solo una vez.
+     */
+    @Transactional
+    public Shipment handOverAtStore(UUID orderId, String storeCode, String receivedBy) {
+        Shipment shipment = getShipmentsForOrder(orderId).stream().findFirst()
+                .orElseThrow(() -> new PickupHandoffException("La orden " + orderId + " no tiene despacho."));
+        if (shipment.getDestination() == null || !shipment.getDestination().contains("(" + storeCode + ")")) {
+            throw new PickupHandoffException("Este pedido no se recoge en la tienda " + storeCode + ".");
+        }
+        if (shipment.getStatus() == ShipmentStatus.DELIVERED) {
+            throw new PickupHandoffException("El pedido ya fue entregado al cliente.");
+        }
+        if (shipment.getStatus() != ShipmentStatus.READY_FOR_PICKUP) {
+            throw new PickupHandoffException("El pedido todavía no llega a la tienda (estado " + shipment.getStatus() + ").");
+        }
+        log.info("Pedido {} entregado al cliente en {} (recibió {}).", orderId, storeCode, receivedBy);
+        return recordTrackingEvent(shipment.getId(), ShipmentStatus.DELIVERED, "TIENDA " + storeCode);
+    }
+
+    /**
+     * LOG-03: un despacho cuya guía quedó en la bandeja de fallidos (LogiExpress
+     * estuvo caído más que los reintentos) se vuelve a solicitar con 2/8/32 s.
+     */
+    @Transactional
+    public Shipment retryLabel(UUID shipmentId) {
+        Shipment shipment = getShipment(shipmentId);
+        if (shipment.getStatus() != ShipmentStatus.LABEL_FAILED || shipment.getTrackingNumber() != null) {
+            return shipment;
+        }
+        shipment.reopenLabelRequest(clock.instant());
+        shipment = shipmentRepository.save(shipment);
+        trackingEventRepository.save(ShipmentTrackingEvent.of(shipmentId, ShipmentStatus.LABEL_REQUESTED,
+                "CONSOLA-REINTENTO", clock.instant()));
+        scheduleLabelRequestAfterCommit(shipmentId);
+        return shipment;
+    }
+
+    private static String originLabel(Shipment shipment) {
+        if (shipment.getOriginCode() != null) {
+            return (shipment.getOrigin() == DispatchOrigin.STORE ? "Tienda " : "Almacén ") + shipment.getOriginCode();
+        }
+        return switch (shipment.getOrigin()) {
+            case DISTRIBUTION_CENTER -> "Centro de distribución MegaStore";
+            case STORE -> "Tienda MegaStore";
+            case CUSTOMER_PICKUP -> "Retiro del cliente";
+        };
     }
 
     /**
@@ -242,7 +333,7 @@ public class ShipmentService implements DispatchPort {
     @Transactional
     public DispatchResult createDispatch(DispatchRequest request) {
         DispatchOrigin origin = DispatchOrigin.valueOf(request.origin());
-        Shipment shipment = createDispatch(request.orderId(), origin, request.destination(),
+        Shipment shipment = createDispatch(request.orderId(), origin, request.originCode(), request.destination(),
                 request.correlationId(), request.idempotencyKey());
         return toResult(shipment);
     }

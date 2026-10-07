@@ -67,6 +67,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- Envío real de correos de notificación por SMTP (p. ej. Gmail), NOT-01. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
         <!-- BB-07 / DEC-06: autenticación JWT, autorización por roles y
              sanitización. Justificado por el checklist de entrega. -->
         <dependency>

@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -64,7 +65,18 @@ class ShipmentServiceTest {
                 orderId, DispatchOrigin.CUSTOMER_PICKUP, "Tienda Zona 10", UUID.randomUUID(), "idem-1");
 
         assertThat(shipment.getStatus()).isEqualTo(ShipmentStatus.READY_FOR_PICKUP);
-        verify(gateway, never()).requestLabel(any(), any(), any(), any());
+        verify(gateway, never()).requestLabel(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void createDispatchKeepsTheConcreteOriginWarehouse() {
+        UUID orderId = UUID.randomUUID();
+        when(shipmentRepository.findByIdempotencyKey("idem-wh")).thenReturn(Optional.empty());
+
+        Shipment shipment = service.createDispatch(orderId, DispatchOrigin.CUSTOMER_PICKUP, "ALM-CENTRAL",
+                "Tienda Zona 10", UUID.randomUUID(), "idem-wh");
+
+        assertThat(shipment.getOriginCode()).isEqualTo("ALM-CENTRAL");
     }
 
     @Test
@@ -124,7 +136,7 @@ class ShipmentServiceTest {
     void requestsLabelAndMarksIssuedOnSuccess() throws Exception {
         UUID orderId = UUID.randomUUID();
         when(shipmentRepository.findByIdempotencyKey("idem-3")).thenReturn(Optional.empty());
-        when(gateway.requestLabel(any(), any(), any(), any()))
+        when(gateway.requestLabel(any(), any(), any(), any(), any()))
                 .thenReturn(new LogiExpressLabelResult("LGX-TEST1234"));
 
         Shipment created = service.createDispatch(orderId, DispatchOrigin.DISTRIBUTION_CENTER, "San Salvador",
@@ -140,7 +152,7 @@ class ShipmentServiceTest {
     void exhaustsThreeRetriesThenSendsToDeadLetterQueue() throws Exception {
         UUID orderId = UUID.randomUUID();
         when(shipmentRepository.findByIdempotencyKey("idem-4")).thenReturn(Optional.empty());
-        when(gateway.requestLabel(any(), any(), any(), any()))
+        when(gateway.requestLabel(any(), any(), any(), any(), any()))
                 .thenThrow(new LogiExpressTimeoutException("timeout"));
 
         Shipment created = service.createDispatch(orderId, DispatchOrigin.STORE, "Antigua Guatemala",
@@ -148,7 +160,7 @@ class ShipmentServiceTest {
         Shipment finalState = shipmentsById.get(created.getId());
 
         // 1 intento inicial + 3 reintentos (2/8/32 s) = 4 llamadas al gateway.
-        verify(gateway, times(4)).requestLabel(any(), any(), any(), any());
+        verify(gateway, times(4)).requestLabel(any(), any(), any(), any(), any());
         assertThat(finalState.getStatus()).isEqualTo(ShipmentStatus.LABEL_FAILED);
         ArgumentCaptor<ShipmentDeadLetter> captor = ArgumentCaptor.forClass(ShipmentDeadLetter.class);
         verify(deadLetterRepository).save(captor.capture());
@@ -188,5 +200,83 @@ class ShipmentServiceTest {
         public java.util.concurrent.ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, java.time.Duration delay) {
             throw new UnsupportedOperationException();
         }
+    }
+
+    @Test
+    void onlyThePickupStoreHandsOverAnOrderThatAlreadyArrived() {
+        UUID orderId = UUID.randomUUID();
+        Shipment shipment = Shipment.assign(orderId, DispatchOrigin.DISTRIBUTION_CENTER, "CD-WEB",
+                "Recoger en Tienda Centro (POS-01) — 6a. Avenida", UUID.randomUUID(), "idem-pickup", clock.instant());
+        shipmentsById.put(shipment.getId(), shipment);
+        when(shipmentRepository.findByOrderIdOrderByCreatedAtDesc(orderId)).thenReturn(java.util.List.of(shipment));
+
+        // Todavía en camino: la tienda no puede entregarlo.
+        shipment.applyTrackingStatus(ShipmentStatus.IN_TRANSIT, clock.instant());
+        assertThatThrownBy(() -> service.handOverAtStore(orderId, "POS-01", "Ana"))
+                .isInstanceOf(PickupHandoffException.class).hasMessageContaining("todavía no llega");
+
+        shipment.applyTrackingStatus(ShipmentStatus.READY_FOR_PICKUP, clock.instant());
+        assertThatThrownBy(() -> service.handOverAtStore(orderId, "POS-02", "Ana"))
+                .isInstanceOf(PickupHandoffException.class).hasMessageContaining("no se recoge en la tienda POS-02");
+
+        Shipment delivered = service.handOverAtStore(orderId, "POS-01", "Ana");
+
+        assertThat(delivered.getStatus()).isEqualTo(ShipmentStatus.DELIVERED);
+        assertThatThrownBy(() -> service.handOverAtStore(orderId, "POS-01", "Ana"))
+                .isInstanceOf(PickupHandoffException.class).hasMessageContaining("ya fue entregado");
+    }
+
+    @Test
+    void labelIssuedAfterATimeoutIsReconciledFromTracking() {
+        Shipment shipment = Shipment.assign(UUID.randomUUID(), DispatchOrigin.DISTRIBUTION_CENTER, "CD-WEB",
+                "Zona 10", UUID.randomUUID(), "idem-late", clock.instant());
+        shipment.markLabelFailed(clock.instant());
+        shipmentsById.put(shipment.getId(), shipment);
+
+        assertThat(service.reconcileLabel(shipment.getId(), "LGX-00000042")).isTrue();
+        assertThat(shipment.getTrackingNumber()).isEqualTo("LGX-00000042");
+        assertThat(shipment.getStatus()).isEqualTo(ShipmentStatus.LABEL_ISSUED);
+        // Ya tiene guía: no se vuelve a tocar.
+        assertThat(service.reconcileLabel(shipment.getId(), "LGX-99999999")).isFalse();
+    }
+
+    @Test
+    void lateTimeoutNeverOverridesAGuideFoundByTracking() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        when(shipmentRepository.findByIdempotencyKey("idem-race")).thenReturn(Optional.empty());
+        // LogiExpress emite la guía pero responde tarde; mientras tanto el rastreo la asocia.
+        when(gateway.requestLabel(any(), any(), any(), any(), any())).thenAnswer(invocation -> {
+            service.reconcileLabel(invocation.getArgument(0), "LGX-00000077");
+            throw new LogiExpressTimeoutException("respuesta tardía");
+        });
+
+        Shipment shipment = service.createDispatch(orderId, DispatchOrigin.DISTRIBUTION_CENTER, "CD-WEB",
+                "Zona 10", UUID.randomUUID(), "idem-race");
+
+        Shipment stored = shipmentsById.get(shipment.getId());
+        assertThat(stored.getTrackingNumber()).isEqualTo("LGX-00000077");
+        assertThat(stored.getStatus()).isEqualTo(ShipmentStatus.LABEL_ISSUED);
+        verify(gateway, times(1)).requestLabel(any(), any(), any(), any(), any());
+        verify(deadLetterRepository, never()).save(any());
+    }
+
+    @Test
+    void deadLetteredLabelCanBeRequestedAgainOnceLogiExpressIsBack() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        when(shipmentRepository.findByIdempotencyKey("idem-down")).thenReturn(Optional.empty());
+        when(gateway.requestLabel(any(), any(), any(), any(), any()))
+                .thenThrow(new LogiExpressUnavailableException("503"))
+                .thenThrow(new LogiExpressUnavailableException("503"))
+                .thenThrow(new LogiExpressUnavailableException("503"))
+                .thenThrow(new LogiExpressUnavailableException("503"))
+                .thenReturn(new LogiExpressLabelResult("LGX-00000099"));
+        Shipment shipment = service.createDispatch(orderId, DispatchOrigin.DISTRIBUTION_CENTER, "CD-WEB",
+                "Zona 10", UUID.randomUUID(), "idem-down");
+        assertThat(shipmentsById.get(shipment.getId()).getStatus()).isEqualTo(ShipmentStatus.LABEL_FAILED);
+
+        service.retryLabel(shipment.getId());
+
+        assertThat(shipmentsById.get(shipment.getId()).getStatus()).isEqualTo(ShipmentStatus.LABEL_ISSUED);
+        assertThat(shipmentsById.get(shipment.getId()).getTrackingNumber()).isEqualTo("LGX-00000099");
     }
 }

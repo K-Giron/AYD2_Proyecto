@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ingresar | Almacén central</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <div class="login-shell">
+        <aside class="login-aside">
+            <div class="brand">
+                <div class="brand-mark">AC</div>
+                <div class="brand-text"><h1>Almacén central</h1><span>Sistema de inventario</span></div>
+            </div>
+
+            <div class="login-pitch">
+                <h2>Un solo lugar para artículos, existencias, cuentas y envíos.</h2>
+                <p>Cada rol ve exactamente lo que necesita operar: Almacén registra el movimiento, Finanzas liquida la cuenta y Logística sigue el envío hasta la entrega.</p>
+
+                <div class="login-modules">
+                    <div class="login-module"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m17 7 4 4-4 4"/><path d="M3 11h18"/><path d="m7 21-4-4 4-4"/><path d="M21 13H3"/></svg></span>Folio por cada entrada y salida</div>
+                    <div class="login-module"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.3c0 3 6 1.4 6 4.4 0 1.4-1.3 2.3-3 2.3s-3-1-3-2.3"/></svg></span>Cuentas por pagar y por cobrar</div>
+                    <div class="login-module"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="10" rx="1.5"/><path d="M14 10h4l4 3.5V17h-8"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg></span>Seguimiento de envío hasta la entrega</div>
+                </div>
+            </div>
+
+            <p class="login-foot">Sistema propio, independiente del punto de venta.</p>
+        </aside>
+
+        <div class="login-form-col">
+            <div class="login-card">
+                <h1>Ingresar</h1>
+                <p class="subtitle">Usa tu cuenta de Almacén, Finanzas o Logística.</p>
+                <form id="login-form" class="form-grid">
+                    <label>Usuario<input type="text" name="username" id="login-username" required autocomplete="username" /></label>
+                    <label>Contraseña<input type="password" name="password" id="login-password" required autocomplete="current-password" /></label>
+                    <button type="submit" class="btn btn-primary">Ingresar</button>
+                </form>
+
+                <div class="demo-accounts">
+                    <div class="label">Cuentas de demostración</div>
+                    <button type="button" class="demo-account-btn" data-user="almacen@almacencentral.local" data-pass="Almacen123"><span>almacen@almacencentral.local</span><span class="role">Almacén</span></button>
+                    <button type="button" class="demo-account-btn" data-user="finanzas@almacencentral.local" data-pass="Finanzas123"><span>finanzas@almacencentral.local</span><span class="role">Finanzas</span></button>
+                    <button type="button" class="demo-account-btn" data-user="logistica@almacencentral.local" data-pass="Logistica123"><span>logistica@almacencentral.local</span><span class="role">Logística</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
