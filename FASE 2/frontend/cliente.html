@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="landing.css" />
     <link rel="stylesheet" href="store.css" />
+    <link rel="stylesheet" href="invoice.css" />
 </head>
 <body class="store">
     <a class="skip-link" href="#store-content">Ir al contenido</a>
@@ -53,11 +54,16 @@
                 <div class="checkout-main">
                     <div id="cart-items" class="cart-list"></div>
                     <section class="store-card"><span class="section-index">01</span><h2>Entrega</h2><div class="delivery-options">
-                        <label class="delivery-option"><input type="radio" name="delivery" value="CUSTOMER_PICKUP" checked /><span><strong>Recoger en tienda</strong><small>Sin costo. Te avisaremos cuando esté listo.</small></span></label>
-                        <label class="delivery-option"><input type="radio" name="delivery" value="DISTRIBUTION_CENTER" /><span><strong>Envío a domicilio</strong><small>La Saga elegirá el mejor origen para el despacho.</small></span></label>
-                    </div><label class="field">Dirección o tienda de destino<input type="text" id="checkout-destination" placeholder="Zona 10, Ciudad de Guatemala" /></label></section>
+                        <label class="delivery-option"><input type="radio" name="delivery" value="PICKUP" checked /><span><strong>Recoger en tienda</strong><small>Sin costo. Te avisaremos cuando esté listo para recoger.</small></span></label>
+                        <label class="delivery-option"><input type="radio" name="delivery" value="HOME" /><span><strong>Envío a domicilio</strong><small>Sale del almacén de la tienda online con guía de LogiExpress.</small></span></label>
+                    </div>
+                    <div id="pickup-block" class="pickup-block"><p class="pickup-title">¿Dónde lo recoges?</p><div id="pickup-points" class="pickup-points"><p class="catalog-status">Cargando ubicaciones…</p></div></div>
+                    <label class="field hidden" id="home-block">Dirección de entrega<input type="text" id="checkout-destination" placeholder="Calle, número, zona y municipio" maxlength="200" /></label></section>
                     <section class="store-card"><span class="section-index">02</span><h2>Datos fiscales</h2><div class="form-grid compact"><label>Nombre para la factura<input id="fiscal-name" type="text" value="Consumidor final" maxlength="200" /></label><label>NIT<input id="fiscal-tax-id" type="text" value="CF" maxlength="32" /></label></div></section>
-                    <section class="store-card"><span class="section-index">03</span><h2>Pago protegido</h2><div class="payment-token-card"><div><strong>Tarjeta tokenizada de demostración</strong><small>Terminación 4242 · PayKlik</small></div><span class="secure-label">Sin PAN ni CVV</span></div></section>
+                    <section class="store-card"><span class="section-index">03</span><h2>Forma de pago</h2><div class="delivery-options">
+                        <label class="delivery-option"><input type="radio" name="payment" value="CARD" checked /><span><strong>Tarjeta de crédito o débito</strong><small>Pagas en la ventana segura de PayKlik. No guardamos el número ni el CVV.</small></span></label>
+                        <label class="delivery-option"><input type="radio" name="payment" value="TRANSFER" /><span><strong>Transferencia bancaria</strong><small>Te mostramos la cuenta de MegaStore y una referencia para tu transferencia.</small></span></label>
+                    </div></section>
                 </div>
                 <aside class="checkout-summary"><p class="eyebrow">Resumen</p><h2>Tu compra</h2><div id="checkout-totals"></div><button id="confirm-purchase-btn" class="btn btn-primary btn-block">Reservar y pagar</button><p class="checkout-legal">La orden se confirma únicamente después de inventario, PayKlik y SAT.</p><div id="checkout-result" class="checkout-result" aria-live="polite"></div></aside>
             </div>
@@ -70,11 +76,46 @@
 
         <section id="view-returns" class="store-view">
             <div class="page-heading"><p class="eyebrow">Postventa</p><h1>Devoluciones e incidencias</h1></div><div class="returns-layout">
-                <div class="store-card"><h2>Nueva solicitud</h2><form id="return-form" class="form-grid compact"><label>Número de orden<input type="text" name="orderId" placeholder="UUID de la orden" required /></label><label>Tipo<select name="type" required><option value="RETURN">Devolución</option><option value="INCIDENT">Incidencia</option></select></label><label class="full-field">Motivo<input type="text" name="reason" placeholder="Cuéntanos qué ocurrió" required /></label><label>SKU<input type="text" name="sku" placeholder="SKU de factura" required /></label><label>Cantidad<input type="number" name="quantity" min="1" value="1" required /></label><label class="checkbox full-field"><input type="checkbox" name="partial" /> Es una devolución parcial</label><button type="submit" class="btn btn-primary btn-sm">Enviar solicitud</button></form></div>
-                <div class="store-card"><h2>Consultar solicitudes</h2><div class="form-inline compact"><input type="text" id="returns-order-input" placeholder="UUID de la orden" /><button id="returns-load-btn" class="btn btn-ghost btn-sm">Buscar por orden</button><button id="returns-history-btn" class="btn btn-ghost btn-sm">Ver todo mi historial</button></div><div id="returns-list" class="card-body list-body"></div></div>
+                <div class="store-card"><h2>Nueva solicitud</h2><form id="return-form" class="form-grid compact"><label>Compra<select name="orderId" id="return-order-select" required><option value="">Cargando tus compras…</option></select></label><label>Tipo<select name="type" required><option value="RETURN">Devolución</option><option value="INCIDENT">Incidencia</option></select></label><label class="full-field">Motivo<input type="text" name="reason" placeholder="Cuéntanos qué ocurrió" required /></label><label>Producto<select name="sku" id="return-sku-select" required><option value="">Elige primero la compra</option></select></label><label>Cantidad<input type="number" name="quantity" min="1" value="1" required /></label><label class="checkbox full-field"><input type="checkbox" name="partial" /> Es una devolución parcial</label><button type="submit" class="btn btn-primary btn-sm">Enviar solicitud</button></form></div>
+                <div class="store-card"><h2>Consultar solicitudes</h2><div class="form-inline compact"><select id="returns-order-input" aria-label="Compra"><option value="">Elige una compra</option></select><button id="returns-load-btn" class="btn btn-ghost btn-sm">Buscar por orden</button><button id="returns-history-btn" class="btn btn-ghost btn-sm">Ver todo mi historial</button></div><div id="returns-list" class="card-body list-body"></div></div>
             </div>
         </section>
     </main>
+    <!-- Ventana de pago PayKlik: el cobro lo autoriza payklik-service por REST desde el backend -->
+    <div id="payklik-modal" class="invoice-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="payklik-title">
+        <div class="invoice-sheet payklik-sheet">
+            <div class="payklik-head"><strong id="payklik-title">PayKlik</strong><span>Pago seguro</span></div>
+            <div class="payklik-body">
+                <div class="payklik-amount"><span>Total a pagar a MegaStore, S.A.</span><strong id="payklik-amount">Q0.00</strong></div>
+                <div id="payklik-card">
+                    <div class="payklik-card-visual"><span>Tarjeta tokenizada</span><strong>•••• •••• •••• 4242</strong><small>VISA · vence 12/29</small></div>
+                    <p class="payklik-note">PayKlik cobra con el token de la tarjeta; MegaStore nunca recibe el número completo ni el CVV.</p>
+                    <button type="button" id="payklik-charge-btn" class="btn btn-primary btn-block">Pagar con esta tarjeta</button>
+                </div>
+                <div id="payklik-transfer" class="hidden">
+                    <div class="bank-box">
+                        <div><span>Banco</span><strong>Banco Industrial</strong></div>
+                        <div><span>Cuenta monetaria</span><strong class="mono">120-004587-3</strong></div>
+                        <div><span>A nombre de</span><strong>MegaStore, S.A.</strong></div>
+                        <div><span>Referencia</span><strong class="mono" id="transfer-reference">—</strong></div>
+                    </div>
+                    <p class="payklik-note">Haz la transferencia por el total exacto e incluye la referencia; PayKlik la registra y confirma el cobro a MegaStore.</p>
+                    <button type="button" id="payklik-transfer-btn" class="btn btn-primary btn-block">Ya realicé la transferencia</button>
+                </div>
+                <button type="button" id="payklik-cancel-btn" class="btn btn-ghost btn-block">Cancelar y volver al carrito</button>
+            </div>
+        </div>
+    </div>
+    <div id="invoice-modal" class="invoice-backdrop hidden" role="dialog" aria-modal="true" aria-label="Factura">
+        <div class="invoice-sheet">
+            <div id="invoice-body" class="invoice-paper"></div>
+            <div class="invoice-actions">
+                <button type="button" id="invoice-xml-btn" class="btn btn-ghost btn-sm">Descargar XML</button>
+                <button type="button" id="invoice-print-btn" class="btn btn-primary btn-sm">Imprimir factura</button>
+                <button type="button" id="invoice-close-btn" class="btn btn-ghost btn-sm">Cerrar</button>
+            </div>
+        </div>
+    </div>
     <footer class="store-footer"><span>MegaStore · SGO-Logic MVP</span><span>Operación trazable · <code id="correlation-id"></code></span></footer>
     <script src="session.js"></script><script src="app-cliente.js"></script>
 </body>

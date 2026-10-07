@@ -82,3 +82,15 @@ body.store code { background: #e7edf5; color: #263b58; }
     .client-campaign::after { background:linear-gradient(90deg,rgba(4,31,77,.92),rgba(4,31,77,.3)); }
     .client-campaign-copy { width:100%; justify-content:flex-end; }
 }
+
+/* Puntos de recogida en el checkout */
+.pickup-block { margin-top: 1rem; }
+.pickup-title { margin: 0 0 .5rem; font-weight: 750; font-size: .84rem; color: var(--accent-deep); }
+.pickup-points { display: grid; gap: .5rem; }
+.pickup-point { display: flex; gap: .7rem; align-items: flex-start; border: 1px solid var(--panel-border); background: #fff; padding: .75rem .9rem; cursor: pointer; }
+.pickup-point:has(input:checked) { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(8,169,214,.15); }
+.pickup-point strong { display: block; color: var(--accent-deep); font-size: .86rem; }
+.pickup-point small { display: block; color: var(--muted); font-size: .74rem; margin-top: .15rem; }
+.field.hidden, .pickup-block.hidden { display: none; }
+.cart-swatch img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cart-swatch { overflow: hidden; }

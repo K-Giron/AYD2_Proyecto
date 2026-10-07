@@ -1,0 +1,65 @@
+/* Administración de la tienda online, sobre el tema de la consola interna. */
+
+.admin-tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+.admin-tab {
+    background: var(--panel); border: 1px solid var(--panel-border); color: var(--muted);
+    border-radius: 99px; padding: 0.45rem 1rem; font: inherit; font-size: 0.85rem; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.admin-tab.active { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+.tab-count { background: rgba(251, 191, 36, .15); color: var(--warn); border-radius: 99px; padding: 0 .45rem; font-size: .72rem; font-weight: 700; }
+
+.admin-view { display: none; }
+.admin-view.active { display: block; }
+.admin-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 1rem; }
+@media (max-width: 900px) { .admin-grid { grid-template-columns: 1fr; } }
+
+.panel-body { padding: 1rem 1.1rem; }
+.folio-row { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; }
+.folio-row input { flex: 1; min-width: 0; font-size: 1rem; }
+.hint { color: var(--muted); font-size: 0.78rem; margin: 0.3rem 0; }
+
+.table-scroll { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.admin-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .04em; padding: 0.6rem 1.1rem; border-bottom: 1px solid var(--panel-border-soft); }
+.admin-table td { padding: 0.6rem 1.1rem; border-bottom: 1px solid var(--panel-border-soft); vertical-align: middle; }
+.admin-table tr:last-child td { border-bottom: 0; }
+.admin-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.admin-table .sub { display: block; color: var(--muted-soft); font-size: 0.74rem; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.shipment-head { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .82rem; margin-bottom: .7rem; color: var(--muted); }
+.shipment-head strong { color: var(--text); }
+.transit-item { display: flex; justify-content: space-between; gap: .8rem; padding: .55rem 0; border-bottom: 1px solid var(--panel-border-soft); font-size: .82rem; }
+.transit-item:last-child { border-bottom: 0; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; }
+
+.thumb { width: 52px; height: 52px; border-radius: .5rem; object-fit: cover; background: var(--field-bg); border: 1px solid var(--panel-border); display: block; }
+.thumb.empty { display: grid; place-items: center; color: var(--muted-soft); font-size: .62rem; text-align: center; }
+.catalog-filter { min-width: 14rem; }
+
+.editor-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(4, 8, 18, .72); display: grid; place-items: center; padding: 1rem; }
+.editor { width: 100%; max-width: 760px; max-height: calc(100vh - 2rem); overflow-y: auto; background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); }
+.editor > header, .editor > footer { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 1.2rem; }
+.editor > header { border-bottom: 1px solid var(--panel-border-soft); }
+.editor > footer { border-top: 1px solid var(--panel-border-soft); }
+.editor h2 { margin: 0; font-size: 1.05rem; }
+.editor-body { display: grid; grid-template-columns: 220px 1fr; gap: 1.2rem; padding: 1.2rem; }
+@media (max-width: 640px) { .editor-body { grid-template-columns: 1fr; } }
+.editor-image { display: flex; flex-direction: column; gap: .5rem; align-items: stretch; }
+.image-preview { aspect-ratio: 1; border-radius: .6rem; border: 1px dashed var(--panel-border); background: var(--field-bg); display: grid; place-items: center; overflow: hidden; color: var(--muted-soft); font-size: .8rem; }
+.image-preview img { width: 100%; height: 100%; object-fit: cover; }
+.file-btn { text-align: center; cursor: pointer; }
+.editor-fields { display: flex; flex-direction: column; gap: .7rem; }
+.editor-fields label { display: flex; flex-direction: column; gap: .3rem; font-size: .78rem; color: var(--muted); font-weight: 600; }
+.editor-fields textarea { resize: vertical; font: inherit; }
+.editor-actions { display: flex; gap: .5rem; }
+.editor-fields textarea { background: var(--field-bg); border: 1px solid var(--panel-border); color: var(--text); padding: .55rem .65rem; border-radius: .4rem; font-size: .9rem; }
+.editor-fields textarea:focus { outline: none; border-color: var(--accent); }
+
+.inventory-summary { display: flex; flex-wrap: wrap; gap: .5rem 1.4rem; padding: .8rem 1.1rem 0; color: var(--muted); font-size: .82rem; }
+.inventory-summary strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.transfer-form { display: flex; flex-direction: column; gap: .7rem; }
+.transfer-form label, .inline-label { display: flex; flex-direction: column; gap: .3rem; font-size: .78rem; color: var(--muted); font-weight: 600; }
+.inline-label { flex-direction: row; align-items: center; gap: .4rem; }
+@media print { .app-bar, .workbench { display: none !important; } }

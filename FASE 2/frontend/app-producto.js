@@ -1,6 +1,5 @@
 "use strict";
 
-const DETAIL_CORRELATION_ID = crypto.randomUUID();
 const DETAIL_FAVORITES_KEY = "sgo.megastore.favorites";
 const detailSession = sgoGetSession();
 let detailProduct = null;
@@ -23,17 +22,14 @@ async function loadProductDetail() {
     const productId = new URLSearchParams(location.search).get("id");
     const shell = document.getElementById("product-detail");
     try {
-        const catalogResponse = await fetch("catalog.json", { cache:"no-store" });
-        const catalog = await catalogResponse.json();
+        const catalog = await sgoLoadCatalog();
         detailProduct = catalog.find(product => product.id === productId);
         if (!detailProduct) throw new Error("Producto no encontrado");
-        const stockResponse = await fetch(`/api/v1/inventory/stock?productId=${detailProduct.id}`, { headers:{ "X-Correlation-Id":DETAIL_CORRELATION_ID } });
-        const stockRows = stockResponse.ok ? await stockResponse.json() : [];
-        const available = stockRows.reduce((sum,row) => sum + Number(row.quantityAvailable ?? row.availableQuantity ?? 0), 0);
+        const available = detailProduct.available;
         const favorite = detailFavorites().has(detailProduct.id);
         document.title = `${detailProduct.name} | MegaStore`;
         document.getElementById("detail-breadcrumb").textContent = detailProduct.name;
-        shell.innerHTML = `<div class="product-detail-media"><img src="${detailEscape(detailProduct.image)}" alt="${detailEscape(detailProduct.name)}" width="900" height="900" /></div><article class="product-detail-copy"><p class="detail-category">${detailEscape(detailProduct.category)} <span>${detailEscape(detailProduct.sku)}</span></p><h1>${detailEscape(detailProduct.name)}</h1><p class="detail-description">${detailEscape(detailProduct.description)}</p><strong class="detail-price">${detailMoney(detailProduct.price)}</strong><p class="detail-stock ${available === 0 ? "out" : ""}">${available > 0 ? `${available} unidades disponibles` : "Producto agotado"}</p><div class="detail-actions"><button id="detail-buy" ${available === 0 ? "disabled" : ""}>${available === 0 ? "Agotado" : "Agregar al carrito"}</button><button id="detail-favorite" class="secondary" aria-pressed="${favorite}">${favorite ? "Quitar de favoritos" : "Guardar en favoritos"}</button></div><section class="stock-locations"><h2>Disponibilidad por ubicación</h2>${stockRows.length ? stockRows.map(row => `<div><span>${detailEscape(row.locationName)}</span><strong>${Number(row.quantityAvailable ?? row.availableQuantity ?? 0)} disponibles</strong></div>`).join("") : `<p>No fue posible consultar el detalle de inventario.</p>`}</section></article>`;
+        shell.innerHTML = `<div class="product-detail-media"><img src="${detailEscape(detailProduct.image)}" alt="${detailEscape(detailProduct.name)}" width="900" height="900" /></div><article class="product-detail-copy"><p class="detail-category">${detailEscape(detailProduct.category)} <span>${detailEscape(detailProduct.sku)}</span></p><h1>${detailEscape(detailProduct.name)}</h1><p class="detail-description">${detailEscape(detailProduct.description)}</p><strong class="detail-price">${detailMoney(detailProduct.price)}</strong><p class="detail-stock ${available === 0 ? "out" : ""}">${available === undefined ? "Existencia en consulta: se valida al reservar" : available > 0 ? `${available} unidades disponibles` : "Producto agotado"}</p><div class="detail-actions"><button id="detail-buy" ${available === 0 ? "disabled" : ""}>${available === 0 ? "Agotado" : "Agregar al carrito"}</button><button id="detail-favorite" class="secondary" aria-pressed="${favorite}">${favorite ? "Quitar de favoritos" : "Guardar en favoritos"}</button></div><section class="stock-locations"><h2>Disponibilidad</h2>${available === undefined ? `<p>No fue posible consultar la existencia de la tienda online.</p>` : `<div><span>Almacén Tienda Online</span><strong>${available} disponibles</strong></div>`}</section></article>`;
         document.getElementById("detail-buy")?.addEventListener("click", buyDetailProduct);
         document.getElementById("detail-favorite").addEventListener("click", toggleDetailFavorite);
     } catch {

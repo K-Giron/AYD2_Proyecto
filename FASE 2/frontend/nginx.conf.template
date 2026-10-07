@@ -7,12 +7,21 @@ server {
 
     # Sitio multi-página real (index/cliente/staff), no una SPA: cada ruta
     # sirve su propio archivo; sin fallback a index.html.
+    # Sin build tooling no hay cache-busting por hash de archivo, así que
+    # cualquier caché del navegador sirve HTML/JS viejo tras un rebuild del
+    # contenedor (bug recurrente ya visto en inventory-service) — se
+    # deshabilita toda caché para que cada carga siempre pida la versión
+    # actual.
     location / {
+        add_header Cache-Control "no-store" always;
         try_files $uri $uri/ =404;
     }
 
     # Evita CORS: el navegador solo habla con nginx, que reenvía al backend
     # dentro de la red interna de Compose.
+    # Imágenes del catálogo que sube la tienda online (máx. 2 MB en el backend).
+    client_max_body_size 5m;
+
     location /api/ {
         proxy_pass http://${BACKEND_HOST}:${BACKEND_INTERNAL_PORT}/api/;
         proxy_set_header Host $host;

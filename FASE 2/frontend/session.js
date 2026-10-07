@@ -15,6 +15,7 @@ const SGO_REGISTERED_ACCOUNTS_KEY = "sgo.registeredAccounts";
 
 /** Traduce los roles del backend a las dos experiencias de la UI. */
 function sgoUiRoleFor(roles) {
+    if (Array.isArray(roles) && roles.includes("ONLINE_STORE")) return "ONLINE_STORE";
     if (Array.isArray(roles) && roles.includes("CLIENT")) return "CLIENTE";
     if (Array.isArray(roles) && roles.includes("FINANCE")) return "FINANCE";
     return "STAFF";
@@ -60,13 +61,21 @@ async function sgoLogin(email, password) {
         return { ok: false, message: (data && data.message) || "Correo o contraseña incorrectos." };
     }
     const roles = Array.isArray(data.roles) ? data.roles : [];
+    const fallbackCustomerId = localAccount?.customerId || (roles.includes("CLIENT")
+        ? "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" : null);
+    const customerId = roles.includes("CLIENT")
+        ? await sgoResolveServerCustomerId(data.accessToken, localAccount?.email || normalizedEmail,
+            localAccount?.name || normalizedEmail, fallbackCustomerId)
+        : null;
+    if (localAccount && customerId && localAccount.customerId !== customerId) {
+        sgoUpdateLocalAccount(localAccount.email, { customerId });
+    }
     return {
         ok: true,
         session: {
             role: sgoUiRoleFor(roles),
             backendRoles: roles,
-            customerId: localAccount?.customerId || (roles.includes("CLIENT")
-                ? "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" : null),
+            customerId,
             email: localAccount?.email || normalizedEmail,
             name: localAccount?.name || normalizedEmail,
             accessToken: data.accessToken,
@@ -76,15 +85,79 @@ async function sgoLogin(email, password) {
     };
 }
 
-/** Registro local del prototipo; reutiliza la identidad JWT CLIENT del entorno demo. */
+/**
+ * El customerId sale del directorio de clientes del servidor (no del
+ * navegador): así el mismo usuario tiene el mismo carrito en la web, en
+ * otro dispositivo y en la tienda física (CDU-01). Si el cliente ya fue
+ * registrado en una tienda, se enlaza a ese mismo registro en vez de
+ * crear otro. Si el directorio no responde, se conserva el id local.
+ */
+async function sgoResolveServerCustomerId(accessToken, username, fullName, fallbackCustomerId) {
+    const headers = { "Content-Type": "application/json", Authorization: "Bearer " + accessToken };
+    try {
+        const found = await fetch(`/api/v1/customers/by-username?username=${encodeURIComponent(username)}`,
+            { headers, cache: "no-store" });
+        if (found.ok) return (await found.json()).id;
+        if (found.status !== 404) return fallbackCustomerId;
+        const created = await fetch("/api/v1/customers", {
+            method: "POST", headers, cache: "no-store",
+            body: JSON.stringify({ username, fullName: fullName || username, channel: "WEB" }),
+        });
+        if (created.ok) return (await created.json()).id;
+        return fallbackCustomerId;
+    } catch {
+        return fallbackCustomerId;
+    }
+}
+
+function sgoUpdateLocalAccount(email, changes) {
+    const accounts = sgoRegisteredAccounts().map(account =>
+        account.email === email ? { ...account, ...changes } : account);
+    localStorage.setItem(SGO_REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+
+/**
+ * ¿El directorio de clientes del servidor ya tiene ese correo? true/false, o
+ * null si no se pudo consultar (entonces se decide con lo que sabe el navegador).
+ * Consulta con la identidad JWT CLIENT del entorno demo, igual que el login.
+ */
+async function sgoDirectoryHasCustomer(email) {
+    try {
+        const login = await fetch("/api/v1/auth/login", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: "cliente@megastore.com", password: "Cliente123" }),
+        });
+        if (!login.ok) return null;
+        const { accessToken } = await login.json();
+        const found = await fetch(`/api/v1/customers/by-username?username=${encodeURIComponent(email)}`,
+            { headers: { Authorization: "Bearer " + accessToken }, cache: "no-store" });
+        if (found.ok) return true;
+        return found.status === 404 ? false : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Registro del prototipo: la contraseña sigue siendo local (la cuenta usa
+ * la identidad JWT CLIENT del entorno demo), pero el cliente queda
+ * registrado en el directorio del servidor al iniciar sesión.
+ */
 async function sgoRegisterClient(name, email, password) {
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const accounts = sgoRegisteredAccounts();
-    if (accounts.some(account => account.email === normalizedEmail)) {
+    // La fuente de verdad es el directorio de clientes del servidor, no este
+    // navegador: si aquí quedó guardada una cuenta que el servidor ya no tiene
+    // (p. ej. tras limpiar los datos de prueba), se reemplaza en vez de bloquear.
+    const existsOnServer = await sgoDirectoryHasCustomer(normalizedEmail);
+    if (existsOnServer === true) {
+        throw new Error("Ya existe una cuenta con ese correo. Inicia sesión con tu contraseña.");
+    }
+    const accounts = sgoRegisteredAccounts().filter(account => account.email !== normalizedEmail);
+    if (existsOnServer === null && accounts.length !== sgoRegisteredAccounts().length) {
         throw new Error("Ya existe una cuenta con ese correo.");
     }
     const account = {
-        customerId: crypto.randomUUID(),
+        customerId: null,
         email: normalizedEmail,
         password,
         name: String(name || "").trim(),
@@ -128,7 +201,9 @@ function sgoAuthHeaders() {
 }
 
 function sgoLandingPageFor(role) {
-    return role === "CLIENTE" ? "cliente.html" : "staff.html";
+    if (role === "CLIENTE") return "cliente.html";
+    if (role === "ONLINE_STORE") return "tienda-online.html";
+    return "staff.html";
 }
 
 function sgoLogout() {
@@ -154,4 +229,21 @@ function sgoRequireAnySession(expectedRoles) {
         return null;
     }
     return session;
+}
+
+// Catálogo de la web = lo que el administrador de la tienda online publicó
+// (con su imagen, precio y descripción). {@code available} es la existencia
+// real de la tienda online menos lo reservado por otras órdenes: la misma que
+// la reserva atómica valida al pagar (ADR-015, módulo onlinestore).
+async function sgoLoadCatalog() {
+    const response = await fetch("/api/v1/online-catalog", { cache: "no-store" });
+    if (!response.ok) throw new Error("No se pudo cargar el catálogo de la tienda online.");
+    const products = await response.json();
+    return products.map(product => ({
+        ...product,
+        category: product.category || "General",
+        description: product.description || "",
+        image: product.image || "favicon.svg",
+        available: Number(product.available) || 0,
+    }));
 }

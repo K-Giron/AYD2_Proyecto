@@ -20,6 +20,8 @@ document.querySelectorAll(".auth-role-btn").forEach((button) => {
             b.setAttribute("aria-selected", String(b === button));
         });
         document.getElementById("login-error").classList.add("hidden");
+        // Solo los clientes se registran; el personal interno usa cuentas asignadas.
+        document.getElementById("register-alternative").classList.toggle("hidden", selectedRole !== "CLIENTE");
     });
 });
 
@@ -42,7 +44,7 @@ document.getElementById("login-form").addEventListener("submit", async (event) =
         return;
     }
     const selectedInternal = selectedRole === "STAFF";
-    const accountIsInternal = ["STAFF", "FINANCE", "SAT_AUDITOR"].includes(result.session.role);
+    const accountIsInternal = ["STAFF", "FINANCE", "SAT_AUDITOR", "ONLINE_STORE"].includes(result.session.role);
     if ((selectedInternal && !accountIsInternal) || (!selectedInternal && result.session.role !== "CLIENTE")) {
         const otherLabel = result.session.role === "CLIENTE" ? "Cliente" : "Personal interno";
         errorEl.textContent = `Esa cuenta pertenece al perfil "${otherLabel}". Cambia la pestaña de arriba.`;

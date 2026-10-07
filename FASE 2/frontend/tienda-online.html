@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MegaStore | Tienda online</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="tienda-online.css" />
+    <link rel="stylesheet" href="invoice.css" />
+</head>
+<body>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <header class="app-bar">
+        <div class="app-bar-brand">
+            <a href="index.html" class="brand-mark" title="Ver la tienda como cliente">MS</a>
+            <div>
+                <h1>Tienda online</h1>
+                <p class="app-bar-subtitle">Recepción de mercadería por folio y catálogo publicado en la web</p>
+            </div>
+        </div>
+        <div class="app-bar-actions">
+            <div class="app-bar-status">
+                <span id="central-dot" class="status-dot unknown"></span>
+                <span id="central-text">Almacén central: verificando…</span>
+            </div>
+            <a href="staff.html" class="btn btn-ghost btn-sm" title="Órdenes, despacho, notificaciones, atención al cliente, finanzas">Centro de operaciones</a>
+            <a href="index.html" class="btn btn-ghost btn-sm">Ver la tienda</a>
+            <button id="sync-btn" class="btn btn-ghost btn-sm">Sincronizar ahora</button>
+            <div class="session-chip">
+                <span id="session-name">Administración</span>
+                <button id="logout-btn" class="btn btn-ghost btn-sm">Cerrar sesión</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="workbench">
+        <nav class="admin-tabs" role="tablist">
+            <button class="admin-tab active" data-tab="receiving" role="tab" aria-selected="true">Recepción <span id="transit-count" class="tab-count hidden">0</span></button>
+            <button class="admin-tab" data-tab="inventory" role="tab" aria-selected="false">Inventario</button>
+            <button class="admin-tab" data-tab="catalog" role="tab" aria-selected="false">Catálogo</button>
+            <button class="admin-tab" data-tab="sales" role="tab" aria-selected="false">Ventas y facturas</button>
+            <button class="admin-tab" data-tab="transfers" role="tab" aria-selected="false">Traslados</button>
+            <button class="admin-tab" data-tab="log" role="tab" aria-selected="false">Bitácora</button>
+        </nav>
+
+        <!-- Recepción por folio -->
+        <section id="view-receiving" class="admin-view active">
+            <div class="admin-grid">
+                <section class="operations-table-panel">
+                    <header><div><h2>Recibir por folio</h2><p>El folio de salida que emitió el almacén central hacia POS-ONLINE (SAL-…).</p></div></header>
+                    <div class="panel-body">
+                        <form id="folio-form" class="folio-row">
+                            <input type="text" id="folio-input" placeholder="Ej. SAL-000001 y Tab" autocomplete="off" aria-label="Folio de envío" />
+                            <button type="submit" class="btn btn-ghost">Buscar</button>
+                        </form>
+                        <div id="folio-detail"><p class="hint">Al salir del campo (Tab) o con Enter se carga lo que trae el folio. Solo al confirmar entra al inventario de la tienda online y se puede vender.</p></div>
+                    </div>
+                </section>
+                <section class="operations-table-panel">
+                    <header><div><h2>En tránsito</h2><p>Enviado por el central y aún sin confirmar.</p></div></header>
+                    <div id="transit-list" class="panel-body"><p class="empty-state">Cargando…</p></div>
+                </section>
+            </div>
+            <section class="operations-table-panel">
+                <header><div><h2>Historial de recepciones</h2><p>Cada folio del central, cuándo llegó y quién lo confirmó.</p></div></header>
+                <div id="history-table" class="table-scroll"><p class="empty-state">Cargando…</p></div>
+            </section>
+        </section>
+
+        <!-- Inventario -->
+        <section id="view-inventory" class="admin-view">
+            <section class="operations-table-panel">
+                <header>
+                    <div><h2>Inventario de la tienda online</h2><p>Almacén CD-WEB. Disponible = en mano − reservado por compras en curso. En tránsito: enviado por el central y aún sin confirmar (no se vende).</p></div>
+                    <input type="search" id="inventory-filter" class="catalog-filter" placeholder="Buscar por código o nombre" aria-label="Buscar en el inventario" />
+                </header>
+                <div id="inventory-summary" class="inventory-summary"></div>
+                <div id="inventory-table" class="table-scroll"><p class="empty-state">Cargando…</p></div>
+            </section>
+        </section>
+
+        <!-- Catálogo -->
+        <section id="view-catalog" class="admin-view">
+            <section class="operations-table-panel">
+                <header>
+                    <div><h2>Catálogo de la tienda online</h2><p>Lo recibido aparece aquí sin publicar. La web solo muestra lo publicado; publicar exige imagen y precio.</p></div>
+                    <input type="search" id="catalog-filter" class="catalog-filter" placeholder="Buscar por código o nombre" aria-label="Buscar en el catálogo" />
+                </header>
+                <div id="catalog-table" class="table-scroll"><p class="empty-state">Cargando…</p></div>
+            </section>
+        </section>
+        <!-- Ventas y facturas -->
+        <section id="view-sales" class="admin-view">
+            <section class="operations-table-panel">
+                <header>
+                    <div><h2>Ventas de la tienda online</h2><p>Órdenes de la web, su estado en la Saga y su factura certificada.</p></div>
+                    <form id="sales-filter" class="form-inline">
+                        <label class="inline-label">Desde<input type="date" id="sales-from" /></label>
+                        <label class="inline-label">Hasta<input type="date" id="sales-to" /></label>
+                        <button type="submit" class="btn btn-ghost btn-sm">Filtrar</button>
+                    </form>
+                </header>
+                <div id="sales-summary" class="inventory-summary"></div>
+                <div id="sales-table" class="table-scroll"><p class="empty-state">Cargando…</p></div>
+            </section>
+        </section>
+
+        <!-- Traslados -->
+        <section id="view-transfers" class="admin-view">
+            <div class="admin-grid">
+                <section class="operations-table-panel">
+                    <header><div><h2>Nuevo traslado</h2><p>La mercadería sale de la tienda online al emitir el folio (TOL-…). Solo lo disponible; lo reservado por compras en curso no se mueve.</p></div></header>
+                    <form id="transfer-form" class="panel-body transfer-form">
+                        <label>Producto<select name="productId" id="transfer-product" required></select></label>
+                        <label>Cantidad<input type="number" name="quantity" min="1" value="1" required /></label>
+                        <label>Destino<select name="destination" id="transfer-destination" required><option value="CENTRAL">Almacén central</option></select></label>
+                        <label>Motivo<input type="text" name="reason" maxlength="255" placeholder="Ej. sobrante, cambio de temporada" /></label>
+                        <button type="submit" class="btn btn-primary">Emitir folio de traslado</button>
+                        <p class="hint">Si el central no lo acepta, el traslado queda Rechazado y la mercadería vuelve al inventario de la tienda online. Sin conexión queda Pendiente y se reintenta solo.</p>
+                    </form>
+                </section>
+                <section class="operations-table-panel">
+                    <header><div><h2>Traslados emitidos</h2></div></header>
+                    <div id="transfers-table" class="table-scroll"><p class="empty-state">Cargando…</p></div>
+                </section>
+            </div>
+        </section>
+
+        <!-- Bitácora -->
+        <section id="view-log" class="admin-view">
+            <section class="operations-table-panel">
+                <header>
+                    <div><h2>Bitácora de sincronización con el almacén central</h2><p>Lo que baja del central (envíos y recepciones) y lo que la tienda online le reporta (ventas y traslados).</p></div>
+                    <select id="log-filter" aria-label="Filtrar bitácora">
+                        <option value="">Todo</option>
+                        <option value="BAJADA">Bajadas (central → tienda online)</option>
+                        <option value="SUBIDA">Subidas (tienda online → central)</option>
+                        <option value="ERROR">Solo errores</option>
+                    </select>
+                </header>
+                <div id="log-table" class="table-scroll"><p class="empty-state">Cargando…</p></div>
+            </section>
+        </section>
+    </main>
+
+    <!-- Factura de una venta -->
+    <div id="invoice-modal" class="invoice-backdrop hidden" role="dialog" aria-modal="true" aria-label="Factura">
+        <div class="invoice-sheet">
+            <div id="invoice-body" class="invoice-paper"></div>
+            <div class="invoice-actions">
+                <button type="button" id="invoice-xml-btn" class="btn btn-ghost btn-sm">Descargar XML</button>
+                <button type="button" id="invoice-print-btn" class="btn btn-primary btn-sm">Imprimir factura</button>
+                <button type="button" id="invoice-close-btn" class="btn btn-ghost btn-sm">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editor de ficha -->
+    <div id="editor" class="editor-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+        <form id="editor-form" class="editor">
+            <header>
+                <div><h2 id="editor-title">Editar producto</h2><p id="editor-sku" class="hint"></p></div>
+                <button type="button" class="btn btn-ghost btn-sm" data-close>Cerrar</button>
+            </header>
+            <div class="editor-body">
+                <div class="editor-image">
+                    <div id="image-preview" class="image-preview"><span>Sin imagen</span></div>
+                    <label class="btn btn-ghost btn-sm file-btn">Cargar imagen<input type="file" id="image-input" accept="image/jpeg,image/png,image/webp" hidden /></label>
+                    <button type="button" id="remove-image-btn" class="btn btn-ghost btn-sm">Quitar imagen</button>
+                    <p class="hint">JPG, PNG o WebP, máximo 2 MB.</p>
+                </div>
+                <div class="editor-fields">
+                    <label>Nombre en la tienda<input type="text" name="name" required maxlength="160" /></label>
+                    <label>Categoría<input type="text" name="category" maxlength="80" placeholder="Ej. Calzado" list="category-options" /></label>
+                    <datalist id="category-options"></datalist>
+                    <label>Precio (Q)<input type="number" name="price" min="0.01" step="0.01" required /></label>
+                    <label>Descripción<textarea name="description" rows="4" maxlength="1000"></textarea></label>
+                    <p id="editor-stock" class="hint"></p>
+                </div>
+            </div>
+            <footer>
+                <span id="editor-status"></span>
+                <div class="editor-actions">
+                    <button type="button" id="toggle-publish-btn" class="btn btn-ghost">Publicar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </footer>
+        </form>
+    </div>
+
+    <script src="session.js"></script>
+    <script src="app-tienda-online.js"></script>
+</body>
+</html>
