@@ -56,6 +56,18 @@ public class InventoryQueryService {
     }
 
     /**
+     * Existencias de todos los productos en una ubicación, por producto.
+     * Vacío si la ubicación no existe o no tiene productos.
+     */
+    public Map<UUID, InventoryStockResponse> getStockAtLocation(String locationCode) {
+        return locationRepository.findByCode(locationCode)
+                .map(location -> itemRepository.findByLocationId(location.getId()).stream()
+                        .collect(Collectors.toMap(InventoryItem::getProductId,
+                                item -> InventoryStockResponse.from(item, location))))
+                .orElse(Map.of());
+    }
+
+    /**
      * Disponibilidad de un producto en una ubicación concreta. Lanza
      * {@link InventoryItemNotFoundException} si no hay stock registrado
      * para esa combinación, en vez de asumir cero: distingue "sin stock

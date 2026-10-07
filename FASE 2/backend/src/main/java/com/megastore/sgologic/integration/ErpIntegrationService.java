@@ -53,14 +53,57 @@ public class ErpIntegrationService {
 
     public ErpSale registerConfirmedSale(UUID orderId, BigDecimal netTotal, BigDecimal taxTotal,
                                          BigDecimal grandTotal, String currency, Instant confirmedAt) {
+        return registerConfirmedSale(orderId, netTotal, taxTotal, grandTotal, currency, confirmedAt,
+                "WEB", "POS-ONLINE", orderId.toString());
+    }
+
+    /**
+     * Venta confirmada de cualquier canal para el siguiente lote: WEB (orden
+     * del monolito) o STORE (factura de tienda física recibida por el
+     * almacén central). Idempotente por {@code orderId}.
+     */
+    public ErpSale registerConfirmedSale(UUID orderId, BigDecimal netTotal, BigDecimal taxTotal,
+                                         BigDecimal grandTotal, String currency, Instant confirmedAt,
+                                         String channel, String pointOfSale, String sourceReference) {
         Optional<ErpSale> existing = saleRepository.findByOrderId(orderId);
         if (existing.isPresent()) { return existing.get(); }
         if (netTotal.add(taxTotal).compareTo(grandTotal) != 0) {
             throw new IllegalArgumentException("El total ERP debe coincidir con neto mas impuesto.");
         }
         ErpSale sale = ErpSale.register(orderId, netTotal, taxTotal, grandTotal,
-                currency.trim().toUpperCase(), confirmedAt, clock.instant());
+                currency.trim().toUpperCase(), confirmedAt, channel, pointOfSale, sourceReference, clock.instant());
         return saleRepository.save(sale);
+    }
+
+    /** Divide un total con IVA incluido (12 %) en neto e impuesto, de modo que neto + IVA = total. */
+    public static BigDecimal[] splitIva(BigDecimal grandTotal) {
+        BigDecimal net = grandTotal.divide(new BigDecimal("1.12"), 2, java.math.RoundingMode.HALF_UP);
+        return new BigDecimal[]{net, grandTotal.subtract(net)};
+    }
+
+    /** Ventas confirmadas en un rango, para el informe de ventas conciliado. */
+    @Transactional(readOnly = true)
+    public List<ErpSaleView> salesConfirmedBetween(Instant from, Instant to) {
+        return saleRepository.findByConfirmedAtGreaterThanEqualAndConfirmedAtLessThanOrderByConfirmedAtAsc(from, to)
+                .stream().map(this::view).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ErpSaleView> saleFor(UUID orderId) {
+        return saleRepository.findByOrderId(orderId).map(this::view);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ErpBatch> recentBatches() {
+        return batchRepository.findTop50ByOrderByCreatedAtDesc();
+    }
+
+    private ErpSaleView view(ErpSale sale) {
+        String batchStatus = sale.getBatchId() == null ? null
+                : batchRepository.findById(sale.getBatchId()).map(batch -> batch.getStatus().name()).orElse(null);
+        return new ErpSaleView(sale.getOrderId(), sale.getChannel(), sale.getPointOfSale(), sale.getSourceReference(),
+                sale.getNetTotal(), sale.getTaxTotal(), sale.getGrandTotal(), sale.getCurrency(), sale.getConfirmedAt(),
+                sale.getStatus().name(), sale.getBatchId(), batchStatus);
     }
 
     @Transactional
@@ -94,7 +137,32 @@ public class ErpIntegrationService {
     @Scheduled(fixedDelayString = "${sgo.integrations.erp.interval-ms:1800000}",
             initialDelayString = "${sgo.integrations.erp.initial-delay-ms:1800000}")
     public void runScheduledBatch() {
+        resumeOrphanedBatches();
         runBatch(defaultFormat);
+    }
+
+    /**
+     * Los reintentos se programan en memoria; si el backend se reinició a la
+     * mitad, el lote quedaría pendiente para siempre. Cada ventana retoma los
+     * lotes pendientes que llevan más de un minuto sin moverse.
+     */
+    void resumeOrphanedBatches() {
+        batchRepository.findByStatusInAndUpdatedAtBefore(
+                        List.of(ErpBatchStatus.PENDING, ErpBatchStatus.PENDING_RETRY), clock.instant().minusSeconds(60))
+                .forEach(batch -> dispatchExecutor.execute(() -> deliverBatch(batch.getId())));
+    }
+
+    /** Reintento manual de un lote que agotó sus reintentos automáticos (DEAD_LETTER). */
+    @Transactional
+    public ErpBatch retryBatch(UUID batchId) {
+        ErpBatch batch = getBatch(batchId);
+        if (batch.getStatus() != ErpBatchStatus.DEAD_LETTER) {
+            return batch;
+        }
+        batch.reopenForRetry(clock.instant());
+        batch = batchRepository.save(batch);
+        dispatchAfterCommit(batch.getId());
+        return batch;
     }
 
     void deliverBatch(UUID batchId) {
@@ -145,21 +213,44 @@ public class ErpIntegrationService {
                 .orElseThrow(() -> new IntegrationResourceNotFoundException("el lote ERP", batchId));
     }
 
+    /**
+     * Resumen de ventas conciliado para el AS/400: una línea por venta (canal,
+     * punto de venta, referencia, neto, IVA, total) y un registro de control
+     * con la cantidad y las sumas, para que el ERP verifique el archivo
+     * completo antes de procesarlo.
+     */
     private String generatePayload(List<ErpSale> sales, ErpExportFormat format) {
+        BigDecimal net = sales.stream().map(ErpSale::getNetTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal tax = sales.stream().map(ErpSale::getTaxTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal total = sales.stream().map(ErpSale::getGrandTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
         if (format == ErpExportFormat.CSV) {
-            return "orderId,confirmedAt,netTotal,taxTotal,grandTotal,currency\n"
-                    + sales.stream().map(sale -> String.join(",",
-                            sale.getOrderId().toString(), sale.getConfirmedAt().toString(),
+            return "recordType,saleId,channel,pointOfSale,reference,confirmedAt,netTotal,taxTotal,grandTotal,currency\n"
+                    + sales.stream().map(sale -> String.join(",", "SALE",
+                            sale.getOrderId().toString(), sale.getChannel(), nullToEmpty(sale.getPointOfSale()),
+                            nullToEmpty(sale.getSourceReference()), sale.getConfirmedAt().toString(),
                             sale.getNetTotal().toPlainString(), sale.getTaxTotal().toPlainString(),
                             sale.getGrandTotal().toPlainString(), sale.getCurrency()))
-                    .collect(Collectors.joining("\n"));
+                    .collect(Collectors.joining("\n"))
+                    + "\nTRAILER," + sales.size() + ",,,,," + net.toPlainString() + "," + tax.toPlainString() + ","
+                    + total.toPlainString() + "," + sales.getFirst().getCurrency();
         }
-        return sales.stream().map(sale -> "<Sale orderId=\"" + sale.getOrderId()
+        return sales.stream().map(sale -> "<Sale id=\"" + sale.getOrderId() + "\" channel=\"" + sale.getChannel()
+                        + "\" pointOfSale=\"" + xml(sale.getPointOfSale()) + "\" reference=\"" + xml(sale.getSourceReference())
                         + "\" confirmedAt=\"" + sale.getConfirmedAt() + "\"><Net>"
                         + sale.getNetTotal().toPlainString() + "</Net><Tax>"
                         + sale.getTaxTotal().toPlainString() + "</Tax><Total>"
                         + sale.getGrandTotal().toPlainString() + "</Total><Currency>"
                         + sale.getCurrency() + "</Currency></Sale>")
-                .collect(Collectors.joining("", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Sales>", "</Sales>"));
+                .collect(Collectors.joining("", "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Sales>",
+                        "<Control count=\"" + sales.size() + "\" net=\"" + net.toPlainString() + "\" tax=\""
+                                + tax.toPlainString() + "\" total=\"" + total.toPlainString() + "\"/></Sales>"));
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value.replace(",", " ");
+    }
+
+    private static String xml(String value) {
+        return value == null ? "" : value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;");
     }
 }

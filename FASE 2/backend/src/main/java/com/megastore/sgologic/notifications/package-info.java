@@ -4,6 +4,6 @@
 @org.springframework.modulith.ApplicationModule(
         id = "notifications",
         displayName = "Notifications",
-        allowedDependencies = {"shared", "messaging"}
+        allowedDependencies = {"shared", "messaging", "customers"}
 )
 package com.megastore.sgologic.notifications;

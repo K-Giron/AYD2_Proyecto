@@ -41,7 +41,8 @@ public class ShipmentController {
             HttpServletRequest httpRequest) {
         UUID correlationId = correlationId(httpRequest);
         Shipment shipment = shipmentService.createDispatch(
-                request.orderId(), request.origin(), request.destination(), correlationId, idempotencyKey);
+                request.orderId(), request.origin(), request.originCode(), request.destination(), correlationId,
+                idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED).body(ShipmentResponse.from(shipment));
     }
 
@@ -75,7 +76,13 @@ public class ShipmentController {
             @PathVariable UUID shipmentId,
             @Valid @RequestBody RecordTrackingEventRequest request) {
         return ShipmentResponse.from(
-                shipmentService.recordTrackingEvent(shipmentId, request.status(), "LOGIEXPRESS"));
+                shipmentService.recordTrackingEvent(shipmentId, request.status(), "CONSOLA"));
+    }
+
+    /** LOG-03: vuelve a pedir la guía a LogiExpress tras agotar los reintentos automáticos. */
+    @PostMapping("/{shipmentId}/label-retry")
+    public ShipmentResponse retryLabel(@PathVariable UUID shipmentId) {
+        return ShipmentResponse.from(shipmentService.retryLabel(shipmentId));
     }
 
     @PatchMapping("/{shipmentId}/delivery-method")

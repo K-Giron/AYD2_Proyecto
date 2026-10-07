@@ -44,6 +44,13 @@ class PosIntegrationController {
         return PosDeliveryResponse.from(service.getDelivery(deliveryId));
     }
 
+    /** Entregas de los eventos de una orden a las tiendas (o las más recientes si no se indica orden). */
+    @GetMapping("/deliveries")
+    List<PosDeliveryResponse> deliveries(@org.springframework.web.bind.annotation.RequestParam(required = false) UUID orderId) {
+        return (orderId == null ? service.recentDeliveries() : service.getDeliveriesForOrder(orderId)).stream()
+                .map(PosDeliveryResponse::from).toList();
+    }
+
     @GetMapping("/events/{eventId}")
     List<PosDeliveryResponse> getForEvent(@PathVariable UUID eventId) {
         return service.getDeliveriesForEvent(eventId).stream().map(PosDeliveryResponse::from).toList();

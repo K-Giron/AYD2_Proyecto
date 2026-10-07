@@ -41,6 +41,41 @@ public class InventoryMovementService {
         this.clock = clock;
     }
 
+    /**
+     * Recepción de mercadería en una ubicación identificada por su código,
+     * aunque el producto todavía no tenga fila ahí: la crea en cero y
+     * registra la entrada (INBOUND) igual que {@link #registerMovement},
+     * con su evento. La usa la tienda online (módulo onlinestore, ADR-015)
+     * al confirmar un folio del almacén central, para que la reserva, el
+     * temporizador y la confirmación de la Saga operen sobre ese stock real.
+     */
+    @Transactional
+    public InventoryStockMovement receiveAtLocation(UUID productId, String locationCode, int quantity,
+                                                    String reason, UUID correlationId) {
+        InventoryLocation location = locationRepository.findByCode(locationCode)
+                .orElseThrow(() -> new InventoryLocationNotFoundException(locationCode));
+        if (itemRepository.findByProductIdAndLocationId(productId, location.getId()).isEmpty()) {
+            itemRepository.saveAndFlush(InventoryItem.empty(productId, location.getId(), clock.instant()));
+        }
+        return registerMovement(productId, location.getId(), StockMovementType.INBOUND, quantity, reason,
+                correlationId);
+    }
+
+    /**
+     * Salida (OUTBOUND) desde una ubicación identificada por su código; igual
+     * que {@link #registerMovement}, solo descuenta unidades disponibles (no
+     * reservadas por órdenes en curso). La usa la tienda online para sacar
+     * mercadería de CD-WEB por traslado.
+     */
+    @Transactional
+    public InventoryStockMovement issueFromLocation(UUID productId, String locationCode, int quantity,
+                                                    String reason, UUID correlationId) {
+        InventoryLocation location = locationRepository.findByCode(locationCode)
+                .orElseThrow(() -> new InventoryLocationNotFoundException(locationCode));
+        return registerMovement(productId, location.getId(), StockMovementType.OUTBOUND, quantity, reason,
+                correlationId);
+    }
+
     @Transactional
     public InventoryStockMovement registerMovement(UUID productId, UUID locationId, StockMovementType type,
                                                      int quantity, String reason, UUID correlationId) {

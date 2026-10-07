@@ -88,6 +88,12 @@ public class ErpBatch {
         failureMessage = reason;
         updatedAt = now;
     }
+    /** Finanzas reabre un lote agotado (el ERP ya volvió): se reintenta desde cero con las mismas ventas. */
+    void reopenForRetry(Instant now) {
+        status = ErpBatchStatus.PENDING_RETRY;
+        attempts = 0;
+        updatedAt = now;
+    }
     void markDeadLetter(String reason, Instant now) {
         status = ErpBatchStatus.DEAD_LETTER;
         failureMessage = reason;

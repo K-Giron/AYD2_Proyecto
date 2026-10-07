@@ -8,4 +8,6 @@ import java.util.UUID;
 interface InventoryStockMovementRepository extends JpaRepository<InventoryStockMovement, UUID> {
 
     List<InventoryStockMovement> findByLocationIdOrderByOccurredAtDesc(UUID locationId);
+
+    List<InventoryStockMovement> findTop200ByLocationIdOrderByOccurredAtDesc(UUID locationId);
 }

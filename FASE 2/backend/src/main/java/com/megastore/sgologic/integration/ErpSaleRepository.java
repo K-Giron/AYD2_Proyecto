@@ -10,4 +10,7 @@ interface ErpSaleRepository extends JpaRepository<ErpSale, UUID> {
     Optional<ErpSale> findByOrderId(UUID orderId);
     List<ErpSale> findByStatusOrderByConfirmedAtAsc(ErpSaleStatus status);
     List<ErpSale> findByBatchId(UUID batchId);
+
+    List<ErpSale> findByConfirmedAtGreaterThanEqualAndConfirmedAtLessThanOrderByConfirmedAtAsc(
+            java.time.Instant from, java.time.Instant to);
 }

@@ -86,7 +86,8 @@ public class NotificationService {
             request.markAttempt(clock.instant());
             request = repository.save(request);
             try {
-                provider.send(request.getChannel(), request.getRecipient(), request.getEventType());
+                provider.send(request.getChannel(), request.getRecipient(), request.getEventType(),
+                        request.getSourceAggregateId());
                 request.markSent(clock.instant());
                 repository.save(request);
             } catch (NotificationProviderUnavailableException failure) {

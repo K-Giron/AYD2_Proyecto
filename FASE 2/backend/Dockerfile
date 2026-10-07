@@ -9,7 +9,8 @@ COPY src/ src/
 RUN ./mvnw --batch-mode clean package -DskipTests
 
 FROM eclipse-temurin:25.0.4_7-jre-alpine-3.23 AS runtime
-RUN addgroup -S sgo && adduser -S -G sgo -h /app sgo
+RUN addgroup -S sgo && adduser -S -G sgo -h /app sgo \
+    && mkdir -p /var/sgo/erp-outbox && chown -R sgo:sgo /var/sgo
 WORKDIR /app
 COPY --from=build --chown=sgo:sgo /workspace/target/sgo-logic-0.0.1-SNAPSHOT.jar app.jar
 USER sgo

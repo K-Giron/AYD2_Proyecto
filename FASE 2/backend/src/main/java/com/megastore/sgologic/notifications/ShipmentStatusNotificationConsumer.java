@@ -12,7 +12,7 @@ import java.util.UUID;
 
 /**
  * CUN-11: convierte los hechos de despacho publicados por Logistics
- * (preparación, tránsito y entrega) en una notificación no bloqueante.
+ * (preparación, tránsito, listo para recoger y entrega) en una notificación no bloqueante.
  * Resuelve el cliente mediante {@link CustomerLookupService} porque
  * Logistics no conoce ni debe conocer el {@code customerId} de la orden.
  */
@@ -25,6 +25,7 @@ class ShipmentStatusNotificationConsumer {
     private static final Map<String, NotificationEventType> STATUS_TO_EVENT = Map.of(
             "PREPARING", NotificationEventType.SHIPMENT_PREPARING,
             "IN_TRANSIT", NotificationEventType.SHIPMENT_IN_TRANSIT,
+            "READY_FOR_PICKUP", NotificationEventType.SHIPMENT_READY_FOR_PICKUP,
             "DELIVERED", NotificationEventType.SHIPMENT_DELIVERED);
 
     private final InboxService inboxService;
