@@ -216,7 +216,7 @@ async function refreshSummary() {
     try {
         const [orderResult, paymentsResult, shipmentsResult, incidentsResult] = await Promise.allSettled([
             apiCall("GET", `/api/v1/orders/${encodeURIComponent(currentOrderId)}`),
-            apiCall("GET", `/api/v1/payment-attempts?orderId=${encodeURIComponent(currentOrderId)}`),
+            apiCall("GET", `/api/v1/payments/attempts?orderId=${encodeURIComponent(currentOrderId)}`),
             apiCall("GET", `/api/v1/shipments?orderId=${encodeURIComponent(currentOrderId)}`),
             apiCall("GET", `/api/v1/incidents?orderId=${encodeURIComponent(currentOrderId)}`),
         ]);

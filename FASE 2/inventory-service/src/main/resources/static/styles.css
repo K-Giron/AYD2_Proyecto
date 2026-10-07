@@ -167,6 +167,8 @@ a { color: inherit; }
 
 .topbar h2 { margin: 0 0 0.2rem; font-size: 1.3rem; }
 .topbar .lede { margin: 0; color: var(--text-muted); font-size: 0.85rem; max-width: 56ch; }
+.system-links { display: flex; align-items: center; justify-content: flex-end; gap: .45rem; flex-wrap: wrap; }
+.system-links a { text-decoration: none; }
 
 main.content { padding: 1.2rem 2rem 3rem; display: grid; gap: 1.1rem; max-width: 1180px; }
 
