@@ -83,7 +83,14 @@ services:
       SGO_ERP_FORMAT: ${SGO_ERP_FORMAT:-CSV}
       SGO_ERP_INTERVAL_MS: ${SGO_ERP_INTERVAL_MS:-1800000}
       SGO_ERP_INITIAL_DELAY_MS: ${SGO_ERP_INITIAL_DELAY_MS:-1800000}
+      # Carpeta de entrada del ERP AS/400 (volumen erp-outbox): cada lote queda como archivo CSV/XML.
+      SGO_ERP_OUTBOX_DIR: ${SGO_ERP_OUTBOX_DIR:-/var/sgo/erp-outbox}
+      # POS de la tienda 01 = store-service real; las otras 31 tiendas siguen simuladas.
+      SGO_POS_STORE_01_ENDPOINT: ${SGO_POS_STORE_01_ENDPOINT:-http://store-service:8080/api/store/pos-events}
+      SGO_POS_TIMEOUT_MS: ${SGO_POS_TIMEOUT_MS:-5000}
       SGO_PAYKLIK_TIMEOUT_MS: ${SGO_PAYKLIK_TIMEOUT_MS:-5000}
+      SGO_INVENTORY_RESERVATION_TTL: ${SGO_INVENTORY_RESERVATION_TTL:-PT15M}
+      SGO_INVENTORY_EXPIRATION_SWEEP_INTERVAL: ${SGO_INVENTORY_EXPIRATION_SWEEP_INTERVAL:-PT1M}
       SGO_PAYKLIK_CALL_POOL_SIZE: ${SGO_PAYKLIK_CALL_POOL_SIZE:-8}
       SGO_PAYKLIK_FAILURE_RATE_THRESHOLD: ${SGO_PAYKLIK_FAILURE_RATE_THRESHOLD:-50}
       SGO_PAYKLIK_SLIDING_WINDOW_SIZE: ${SGO_PAYKLIK_SLIDING_WINDOW_SIZE:-10}
@@ -118,12 +125,50 @@ services:
       SGO_SECURITY_LOGISTICS_PASSWORD: ${SGO_SECURITY_LOGISTICS_PASSWORD:-Logistica123}
       SGO_SECURITY_FINANCE_USER: ${SGO_SECURITY_FINANCE_USER:-finanzas@megastore.com}
       SGO_SECURITY_FINANCE_PASSWORD: ${SGO_SECURITY_FINANCE_PASSWORD:-Finanzas123}
+      SGO_SECURITY_STORE_TERMINAL_USER: ${SGO_SECURITY_STORE_TERMINAL_USER:-terminal-pos01@megastore.com}
+      SGO_SECURITY_STORE_TERMINAL_PASSWORD: ${SGO_SECURITY_STORE_TERMINAL_PASSWORD:-TerminalPos01}
+      # inventorysync: primera integración en vivo hacia el almacén central
+      # (inventory-service) — ver ADR-015. Cuenta de servicio propia, no
+      # una cuenta humana.
+      SGO_INTEGRATIONS_INVENTORY_BASE_URL: ${SGO_INTEGRATIONS_INVENTORY_BASE_URL:-http://inventory-service:8080}
+      SGO_INTEGRATIONS_INVENTORY_USERNAME: ${SGO_INTEGRATIONS_INVENTORY_USERNAME:-integracion-web@almacencentral.local}
+      SGO_INTEGRATIONS_INVENTORY_PASSWORD: ${SGO_INTEGRATIONS_INVENTORY_PASSWORD:-IntegracionWeb123}
+      SGO_INTEGRATIONS_INVENTORY_TIMEOUT_MS: ${SGO_INTEGRATIONS_INVENTORY_TIMEOUT_MS:-5000}
+      # Tienda online (onlinestore): su cuenta TIENDA en el almacén central y
+      # la cuenta de quien la administra en la web.
+      SGO_INTEGRATIONS_ONLINE_STORE_USERNAME: ${INVENTORY_STORE_ONLINE_USER:-tienda-online@almacencentral.local}
+      SGO_INTEGRATIONS_ONLINE_STORE_PASSWORD: ${INVENTORY_STORE_ONLINE_PASSWORD:-TiendaOnline123}
+      # Correo real de notificaciones (Gmail SMTP con contraseña de aplicación).
+      # Vacío = el correo sigue en el simulador.
+      SGO_MAIL_HOST: ${SGO_MAIL_HOST:-smtp.gmail.com}
+      SGO_MAIL_PORT: ${SGO_MAIL_PORT:-587}
+      SGO_MAIL_USERNAME: ${SGO_MAIL_USERNAME:-}
+      SGO_MAIL_PASSWORD: ${SGO_MAIL_PASSWORD:-}
+      SGO_MAIL_FROM_NAME: ${SGO_MAIL_FROM_NAME:-MegaStore}
+      SGO_NOTIFICATIONS_EMAIL_PROVIDER: ${SGO_NOTIFICATIONS_EMAIL_PROVIDER:-auto}
+      SGO_PUBLIC_SITE_URL: ${SGO_PUBLIC_SITE_URL:-http://localhost:8081}
+      SGO_SECURITY_ONLINE_STORE_USER: ${SGO_SECURITY_ONLINE_STORE_USER:-tienda-online@megastore.com}
+      SGO_SECURITY_ONLINE_STORE_PASSWORD: ${SGO_SECURITY_ONLINE_STORE_PASSWORD:-TiendaOnline123}
+      SGO_SECURITY_CENTRAL_EVENTS_USER: ${SGO_SECURITY_CENTRAL_EVENTS_USER:-central-eventos@megastore.com}
+      SGO_SECURITY_CENTRAL_EVENTS_PASSWORD: ${SGO_SECURITY_CENTRAL_EVENTS_PASSWORD:-CentralEventos123}
+      # Proveedores externos reales (sistemas propios), por REST con llave de comercio.
+      # Sin depends_on: SGO-Logic arranca y reintenta aunque estén caídos.
+      SGO_PAYKLIK_BASE_URL: ${SGO_PAYKLIK_BASE_URL:-http://payklik-service:8080}
+      SGO_PAYKLIK_API_KEY: ${PAYKLIK_MERCHANT_API_KEY:-local_only_payklik_key}
+      SGO_LOGIEXPRESS_BASE_URL: ${SGO_LOGIEXPRESS_BASE_URL:-http://logiexpress-service:8080}
+      SGO_LOGIEXPRESS_API_KEY: ${LOGIEXPRESS_MERCHANT_API_KEY:-local_only_logiexpress_key}
+      SGO_LOGIEXPRESS_TIMEOUT_MS: ${SGO_LOGIEXPRESS_TIMEOUT_MS:-5000}
+      SGO_LOGIEXPRESS_TRACKING_INTERVAL_MS: ${SGO_LOGIEXPRESS_TRACKING_INTERVAL_MS:-10000}
+    volumes:
+      - erp-outbox:/var/sgo/erp-outbox
     ports:
       - "${BACKEND_PORT}:8080"
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      inventory-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health/readiness"]
@@ -159,9 +204,251 @@ services:
     networks:
       - sgo-internal
 
+  # Almacén central (Kevin Girón): artículos, existencias, movimientos de
+  # entrada/salida con folio, cuentas por pagar/cobrar y seguimiento de
+  # envíos. Sistema propio con su propia base de datos.
+  inventory-db:
+    image: postgres:17.11-alpine3.23
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${INVENTORY_POSTGRES_DB}
+      POSTGRES_USER: ${INVENTORY_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${INVENTORY_POSTGRES_PASSWORD}
+    ports:
+      - "${INVENTORY_POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - inventory-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sgo-internal
+
+  inventory-service:
+    image: inventory-service:0.0.1-phase2
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      INVENTORY_POSTGRES_DB: ${INVENTORY_POSTGRES_DB}
+      INVENTORY_POSTGRES_USER: ${INVENTORY_POSTGRES_USER}
+      INVENTORY_POSTGRES_PASSWORD: ${INVENTORY_POSTGRES_PASSWORD}
+      INVENTORY_POSTGRES_HOST: inventory-db
+      INVENTORY_POSTGRES_PORT: 5432
+      INVENTORY_JWT_SECRET: ${INVENTORY_JWT_SECRET:-local_dev_only_inventory_jwt_secret_32b!}
+      INVENTORY_ALMACEN_USER: ${INVENTORY_ALMACEN_USER:-almacen@almacencentral.local}
+      INVENTORY_ALMACEN_PASSWORD: ${INVENTORY_ALMACEN_PASSWORD:-Almacen123}
+      INVENTORY_FINANZAS_USER: ${INVENTORY_FINANZAS_USER:-finanzas@almacencentral.local}
+      INVENTORY_FINANZAS_PASSWORD: ${INVENTORY_FINANZAS_PASSWORD:-Finanzas123}
+      INVENTORY_LOGISTICA_USER: ${INVENTORY_LOGISTICA_USER:-logistica@almacencentral.local}
+      INVENTORY_LOGISTICA_PASSWORD: ${INVENTORY_LOGISTICA_PASSWORD:-Logistica123}
+      INVENTORY_STORE_POS01_USER: ${INVENTORY_STORE_POS01_USER:-tienda-pos01@almacencentral.local}
+      INVENTORY_STORE_POS01_PASSWORD: ${INVENTORY_STORE_POS01_PASSWORD:-TiendaPos01}
+      INVENTORY_STORE_ONLINE_USER: ${INVENTORY_STORE_ONLINE_USER:-tienda-online@almacencentral.local}
+      INVENTORY_STORE_ONLINE_PASSWORD: ${INVENTORY_STORE_ONLINE_PASSWORD:-TiendaOnline123}
+      # Eventos de stock hacia el sistema de cada punto de venta (POS local).
+      INVENTORY_POS01_EVENTS_URL: ${INVENTORY_POS01_EVENTS_URL:-http://store-service:8080/api/store/stock-events}
+      INVENTORY_POS_ONLINE_EVENTS_URL: ${INVENTORY_POS_ONLINE_EVENTS_URL:-http://backend:8080/api/v1/online-store/stock-events}
+      INVENTORY_POS_ONLINE_LOGIN_URL: ${INVENTORY_POS_ONLINE_LOGIN_URL:-http://backend:8080/api/v1/auth/login}
+      INVENTORY_POS_ONLINE_EVENTS_USER: ${SGO_SECURITY_CENTRAL_EVENTS_USER:-central-eventos@megastore.com}
+      INVENTORY_POS_ONLINE_EVENTS_PASSWORD: ${SGO_SECURITY_CENTRAL_EVENTS_PASSWORD:-CentralEventos123}
+    ports:
+      - "${INVENTORY_SERVICE_PORT:-8082}:8080"
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+    networks:
+      - sgo-internal
+
+  # Sistema de la tienda física POS-01 (Kevin Girón, ADR-015): su propio
+  # almacén, venta y cobro (NIT o CF), traslados por folio y bitácora de
+  # sincronización con el almacén central. Vende aunque el central esté
+  # caído. Otra tienda física = otro par store-db/store-service con otro
+  # STORE_CODE y su propia cuenta TIENDA en el central.
+  store-db:
+    image: postgres:17.11-alpine3.23
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${STORE_POSTGRES_DB:-store_pos01_local}
+      POSTGRES_USER: ${STORE_POSTGRES_USER:-store_local}
+      POSTGRES_PASSWORD: ${STORE_POSTGRES_PASSWORD:-local_only_change_me}
+    ports:
+      - "${STORE_POSTGRES_PORT:-5435}:5432"
+    volumes:
+      - store-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sgo-internal
+
+  store-service:
+    image: store-service:0.0.1-phase2
+    build:
+      context: ./store-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      STORE_CODE: ${STORE_CODE:-POS-01}
+      STORE_NAME: ${STORE_NAME:-Tienda Centro}
+      STORE_LEGAL_NAME: ${STORE_LEGAL_NAME:-MegaStore, S.A.}
+      STORE_TAX_ID: ${STORE_TAX_ID:-1234567-8}
+      STORE_ADDRESS: ${STORE_ADDRESS:-6a. Avenida 10-25, Zona 1, Ciudad de Guatemala}
+      STORE_TIMEZONE: ${STORE_TIMEZONE:-America/Guatemala}
+      STORE_POSTGRES_HOST: store-db
+      STORE_POSTGRES_PORT: 5432
+      STORE_POSTGRES_DB: ${STORE_POSTGRES_DB:-store_pos01_local}
+      STORE_POSTGRES_USER: ${STORE_POSTGRES_USER:-store_local}
+      STORE_POSTGRES_PASSWORD: ${STORE_POSTGRES_PASSWORD:-local_only_change_me}
+      STORE_CENTRAL_URL: http://inventory-service:8080
+      STORE_CENTRAL_USER: ${INVENTORY_STORE_POS01_USER:-tienda-pos01@almacencentral.local}
+      STORE_CENTRAL_PASSWORD: ${INVENTORY_STORE_POS01_PASSWORD:-TiendaPos01}
+      STORE_MONOLITH_URL: http://backend:8080
+      STORE_MONOLITH_USER: ${SGO_SECURITY_STORE_TERMINAL_USER:-terminal-pos01@megastore.com}
+      STORE_MONOLITH_PASSWORD: ${SGO_SECURITY_STORE_TERMINAL_PASSWORD:-TerminalPos01}
+    ports:
+      - "${STORE_SERVICE_PORT:-8084}:8080"
+    # Sin depends_on del central ni del monolito: la tienda arranca y vende
+    # aunque ninguno de los dos esté disponible.
+    depends_on:
+      store-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+    networks:
+      - sgo-internal
+
+  # LogiExpress (transportista contratado): sistema propio con su base de
+  # datos, API REST de guías y rastreo (llave de comercio) y portal de
+  # operación donde los mensajeros recolectan y entregan.
+  logiexpress-db:
+    image: postgres:17.11-alpine3.23
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${LOGIEXPRESS_POSTGRES_DB:-logiexpress_local}
+      POSTGRES_USER: ${LOGIEXPRESS_POSTGRES_USER:-logiexpress_local}
+      POSTGRES_PASSWORD: ${LOGIEXPRESS_POSTGRES_PASSWORD:-local_only_change_me}
+    ports:
+      - "${LOGIEXPRESS_POSTGRES_PORT:-5436}:5432"
+    volumes:
+      - logiexpress-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sgo-internal
+
+  logiexpress-service:
+    image: logiexpress-service:0.0.1-phase2
+    build:
+      context: ./logiexpress-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      LOGIEXPRESS_POSTGRES_HOST: logiexpress-db
+      LOGIEXPRESS_POSTGRES_PORT: 5432
+      LOGIEXPRESS_POSTGRES_DB: ${LOGIEXPRESS_POSTGRES_DB:-logiexpress_local}
+      LOGIEXPRESS_POSTGRES_USER: ${LOGIEXPRESS_POSTGRES_USER:-logiexpress_local}
+      LOGIEXPRESS_POSTGRES_PASSWORD: ${LOGIEXPRESS_POSTGRES_PASSWORD:-local_only_change_me}
+      LOGIEXPRESS_MERCHANT: MegaStore
+      LOGIEXPRESS_MERCHANT_API_KEY: ${LOGIEXPRESS_MERCHANT_API_KEY:-local_only_logiexpress_key}
+    ports:
+      - "${LOGIEXPRESS_SERVICE_PORT:-8085}:8080"
+    depends_on:
+      logiexpress-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+    networks:
+      - sgo-internal
+
+  # PayKlik (pasarela de pagos contratada): sistema propio con su base de
+  # datos, API REST de autorizaciones idempotentes (llave de comercio) y
+  # portal de comercios con las transacciones y el estado del servicio.
+  payklik-db:
+    image: postgres:17.11-alpine3.23
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PAYKLIK_POSTGRES_DB:-payklik_local}
+      POSTGRES_USER: ${PAYKLIK_POSTGRES_USER:-payklik_local}
+      POSTGRES_PASSWORD: ${PAYKLIK_POSTGRES_PASSWORD:-local_only_change_me}
+    ports:
+      - "${PAYKLIK_POSTGRES_PORT:-5437}:5432"
+    volumes:
+      - payklik-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sgo-internal
+
+  payklik-service:
+    image: payklik-service:0.0.1-phase2
+    build:
+      context: ./payklik-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      PAYKLIK_POSTGRES_HOST: payklik-db
+      PAYKLIK_POSTGRES_PORT: 5432
+      PAYKLIK_POSTGRES_DB: ${PAYKLIK_POSTGRES_DB:-payklik_local}
+      PAYKLIK_POSTGRES_USER: ${PAYKLIK_POSTGRES_USER:-payklik_local}
+      PAYKLIK_POSTGRES_PASSWORD: ${PAYKLIK_POSTGRES_PASSWORD:-local_only_change_me}
+      PAYKLIK_MERCHANT: MegaStore
+      PAYKLIK_MERCHANT_API_KEY: ${PAYKLIK_MERCHANT_API_KEY:-local_only_payklik_key}
+    ports:
+      - "${PAYKLIK_SERVICE_PORT:-8086}:8080"
+    depends_on:
+      payklik-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+    networks:
+      - sgo-internal
+
 volumes:
   postgres-data:
   rabbitmq-data:
+  inventory-postgres-data:
+  store-postgres-data:
+  erp-outbox:
+  logiexpress-postgres-data:
+  payklik-postgres-data:
 
 networks:
   sgo-internal:
