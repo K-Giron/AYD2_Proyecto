@@ -1,0 +1,90 @@
+// NUEVO (Fase 2, Kevin Girón, 2026-10-07): componentes reales del código.
+// No sustituye a Docs/diagramas/componentes.dot (vista de Fase 1).
+digraph SGO_Componentes_Fase2 {
+  graph [label=<<B>NUEVO · SGO-Logic Fase 2 — Vista de componentes (código real)</B><BR/><FONT POINT-SIZE="10">Módulos Spring Modulith del monolito, sus adaptadores y los sistemas propios con los que se integran</FONT>>,
+         labelloc=t, rankdir=LR, bgcolor="#F8FAFC", fontname="Arial", fontsize=14, pad=0.3, nodesep=0.25, ranksep=0.8, compound=true];
+  node [shape=component, style=filled, fillcolor="#FFFFFF", color="#94A3B8", fontname="Arial", fontsize=8.3];
+  edge [color="#64748B", fontcolor="#334155", fontname="Arial", fontsize=7, arrowsize=0.6];
+
+  subgraph cluster_monolito {
+    label="<<subsystem>> SGO-Logic (backend :8080) — un desplegable modular"; style="rounded,filled"; fillcolor="#EEF2FF"; color="#818CF8"; fontname="Arial";
+
+    subgraph cluster_existentes {
+      label="Módulos de Fase 2 del equipo"; style="rounded,dashed"; color="#A5B4FC"; fontname="Arial";
+      orders [label="orders\ncarrito omnicanal, Saga\n(Jairo)"];
+      inventory [label="inventory\nreservas, CD-WEB, kárdex\n(Jorge)"];
+      payments [label="payments\nintentos, conciliación\n(Edson)"];
+      fiscal [label="fiscal\nXML SAT, factura cliente\n(Andy)"];
+      integration [label="integration\nlotes ERP, entregas POS,\nOutbox/Inbox (Andy/Edson)"];
+      audit [label="audit\nregistro y consulta (Edson)"];
+      logistics [label="logistics\ndespacho, guía, rastreo,\nretiro en tienda (Kevin)"];
+      query [label="query\nresumen consolidado (Kevin)"];
+      notifications [label="notifications\ncorreo real + SMS/push (Kevin)"];
+      incidents [label="incidents\ndevoluciones (Kevin)"];
+    }
+
+    subgraph cluster_nuevos {
+      label="NUEVOS módulos (Kevin, ADR-015)"; style="rounded,filled"; fillcolor="#DCFCE7"; color="#22C55E"; fontname="Arial";
+      onlinestore [fillcolor="#BBF7D0", label="onlinestore\nrecepción por folio, catálogo publicado,\ntraslados, bitácora, eventos de stock"];
+      inventorysync [fillcolor="#BBF7D0", label="inventorysync\nventa web → POS-ONLINE\nen el central"];
+      legacyfeed [fillcolor="#BBF7D0", label="legacyfeed\nventa → ERP, órdenes → 32 POS,\nfacturas de tienda → ERP"];
+      salesreport [fillcolor="#BBF7D0", label="salesreport\ninforme de ventas conciliado"];
+      fulfillment [fillcolor="#BBF7D0", label="fulfillment\nla orden sigue al despacho"];
+      customers [fillcolor="#BBF7D0", label="customers\ndirectorio de clientes"];
+    }
+
+    subgraph cluster_adapt {
+      label="Adaptadores de salida (reales)"; style="rounded,filled"; fillcolor="#FEF3C7"; color="#F59E0B"; fontname="Arial";
+      a_pay [fillcolor="#FDE68A", label="HttpPayKlikAdapter\n+ ResilientPayKlikClient\n(timeout 5 s, circuit breaker)"];
+      a_logi [fillcolor="#FDE68A", label="HttpLogiExpressAdapter\n+ LogiExpressTrackingSync\n(reintentos 2/8/32 s, rastreo 10 s)"];
+      a_erp [fillcolor="#FDE68A", label="FileDropErpGatewayAdapter\n(archivo CSV/XML)"];
+      a_pos [fillcolor="#FDE68A", label="RoutingPosGatewayAdapter\n(POS-01 HTTP, resto simulador)"];
+      a_mail [fillcolor="#FDE68A", label="ChannelRoutingNotificationProvider\n(SMTP real)"];
+      a_central [fillcolor="#FDE68A", label="Clientes del almacén central\n(InventoryServiceStockAdapter,\nCentralReceiptsClient)"];
+    }
+  }
+
+  subgraph cluster_sistemas {
+    label="Sistemas propios (cada uno con su base)"; style="rounded,filled"; fillcolor="#F0FDF4"; color="#10B981"; fontname="Arial";
+    central [fillcolor="#D1FAE5", label="Almacén central\ninventory-service\n(storesync, posstock, posevents)"];
+    tienda [fillcolor="#FFEDD5", label="Tienda física POS-01\nstore-service\n(ventas, sync, posevents, stockevents)"];
+    logi [fillcolor="#FEF08A", label="LogiExpress\nlogiexpress-service\n(guías, portal)"];
+    pay [fillcolor="#EDE9FE", label="PayKlik\npayklik-service\n(autorizaciones, portal)"];
+  }
+  erp [shape=box3d, label="ERP AS/400\n(carpeta erp-outbox)"];
+
+  orders -> payments [label="IProcesarPago"];
+  orders -> fiscal [label="IEmitirFactura"];
+  orders -> inventory [label="IReservas"];
+  orders -> logistics [label="DispatchPort"];
+  payments -> a_pay;
+  a_pay -> pay [label="REST + X-Api-Key"];
+  logistics -> a_logi;
+  a_logi -> logi [label="REST + X-Api-Key"];
+  integration -> a_erp; a_erp -> erp [label="CSV/XML"];
+  integration -> a_pos; a_pos -> tienda [label="eventos de órdenes"];
+  notifications -> a_mail;
+
+  legacyfeed -> orders [label="EventoEstadoOrden", style=dashed];
+  legacyfeed -> integration [label="IERP / IPOS"];
+  legacyfeed -> a_central [label="facturas de tienda"];
+  inventorysync -> a_central [label="venta en POS-ONLINE"];
+  onlinestore -> a_central [label="recepciones, traslados"];
+  onlinestore -> inventory [label="entradas/salidas CD-WEB"];
+  a_central -> central [label="REST + JWT"];
+  salesreport -> payments [label="IPagos"];
+  salesreport -> fiscal [label="IFiscal"];
+  salesreport -> integration [label="ventas ERP"];
+  salesreport -> audit [label="IAuditoría"];
+  fulfillment -> orders [label="avanza la orden"];
+  logistics -> fulfillment [label="EventoEstadoEnvío", style=dashed];
+  logistics -> query [label="EventoEstadoEnvío", style=dashed];
+  payments -> query [label="EventoPago", style=dashed];
+  orders -> query [label="EventoEstadoOrden", style=dashed];
+  logistics -> notifications [label="EventoEstadoEnvío", style=dashed];
+  notifications -> customers [label="contacto del cliente"];
+  central -> onlinestore [label="eventos de stock", style=dashed, color="#059669"];
+  central -> tienda [label="eventos de stock", style=dashed, color="#059669"];
+  tienda -> central [label="recepciones, facturas, traslados", color="#059669"];
+  tienda -> logistics [label="entrega en tienda (STORE)", color="#EA580C"];
+}

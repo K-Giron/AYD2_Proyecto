@@ -444,6 +444,251 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Resultado funcional: `./mvnw clean verify` — **BUILD SUCCESS**, incluida la prueba nueva `InventoryMovementServiceTest` (4 casos: entrada, salida, salida insuficiente, ubicación inexistente).
 - Nota de coherencia con `AUDITORIA.md` (Jairo, 23 de septiembre): "Actualizar inventario" y "Consultar historial" ya estaban señaladas ahí como parciales (1/3 y 1/2 respectivamente, por falta de entradas/POS y de historial consolidado por cliente); ambas quedan cerradas con el trabajo de hoy.
 
+### Fecha: 2026-10-01 — Integrante: Kevin Girón
+
+- Trabajo realizado: construí `FASE 2/inventory-service/`, un almacén central nuevo con login y tres roles, a solicitud directa mía (no es trabajo de Jorge ni de Jairo, y no toca su código — cero archivos modificados en `FASE 2/backend/`).
+  - **Login**: JWT por rol (`ALMACEN`, `FINANZAS`, `LOGISTICA`), tres cuentas de demostración, autorización por endpoint.
+  - **Almacén**: `Article` (catálogo propio, CRUD), `Stock` (existencia por artículo, solo cambia por movimiento), `StockMovement` (entrada/salida con **folio** secuencial `ENT-000001`/`SAL-000001`).
+  - **Finanzas**: cuentas por pagar (proveedores) y por cobrar (tiendas/clientes), con fecha límite, folio relacionado opcional y liquidación.
+  - **Logística**: cada folio de salida genera automáticamente un envío en estado Pendiente; avanza Pendiente → En tránsito → Entregado, un paso a la vez.
+  - Web con pestañas por módulo, visibilidad de acciones según el rol de la sesión.
+  - Un contenedor (API + web) y una base de datos Postgres propia en `docker-compose.yml`, sin ninguna llamada de red hacia/desde `backend` del punto de venta.
+- Hallazgo de ecosistema no documentado en ningún lado del proyecto: Spring Boot 4.1 migró a Jackson 3, que cambió su Maven groupId/paquete de `com.fasterxml.jackson.*` a `tools.jackson.*` (ej. `tools.jackson.databind.ObjectMapper`, artefacto `tools.jackson.core:jackson-databind:3.1.5`). Me costó tres iteraciones de build descubrirlo porque el síntoma ("package does not exist") no lo deja obvio. Lo dejo anotado aquí por si alguien más del equipo se topa con el mismo error al escribir una prueba con `ObjectMapper` en Spring Boot 4.1.
+- Resultado funcional: `./mvnw clean verify` del `inventory-service/` — **BUILD SUCCESS**, incluida la prueba de integración completa (login por rol, folio de entrada/salida, envío automático desde el folio de salida, cuenta por cobrar y liquidación, rechazo sin token).
+- Impedimentos, responsable e impacto: ninguno para el equipo — es un sistema nuevo, aislado, en rama local, sin commit ni push. No bloquea ni depende de nadie.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+### Fecha: 2026-10-02 — Integrante: Kevin Girón
+
+- Ayer: el almacén central (`inventory-service`) quedó con login, artículos/stock/movimientos con folio, finanzas y logística, pero con un diseño visual plano y con "destinatario" como texto libre en vez de un punto de venta real.
+- Trabajo realizado:
+  - **Rediseño visual completo**: layout con barra lateral y navegación por íconos, pestaña "Resumen" nueva con 4 KPI calculados en vivo (artículos, valor de existencias, cuentas pendientes, envíos en curso), tablas reales en vez de filas sueltas, barra de progreso visual en cada envío, login con panel de marca dividido y accesos directos a las 3 cuentas de demostración.
+  - **Punto de venta como entidad real**: nuevo módulo `pointofsale` (identificador propio, código único, almacén asignado) y módulo `warehouse` (almacén central sembrado por migración). Reemplacé el campo de texto libre "destinatario" en movimientos y envíos por una referencia real a `PointOfSale`, resuelta en las respuestas (código, nombre, almacén). Una salida sin punto de venta se rechaza con `400 POINT_OF_SALE_REQUIRED` antes de tocar la existencia.
+  - **Datos de demostración**: 3 artículos con stock inicial (camisa, pantalón, zapatos) y 3 puntos de venta sembrados por migración, para no empezar con el catálogo vacío.
+  - **Corrección de caché**: el navegador podía quedarse con una versión vieja de `app.js`/`index.html` después de cada rediseño (síntoma reportado: "mis movimientos no funcionan", aunque la API respondía bien por `curl`). Agregué `Cache-Control: no-store` a los recursos estáticos del almacén central.
+  - Migraciones nuevas V5-V9 (almacenes, puntos de venta, `point_of_sale_id` en movimientos/envíos reemplazando `destinatario`, artículos de demostración).
+- Resultado funcional: `./mvnw clean verify` del `inventory-service/` — ver resultado en este mismo corte; probado en vivo con `curl` de punta a punta (almacén, punto de venta, folio de salida con destino resuelto, rechazo sin destino, envío con tienda y almacén).
+- Impedimentos, responsable e impacto: ninguno para el equipo — sigue siendo un sistema nuevo y aislado, sin tocar `FASE 2/backend/`.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día, dos bugs reportados y dos pautas nuevas sobre el almacén central:**
+
+- **Bug 1 corregido**: "si no agrego un artículo manual no se inicia con lo que tiene ya en la BD" y "al hacer un movimiento sí cargan los artículos pero no veo el punto de venta destino habilitado". Causa real: `apiCall()` en `app.js` no pasaba `cache: "no-store"` al `fetch()` — el `Cache-Control: no-store` agregado el 2026-10-01 solo cubre los recursos estáticos de Spring (`index.html`/`app.js`), no las respuestas JSON de los `@RestController`, así que el navegador podía servir una respuesta `GET` vieja (vacía) de `/api/v1/points-of-sale` o `/api/v1/articles` desde antes de sembrar los datos de demostración. Corregido agregando `cache: "no-store"` directo en el `fetch()`. Reforzado además un segundo punto: el campo "Punto de venta destino" solo se sincronizaba en el evento `change` del selector de tipo, nunca al cargar la página — se agregó una llamada a `toggleMovementPosField(...)` al iniciar `bindMainPage()`.
+- **Pauta 1 implementada — stock propio por punto de venta**: nuevo módulo `posstock` (`PosStock`, `PosStockMovement`, migración `V11`). Cada punto de venta ahora lleva su propio saldo, separado del almacén central, alimentado **solo** cuando `StockService.registerMovement` registra una salida con `pointOfSaleId`: genera automáticamente un folio propio de tienda (`POS-ENT-NNNNNN`, secuencia `seq_pos_folio_entrada`) correlacionado con el folio de salida del almacén que lo originó. No es posible cargar el stock de una tienda manualmente ni desde ningún otro flujo.
+- **Pauta 2 implementada — bitácora/trazo de folios**: nuevo módulo `auditlog` (`AuditLogEntry`, migración `V10`), con `AuditLogService.record(eventType, description, relatedFolio, pointOfSaleId)` inyectado en `ArticleService`, `StockService`, `ShipmentService`, `InvoiceService` y `PointOfSaleService`. Registra automáticamente: creación de artículo, entrada/salida de almacén, recepción en tienda, avance de envío, registro/pago de cuenta — cada evento con actor (resuelto de `SecurityContextHolder`), folio relacionado y fecha. Expuesto en `GET /api/v1/audit-log?relatedFolio=&pointOfSaleId=`.
+- **UI nueva**: dos pestañas agregadas a `index.html`/`app.js` del almacén central — "Stock por tienda" (existencia y folios de entrada por punto de venta, con filtro) y "Bitácora" (trazo de eventos con filtro por folio).
+- Verificado en vivo con `curl` contra el stack real (`docker compose up --build -d inventory-service`): entrada de 50 unidades (folio `ENT-000001`), salida de 7 hacia POS-01 (folio `SAL-000002`) generó automáticamente `POS-ENT-000001` en el stock de POS-01 (saldo 7) y dos entradas de bitácora (`SALIDA_REGISTRADA`, `POS_ENTRADA_REGISTRADA`) con el folio y el punto de venta correctos.
+- Resultado funcional: `./mvnw clean verify` del `inventory-service/` — **BUILD SUCCESS, 25 pruebas, 0 fallos, 0 errores**, incluida la integración completa (migra de v9 a v11 sin perder datos existentes) y la prueba nueva `PosStockServiceTest` (folio de tienda, reutilización de la fila de stock existente).
+- **Pauta 3 (centralizar sesión del cliente entre canales) — no es una funcionalidad nueva, ya existe en `develop`**: revisé `Docs/DDA.md` (CDU-01 "Gestionar carrito omnicanal") y el código de Jairo (`orders.Cart`, `orders.SalesChannel{WEB,MOBILE,STORE,CALL_CENTER}`, `POST /api/v1/carts {customerId, channel}` en `OrdersController`) — el mecanismo que pedí ya está implementado como ORD-01 (carrito recuperable entre canales, responsabilidad de Jairo según `RESPONSABILIDADES_INTEGRANTES_FASE_2.md`). Lo que faltaba era un punto de entrada desde el canal tienda: agregué un panel "Buscar cliente (omnicanal)" en `staff.html`/`app.js` (mi módulo UI-01, cero archivos Java tocados) que llama `POST /api/v1/carts` con `channel: "STORE"` y muestra el carrito real del cliente tal cual quedó en la web. Verificado en vivo con `curl` usando un `Idempotency-Key` estable por cliente (header requerido por el endpoint, no documentado en ningún lado que yo haya visto).
+- **Hallazgo ajeno, no corregido por mí**: `GlobalExceptionHandler.handleUnexpected()` (módulo `shared`, de Edson) responde `500 INTERNAL_ERROR` sin registrar la excepción real en ningún log — me costó varias iteraciones diagnosticar el `500` de arriba por esto. Documentado aquí para que Edson lo revise, no lo toqué.
+- **Pendiente de decisión con Kevin, no implementado todavía**: la cuarta pauta ("levantar otro punto de venta, interfaz de punto local, login solo con nombre de usuario sin contraseña") no se construyó todavía como sistema aparte — quedó pendiente de confirmar si el panel nuevo de `staff.html` ya cubre el caso de uso (vendedor identifica al cliente en tienda física) o si Kevin sigue queriendo un terminal/contenedor nuevo y separado con su propio login simplificado.
+- Impedimentos, responsable e impacto: ninguno para el equipo en lo de `inventory-service` (sistema propio, aislado). El hallazgo de `GlobalExceptionHandler` no bloquea a nadie hoy pero sí dificulta diagnóstico futuro de errores 500 — queda como hallazgo para Edson.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día, bug real de caché en `frontend` (mío, UI-01) y validación de la pauta de sesión omnicanal entre puntos de venta:**
+
+- **Bug real encontrado y corregido** (no era un malentendido): el contenedor `frontend` (nginx, `FASE 2/frontend`) nunca tuvo cabeceras `Cache-Control: no-store` — a diferencia de `inventory-service`, donde sí se corrigió este mismo problema el 2026-10-01. Esto hacía que un navegador que ya había visitado `staff.html`/`app.js` antes siguiera sirviendo la versión vieja después de reconstruir el contenedor, sin que el usuario lo notara (sin hard-refresh no vuelve a pedir el archivo). Reproducido de forma controlada con un navegador real (Chrome headless vía DevTools Protocol): en un perfil con una visita previa a `staff.html`, `document.getElementById(...)` no encontraba elementos agregados en el HTML más reciente aunque `curl` sí mostraba el archivo correcto; en un perfil limpio, todo cargaba bien. Corregido agregando `add_header Cache-Control "no-store" always;` en `nginx.conf.template`. Esta es probablemente la causa real de varios reportes de "no carga la lista de artículos" a lo largo de la sesión, no un defecto del código de la pantalla en sí.
+- **Validación de la pauta "sesión del cliente no depende de dónde esté"**: el mecanismo de Jairo (`Cart` + `SalesChannel`, CDU-01) ya es agnóstico de punto de venta — el carrito se identifica por `customerId`, no por terminal. Para completar el ciclo (antes solo se podía *ver* el carrito desde tienda, no modificarlo), agregué un formulario "Agregar al carrito desde tienda" en el panel omnicanal de `staff.html`, usando `PUT /api/v1/carts/{cartId}/items/{productId}` (ya existente, de Jairo). Validado en vivo: se abrió un carrito en canal `STORE`, se agregó un artículo desde ese "punto de venta", y una segunda consulta independiente (`GET /api/v1/carts/active?customerId=`, simulando otro canal/terminal) mostró el mismo carrito con el mismo artículo — sin necesidad de ningún sistema nuevo ni de un identificador de punto de venta físico en el modelo de carrito.
+- **Corrección a pedido directo de Kevin, en módulo ajeno (`shared`, de Edson)**: `GlobalExceptionHandler.handleUnexpected()` ahora registra la excepción real con `log.error(...)` (método, URI y correlationId) antes de responder `500 INTERNAL_ERROR` — antes no dejaba ningún rastro en logs. Cambio mínimo, no toca el contrato de la API.
+- Resultado funcional: `./mvnw clean verify` del `backend/` del monolito — **BUILD SUCCESS, 161 pruebas, 0 fallos, 0 errores**, incluido el cambio de `GlobalExceptionHandler`.
+- Impedimentos, responsable e impacto: ninguno. El fix de caché es puramente de infraestructura de `frontend` (mi módulo); el de logging es una mejora de observabilidad de una línea en módulo ajeno, de bajo riesgo, hecha porque Kevin la pidió explícitamente.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día, tercera ronda: TDZ real en `app.js` del almacén central y existencia inicial al crear artículo:**
+
+- **Bug real corregido**: `let currentArticles`, `let currentStock`, `let currentPointsOfSale` y `let currentMovements` estaban declarados junto a cada sección del archivo, pero `bindMainPage()` (llamado de forma síncrona al cargar la página) dispara `loadArticles()` y las demás cargas antes de que la ejecución del script alcance esas líneas — produce `ReferenceError: can't access lexical declaration before initialization` en navegadores donde el `fetch` se resuelve antes de lo esperado. Corregido moviendo las cuatro declaraciones al inicio del archivo, antes de cualquier código que pueda ejecutarse. Verificado con un navegador real (Chrome headless vía DevTools Protocol): cero excepciones al cargar `index.html`.
+- **Pauta implementada — existencia inicial al crear un artículo**: nuevo campo "Existencia inicial en almacén" en el formulario de artículos; si es mayor a 0, después de crear el artículo se registra automáticamente una entrada (`POST /api/v1/stock-movements`, mismo folio secuencial `ENT-NNNNNN`) — no se inventó un mecanismo paralelo para tocar el stock, se reutilizó el único camino que ya existía. Validado en vivo: artículo creado con 15 unidades generó el folio `ENT-000002`, visible en Movimientos y reflejado en Existencias.
+- Impedimentos, responsable e impacto: ninguno — ambos cambios son solo frontend de `inventory-service` (mi sistema).
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día, cuarta ronda: cada punto de venta con su propio almacén:**
+
+- Kevin notó que los tres puntos de venta sembrados mostraban el mismo "Almacén asignado" (`ALM-CENTRAL`) — correcto según el diseño anterior (el campo indicaba de qué almacén central recibe mercadería cada tienda), pero no lo que él quería: cada punto de venta debe tener su **propio** almacén, no uno compartido.
+- Cambiado `PointOfSaleService.create(code, name)`: ya no recibe ni busca un `warehouseId` existente — crea automáticamente un `Warehouse` nuevo y dedicado (código `ALM-<código del POS>`, nombre `Almacén <nombre de la tienda>`) y lo asigna. El formulario "Nuevo punto de venta" ya no pide elegir almacén.
+- Migración `V12__points_of_sale_own_warehouses.sql`: crea un almacén dedicado para cada uno de los 3 puntos de venta sembrados y los reasigna; `ALM-CENTRAL` se conserva como el único origen de artículos/existencias/movimientos (`ENT-`/`SAL-`), pero deja de estar asignado a ningún punto de venta.
+- Columna renombrada en la tabla de Puntos de Venta: "Almacén asignado" → "Su almacén".
+- Verificado en vivo: los 3 puntos de venta existentes migraron a `ALM-POS-01/02/03`; un punto de venta nuevo creado después (`POS-04`) generó automáticamente `ALM-POS-04`.
+- Resultado funcional: `./mvnw clean verify` — **BUILD SUCCESS, 24 pruebas, 0 fallos**, incluida la reescritura de `PointOfSaleServiceTest` y la corrección de dos aserciones en `InventoryServiceIntegrationTest` que asumían el almacén compartido.
+- Impedimentos, responsable e impacto: ninguno — cambio contenido en `inventory-service` (mi sistema).
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día, quinta ronda: `warehouse_id` real en `stock` y `stock_movements`:**
+
+- Kevin notó que ni la tabla de Existencias ni los movimientos mostraban en qué almacén estaban cargadas las unidades. Causa de fondo: `Stock`/`StockMovement` nunca tuvieron una columna que los ligara a un almacén — "el almacén central" era una convención (el primer almacén sembrado), no una relación real en la base de datos.
+- Migración `V13__stock_warehouse_id.sql`: agrega `warehouse_id` (FK real a `warehouses`, `NOT NULL`) a `stock` y `stock_movements`, poblando las filas existentes con el id de `ALM-CENTRAL`.
+- `Stock`/`StockMovement` ahora cargan su `warehouseId`; `StockService` resuelve el almacén central por código (`Warehouse.CENTRAL_CODE`) una sola vez y lo usa al inicializar existencia y al registrar cada movimiento — ya no es una suposición implícita.
+- `StockResponse`/`StockMovementResponse` exponen `warehouseId/warehouseCode/warehouseName` (existencias) y `sourceWarehouseCode/sourceWarehouseName` (movimientos). Nueva columna "Almacén" en las pestañas Existencias y Movimientos.
+- Verificado en vivo (API y navegador real): ambas respuestas y ambas tablas muestran `ALM-CENTRAL` correctamente, sin excepciones.
+- Resultado funcional: `./mvnw clean verify` — **BUILD SUCCESS, 24 pruebas, 0 fallos**, incluida la actualización de `StockServiceTest` (constructor con `WarehouseRepository`, verificación de `warehouseId` en el movimiento creado).
+- Impedimentos, responsable e impacto: ninguno — cambio contenido en `inventory-service` (mi sistema).
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día, sexta ronda: permiso de Logística sobre folios, "Tienda Online" y la primera integración en vivo entre los dos sistemas (ver ADR-015):**
+
+- **Permiso de rol**: el rol LOGISTICA de `inventory-service` ahora también puede registrar folios de entrada/salida (`POST /api/v1/stock-movements`), antes exclusivo de ALMACEN — despachar hacia un punto de venta es una acción de logística. `SecurityConfig`, UI y pruebas actualizadas.
+- **Bug real encontrado y corregido, grave**: cada folio de `SALIDA` (y su envío asociado) se estaba **perdiendo silenciosamente** — la API respondía `201` con un folio "fantasma" que nunca quedaba en la base de datos (0 filas), descubierto al agregar `external_reference` y ver que un reintento con la misma referencia creaba un folio distinto en vez de devolver el existente. Causa: `StockMovementRepository.save(...)`/`ShipmentRepository.save(...)` usan `merge()` (porque el `@Id` se asigna a mano, sin `@Version`), y justo después de la actualización masiva `@Modifying(clearAutomatically = true)` sobre `stock`, ese `merge()` no quedaba programado para el flush de la transacción. Corregido cambiando esos dos `save()` por `saveAndFlush()`. Verificado en vivo con logging SQL completo (antes: `select` sin `insert` subsecuente; después: `insert` real, fila persistida). Esto probablemente explica folios "fantasma" que no se habían notado antes.
+- **Idempotencia por referencia externa**: `stock_movements.external_reference` (migración `V14`, `UNIQUE`) — un reintento de red con la misma referencia devuelve el mismo movimiento en vez de descontar la existencia dos veces.
+- **Nuevo punto de venta "Tienda Online"** (`POS-ONLINE`, migración `V15`), con su propio almacén (`ALM-POS-ONLINE`) — representa la web del monolito dentro de `inventory-service`.
+- **Primera integración en vivo entre los dos sistemas** (ver `ADR-015`, Proposed): nuevo módulo `inventorysync` en el monolito — cuando una orden llega a `CONFIRMED`, registra automáticamente en `inventory-service` la salida de cada línea vendida contra `POS-ONLINE`. Reintentos 2/8/32 s (mismo molde que LOG-03), bandeja de fallidos (`inventory_bridge_dead_letters`) si se agotan o si el nombre del producto no tiene artículo correspondiente, cuenta de servicio propia (no humana). Nunca bloquea la venta.
+- **Verificado en vivo, extremo a extremo, dos veces**: (1) compra real en la web → folio `SAL-000012` en `inventory-service`, stock de `POS-ONLINE` correcto; (2) con `inventory-service` apagado a propósito, la orden se confirmó igual en el monolito, los reintentos (2s, 8s, 32s) quedaron en el log, y al volver a levantar `inventory-service` el cuarto intento se recuperó solo (folio `SAL-000013`) sin ninguna intervención manual.
+- Resultado funcional: `./mvnw clean verify` en `inventory-service/` (**BUILD SUCCESS, 25 pruebas**) y en `backend/` (**BUILD SUCCESS, 169 pruebas**, incluye `ModularArchitectureTest` actualizado para aprobar el nuevo módulo `inventorysync` y 8 pruebas nuevas del módulo).
+- Impedimentos, responsable e impacto: esta integración cruza a propósito el límite de "sin acoplamiento" que el equipo tenía documentado — queda señalado explícitamente en `ADR-015` (Proposed, pendiente de aprobación de al menos tres integrantes) para que el equipo lo revise, aunque la decisión y la implementación completa sean de Kevin.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+### Fecha: 2026-10-05 — Integrante: Kevin Girón
+
+- Trabajo realizado: segundo punto de venta (**terminal de tienda física**) y continuidad del carrito entre canales, a partir de CDU-01 del DDA (ver `ADR-015`, sección de ampliación).
+  - Hallazgo de diseño: el carrito ya era único y del servidor (ORD-01, Jairo); lo que hacía que "se perdiera" era la **identidad del cliente**, que vivía solo en el `localStorage` del navegador. Nuevo módulo `customers` (directorio en el servidor, migración `V1008`); la web resuelve ahí su `customerId` y se enlaza al cliente si ya fue registrado en tienda.
+  - Bug corregido en la web (mi UI-01): con la clave de carrito guardada apuntando a un carrito cerrado, la web quedaba mostrando ese carrito; ahora pide uno vigente con clave nueva.
+  - Nueva terminal `pos-tienda` (puerto 8084): vendedor solo con usuario (credencial del equipo, no de la persona), buscar/registrar cliente, carrito compartido con la web, cobro con Saga. El vendedor queda como `X-Actor` en la auditoría de la orden.
+  - Venta en tienda descuenta la existencia de esa tienda en inventory-service (`POST /api/v1/pos-stock/sales`, folio `POS-VTA-NNNNNN`, migración `V16`); `inventorysync` enruta por el origen registrado (`V1009`). Las ventas web siguen yendo a `POS-ONLINE`.
+- Resultado funcional: `./mvnw clean verify` — backend **177 pruebas** y inventory-service **28 pruebas**, BUILD SUCCESS. E2E con navegador real: registro web → carrito con camisa → en la terminal, la vendedora "maria" busca al cliente (escribiendo el correo en mayúsculas) y ve **el mismo carrito** ("abierto en WEB · ahora en STORE") → agrega pantalón → cobra (orden PREPARING, factura emitida) → POS-01 baja 1 camisa y 1 pantalón (`POS-VTA-000001/2`), POS-ONLINE sin cambios → la web muestra carrito vacío, no el cerrado. Cliente nuevo registrado directamente en la terminal. Venta web de regresión → `SAL-000015` a POS-ONLINE.
+- Impedimentos, responsable e impacto: toca configuración de seguridad del backend (un usuario de servicio nuevo en `application.yml`, módulo de Edson) y agrega un módulo de identidad que Edson (BB-07) debe revisar; no se modificó `SecurityConfig` del monolito ni el módulo `orders` (Jairo). `ModularArchitectureTest` actualizado para aprobar `customers`.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-05), segunda ronda: la tienda física como sistema propio y almacén por punto de venta (ver `ADR-015`, segunda ampliación):**
+
+- Trabajo realizado, a partir de la revisión de Kevin ("el punto de venta 01 está simple"):
+  - **Nuevo sistema `store-service`** (`FASE 2/store-service/`, puerto 8084, base propia `store-db`), reemplaza a la terminal `pos-tienda`. Venta y cobro locales: escáner por SKU, ticket `TKT-NNNNNN`, **NIT o CF** (NIT validado; CF = "Consumidor Final" por defecto), efectivo con cambio, tarjeta o transferencia. Inventario propio (solo lo que el central envió por folio), recepciones, traslados y **bitácora de sincronización** (subidas y bajadas). Vende sin conexión con el central; las facturas pendientes suben solas.
+  - Identificar al cliente es **opcional**: "Traer carrito web" por usuario, que cierra el carrito web al cobrar.
+  - **`inventory-service`**: endpoints `store-sync` con rol nuevo `TIENDA` (cuenta ligada a su propio punto de venta), facturas de tienda `FT-NNNNNN` en Finanzas, traslados `TRA-NNNNNN` tienda → central / tienda → tienda (migración `V17`), y movimiento de tienda tipo `TRASLADO`.
+  - **Tienda online por etapas**: la venta web descuenta la existencia propia de `POS-ONLINE` (ya no crea salida del central); la web muestra disponibilidad con ese stock (`GET /api/v1/inventory-sync/online-stock`, público, solo lectura).
+  - **Limpieza**: `FASE 2/scripts/reset-demo-data.sh` (los tres sistemas; conserva usuarios, almacenes, puntos de venta, catálogo e inventario web). Ejecutado: folios desde `000001`.
+- Resultado funcional: `./mvnw clean verify` — inventory-service **35 pruebas**, store-service **9 pruebas** (Testcontainers; incluye arranque con el central inalcanzable), backend **180 pruebas**, todos BUILD SUCCESS. Compose con 8 contenedores sanos. E2E en vivo después de la limpieza (API y navegador): surtido por folio → recepción automática en la tienda → venta CF con cambio y venta con NIT → `FT-000001/2` en Finanzas → traslados `TRA-000001` (→ `ENT-000003`) y `TRA-000002` (→ `POS-ENT-000004` en POS-02) → venta con el central apagado queda Pendiente y sube sola (`FT-000003`) → POS-ONLINE surtido con 6, web muestra "6 disponibles", compra web de 2 → `POS-VTA-000006`, queda 4, sin salida del central. Sin errores de JavaScript en las tres UIs.
+- Impedimentos, responsable e impacto: dos cambios pequeños fuera de mis módulos, para revisión: (1) Edson — una línea en `SecurityConfig` del monolito para que `GET /api/v1/inventory-sync/online-stock` sea público como `GET /api/v1/inventory/stock`; (2) Jorge — la web ya no muestra la disponibilidad de su inventario sino la de `POS-ONLINE` (su inventario sigue intacto y la Saga sigue reservando contra él). No se tocó `orders` (Jairo) ni fiscal/ERP (Andy).
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-05), tercera ronda: recepción por folio y ajustes del central tras la revisión de Kevin:**
+
+- Trabajo realizado:
+  - **Tienda — recepción por folio**: pestaña Recepción; se escribe el folio de envío (`SAL-…`/`TRA-…`), con Tab se cargan artículos y cantidades, y la existencia solo sube al confirmar. Lo enviado y no confirmado se ve como "en tránsito" (también en Inventario y con contador en el menú).
+  - **Central — "no vi llegar el traslado"**: los traslados sí llegaban (`ENT-000002/3`, existencia y bitácora), pero la UI del central solo cargaba datos al abrir la página. Ahora se actualiza cada 15 s y al cambiar de pestaña, y la entrada por traslado se distingue ("Entrada · traslado de tienda", folio `TRA-…`, tienda de origen y motivo).
+  - **Bug real en la tienda**: el formulario de traslado mostraba un error ("Cannot read properties of null") aunque el traslado sí se registraba (uso de `event.currentTarget` después de un `await`). Corregido.
+  - **Central — agregar existencia** a un artículo ya registrado: botón "+ Existencia" en Artículos y Existencias (entrada con su folio); Artículos muestra la existencia.
+- Resultado funcional: store-service **10 pruebas**, inventory-service **35 pruebas**, BUILD SUCCESS; migración `V2` aplicada sobre los datos existentes (lo ya recibido quedó como recibido). E2E en navegador: "+ Existencia" 25 → `ENT-000044`; `SAL-000003` a POS-01 → en la tienda, folio + Tab muestra 3 unidades en tránsito, existencia 0 hasta confirmar, luego 3; traslado desde la UI de la tienda → `TRA-000003`/`ENT-000045` aparece en Movimientos y Bitácora del central sin recargar.
+- Impedimentos, responsable e impacto: mismo patrón de bug detectado en la consola staff de la web (`frontend/app.js`, formulario de movimiento de inventario, ~línea 622): registra el movimiento y luego muestra un error. No es de mi módulo; se reporta para el responsable de esa pantalla.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-05), cuarta ronda: búsqueda manual en caja y facturas reimprimibles:**
+
+- Trabajo realizado:
+  - **Caja — búsqueda manual**: el mismo campo del escáner busca por código, nombre o descripción mientras se escribe (lista con flechas, Enter o clic; muestra precio y existencia, deshabilita lo que no tiene existencia). El código exacto + Enter sigue agregando directo (escáner). La descripción del artículo ahora viaja del central a la tienda con cada envío (`StoreReceiptResponse.description`, migración `V3` de `store-service`).
+  - **Factura al cobrar**: al finalizar la venta se genera la factura (emisor configurable `STORE_LEGAL_NAME`/`STORE_TAX_ID`/`STORE_ADDRESS`, serie = código de tienda, número = ticket, NIT/nombre del cliente, líneas, subtotal sin IVA, IVA 12 % incluido, forma de pago, efectivo y cambio, estado de envío al central), lista para imprimir. Indica que la certificación FEL ante SAT no está integrada (es del módulo fiscal de Andy).
+  - **Ventas y facturas**: filtro por rango de fechas (hora de Guatemala, por defecto hoy) y texto (folio, NIT, cliente, vendedor), resumen de cantidad y totales por forma de pago, y **reimpresión**: cada reimpresión se cuenta y la copia sale marcada "REIMPRESIÓN n — COPIA".
+- Resultado funcional: store-service **12 pruebas**, inventory-service **35**, BUILD SUCCESS. En navegador: "talla" (descripción) + Enter agrega; "mc001" + Enter (escáner) agrega; clic en resultado agrega; "zzzz" avisa que no existe; venta con NIT 4567890-1 en efectivo → factura `TKT-000002` (subtotal Q2,035.71, IVA Q244.29, total Q2,280.00, cambio Q220.00, enviada `FT-000002`); filtro por fechas y por "pérez"; reimpresión marcada y contada.
+- Impedimentos, responsable e impacto: ninguno nuevo. Artículos que la tienda ya tenía antes de este cambio reciben su descripción con el próximo envío confirmado.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-05), quinta ronda: tienda online conectada (ver `ADR-015`, tercera ampliación):**
+
+- Trabajo realizado:
+  - **Módulo nuevo `onlinestore`** (monolito, `V1010`): recepción por folio de lo que el central envía a POS-ONLINE (en tránsito hasta confirmar), ingreso al inventario del monolito en la ubicación nueva `CD-WEB`, catálogo administrable (nombre, descripción, categoría, precio, imagen) y publicación. Página `tienda-online.html` con cuenta propia `tienda-online@megastore.com` (rol `ONLINE_STORE`).
+  - **La web** carga el catálogo publicado desde `GET /api/v1/online-catalog` (se retiró `catalog.json`); disponibilidad = en mano − reservado en `CD-WEB`. La Saga reserva y confirma ahí (reserva atómica y temporizador existentes), e `inventorysync` reporta la venta al central por id de artículo.
+  - **Central**: ajuste de existencia `AJU-NNNNNN` (motivo obligatorio, solo Almacén, migración `V18`) con botón "− Ajuste" en Existencias; cuenta TIENDA para POS-ONLINE.
+  - **Limpieza** ampliada a la tienda online (recepciones, catálogo, inventario de `CD-WEB`); ejecutada al final.
+- Resultado funcional: backend **180 pruebas** (incluye `OnlineStoreIntegrationTest`: flujo completo y **dos compradores concurrentes por la última unidad → exactamente una reserva**), inventory-service **37**, BUILD SUCCESS. E2E en navegador: `SAL-000001` (4) a POS-ONLINE → folio + Tab en la tienda online → confirmar → catálogo "sin publicar · falta imagen" → publicar sin imagen rechazado → imagen + precio Q749 → publicado → portada y catálogo del cliente muestran imagen y "4 disponibles" → compra completa (Saga hasta despacho) → 3 en `CD-WEB` y 3 en POS-ONLINE del central. "− Ajuste" sin motivo no se envía; con motivo → `AJU-000002`.
+- Impedimentos, responsable e impacto: (1) Jorge — tres métodos aditivos en `inventory` y la ubicación `CD-WEB`; la reserva no cambió. (2) Edson — reglas en `SecurityConfig` (`/api/v1/online-catalog/**` público de lectura, `/api/v1/online-store/**` solo `ONLINE_STORE`) y un usuario nuevo. (3) Jairo — `catalog.json` se retiró; la web usa el catálogo publicado. (4) **Prueba inestable preexistente** `SensitiveDataLeakScanTest` (Edson): su patrón de PAN (13+ dígitos con puntos o guiones intercalados) a veces encuentra valores aleatorios (vista en columnas distintas: `shipments.idempotency_key`, `outbox_event.payload`); 1 de 3 corridas aisladas falló sin cambios de por medio. (5) Bug de la consola staff de inventario (`frontend/app.js`, `event.currentTarget` tras `await`) sigue reportado. (6) DDA §2.2 dejó el catálogo fuera de alcance: agregar `onlinestore`/`CD-WEB` a los diagramas y CDU para que no cuente como código huérfano.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-05), sexta ronda: almacenes en la consola interna y factura al finalizar la compra web:**
+
+- Trabajo realizado:
+  - **Consola staff**: el panel de inventario pasa a "vista unificada de almacenes" (almacén central, almacén de cada tienda y almacén de la tienda online con reservas), con filtro por almacén y búsqueda. El ajuste manual de Jorge (INV-04) queda plegado y ya no ofrece `CD-WEB` (la tienda online solo se surte por folio). "Nuevo despacho" elige el almacén de origen (central, tienda online, tiendas o recogida). Corregido el bug de `event.currentTarget` tras `await` de ese formulario.
+  - **Logística (LOG-01)**: el despacho guarda el almacén concreto de origen (`origin_code`, `V1011`); la Saga lo llena con la ubicación de la reserva.
+  - **Factura web**: endpoint de cliente `GET /api/v1/invoices/orders/{orderId}` (módulo fiscal, aditivo) y factura imprimible con descarga del XML al terminar la compra y en "Mis pedidos". "Mis pedidos" antes intentaba leer `/api/v1/fiscal-documents` (solo Finanzas) y fallaba en silencio.
+- Resultado funcional: backend **183 pruebas**, BUILD SUCCESS (incluye las de autorización de Edson sin cambios: el cliente sigue sin acceso a `fiscal-documents`). E2E en navegador: compra con NIT 4567890-1 → factura abierta sola (serie SGO-2026, CUI, autorización SAT, subtotal Q668.75 + IVA Q80.25 = Q749.00) → XML descargado → "Ver factura" desde Mis pedidos; consola staff con 6 almacenes (central, online, 4 tiendas), despacho de la orden "Almacén Tienda Online (CD-WEB) → Zona 10" y uno nuevo "Almacén Central (ALM-CENTRAL) → Mixco".
+- Impedimentos, responsable e impacto: Andy — controlador nuevo `CustomerInvoiceController` en `fiscal` (solo lectura, no cambia emisión). Edson — dos reglas nuevas en `SecurityConfig` (`/api/v1/invoices/orders/*` CLIENT/FINANCE; `/api/v1/inventory-sync/warehouses` interno). Jorge — su formulario de ajuste manual sigue igual, plegado y sin `CD-WEB`.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-05), séptima ronda: vista general en el central y tienda online completa:**
+
+- Trabajo realizado:
+  - **Almacén central**: pestaña "Vista general" (`GET /api/v1/stock-overview`): existencia por artículo en el central y en cada punto de venta, con total de la red. Se retiró la vista unificada que se había puesto en la consola de la web (pedido de Kevin: la vista general va en el servidor).
+  - **Tienda online** (`tienda-online.html`): Inventario (en mano / reservado / disponible / en tránsito), Ventas y facturas (por fecha, con la factura certificada imprimible y su XML), Traslados por folio `TOL-NNNNNN` (central u otra tienda; rechazo devuelve a `CD-WEB`; pendientes se reintentan) y Bitácora (recepciones, ventas reportadas al central, traslados). Migración `V1012`.
+- Resultado funcional: backend **182 pruebas**, inventory-service **37**, BUILD SUCCESS. E2E desde cero en navegador: `SAL-000001` (6) recibido + `SAL-000002` (2) en tránsito → publicado con imagen → compra de 2 con factura → Ventas muestra la orden y su factura → traslado `TOL-000001` → `TRA-000001`/`ENT-000002` en el central → inventario online 3 en mano + 2 en tránsito → bitácora con recepción, venta (`POS-VTA-000001`) y traslado → vista general del central: central 13, POS-ONLINE 5, total red 18.
+- Impedimentos, responsable e impacto: Jorge — un método aditivo más (`issueFromLocation`, salida desde una ubicación por código; solo disponible, no reservado).
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-05), octava ronda: correcciones generales de la tienda online:**
+
+- Trabajo realizado:
+  - **Checkout**: "Recoger en tienda" lista las ubicaciones físicas activas (almacén central y tienda física 1) con dirección y horario; "Envío a domicilio" pide la dirección. **Ventana PayKlik simulada**: tarjeta tokenizada con botón "Cobrado", o transferencia con cuenta y referencia inventadas; cancelar deja el carrito intacto.
+  - **Roles**: `tienda-online@megastore.com` administra la web completa (ONLINE_STORE + SUPPORT + LOGISTICS + FINANCE) y navega entre su página y el centro de operaciones; la auditoría de la consola usa los roles reales del token.
+  - **Consola — "Inventario — entradas y salidas"** (estaba roto: ofrecía productos de la tienda online en ubicaciones donde no existen) → existencias y kárdex de la tienda online, incluidas las reservas y su liberación por temporizador. **"Buscar cliente (omnicanal)"** (pedía un UUID) → call center por correo con carrito compartido en canal CALL_CENTER, historial de compras y atenciones. La web relee el carrito al abrirlo (cambios desde otro canal).
+  - **Notificaciones**: un cliente recién registrado no recibía nada (solo el cliente demo tenía contacto); ahora su correo de registro es su contacto.
+  - **Devoluciones** (cliente): se elige la compra y el producto de listas, sin teclear UUID ni SKU.
+  - Corregidos: filas de auditoría de la consola (`undefined`, estados vacíos) y la miniatura del carrito (`undefined`).
+- Resultado funcional: backend **184 pruebas**, BUILD SUCCESS. E2E en navegador con cliente registrado desde cero: compra con recogida en Tienda Centro (POS-01) pagada por transferencia y compra a domicilio con tarjeta (cancelada una vez) → facturas → notificaciones `ORDER_CONFIRMED` y `SHIPMENT_PREPARING` enviadas a su correo → devolución registrada; consola como tienda online: kárdex con entradas y ventas, call center agrega al carrito del cliente (último canal CALL_CENTER) y la web lo muestra sin recargar; auditoría con actor y estados.
+- Impedimentos, responsable e impacto: Jorge — `InventoryLocationActivityService` y dos consultas de repositorio (solo lectura). Edson — regla de lectura de inventario/kárdex para roles internos y roles ampliados de la cuenta de tienda online. Jairo — sin cambios en orders; el call center usa los endpoints de carrito existentes.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-05): registro web bloqueado tras limpiar datos:**
+
+- Causa: el registro validaba duplicados contra las cuentas guardadas en el `localStorage` del navegador (modelo demo de autenticación). Al limpiar el servidor, el navegador seguía "recordando" esos correos y respondía "Ya existe una cuenta con ese correo" aunque el cliente ya no existiera.
+- Corrección (`frontend/session.js`): el registro consulta primero el directorio de clientes del servidor; si el servidor no tiene el correo, se reemplaza la copia vieja del navegador y se registra; si lo tiene, se pide iniciar sesión. Verificado en navegador: correo viejo del navegador → registra; correo existente en el servidor → aviso; correo nuevo → registra; login con la contraseña nueva → entra.
+- Limitación que sigue (BB-07, Edson): la contraseña del cliente vive en el navegador; en otro dispositivo no puede iniciar sesión con contraseña.
+
+### Fecha: 2026-10-06 — Integrante: Kevin Girón
+
+- Trabajo realizado: **correo real de notificaciones**. El proveedor era solo un simulador (BB-06): marcaba los avisos como enviados pero no salía ningún correo. Nuevo envío SMTP (`SmtpEmailSender`, Gmail con contraseña de aplicación por `SGO_MAIL_USERNAME`/`SGO_MAIL_PASSWORD` en `.env`, que no se versiona) con correo HTML por evento (confirmación, preparación, en tránsito, entregado, incidencia) y enlace a "Mis pedidos". Selección automática por canal: correo real si hay credenciales; si no, simulador; SMS/push simulados. Además: enlaces "Crear cuenta" en la portada y en el login (antes solo aparecía al intentar comprar sin sesión).
+- Resultado funcional: backend **189 pruebas**, BUILD SUCCESS; incluye envío SMTP real contra un servidor de correo de prueba en contenedor (Mailpit): llega con asunto, destinatario y enlace; servidor caído → proveedor no disponible (reintento).
+- Impedimentos, responsable e impacto: falta que Kevin genere la contraseña de aplicación de Gmail y la ponga en `.env`; mientras tanto el correo sigue simulado.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-06): ERP AS/400, POS de las 32 tiendas e informe de ventas (ver `ADR-015`, cuarta ampliación):**
+
+- Trabajo realizado: revisión del módulo contra el enunciado y la hoja de calificación. Brechas encontradas: ERP y POS solo funcionaban con botones manuales en la consola, las ventas de tienda física no llegaban al ERP, el lote no se escribía como archivo y no había informe de ventas. Nuevo módulo `legacyfeed`: la venta confirmada entra sola al ERP y cada cambio de la orden se avisa a las 32 tiendas; las facturas de tienda llegan desde el central cada 60 s. El lote se escribe como archivo CSV/XML con registro de control en la carpeta del AS/400 (volumen `erp-outbox`, cada 30 min), los lotes huérfanos se retoman y un `DEAD_LETTER` se puede reenviar. La tienda 01 recibe los eventos de verdad (`store-service`, pestaña "Pedidos web"). Nuevo módulo `salesreport`: informe conciliado por rango (pago, factura SAT, ERP) con diferencias, exportación CSV y auditoría de cada consulta. En la consola, paneles de lotes/eventos e informe.
+- Resultado funcional: backend **200**, inventory-service **37** y store-service **13** pruebas, en verde. E2E en vivo con datos limpios, incluidas la caída del ERP (`DEAD_LETTER` → reintento manual → entregado) y la caída de las tiendas 7 y 15 (30 ACK / 2 `DEAD_LETTER`); el informe marca la diferencia mientras el lote no se entrega.
+- Impedimentos, responsable e impacto: cambios aditivos en `integration` (Andy) y una regla nueva `/api/v1/reports/**` → FINANCE en `SecurityConfig` (Edson); a revisar con ellos. Los diagramas (despliegue: volumen `erp-outbox`, POS-01 real; modelo de datos: columnas nuevas de `erp_sales`, `pos_events`) deben actualizarse para no quedar como código huérfano.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+**Actualización — mismo día (2026-10-06): PayKlik y LogiExpress reales, eventos de stock a los POS y entrega en tienda (ver `ADR-015`, quinta ampliación):**
+
+- Trabajo realizado:
+  - PayKlik y LogiExpress pasan de simuladores dentro del backend a sistemas propios, cada uno con su base y su portal (`payklik-service` :8086, `logiexpress-service` :8085). SGO-Logic los consume por REST con llave de comercio.
+  - El rastreo de LogiExpress mueve el despacho y la orden (módulo nuevo `fulfillment`) y avisa al cliente y a las tiendas. El retiro en tienda termina con "Entregar al cliente" en el POS.
+  - La Saga retoma la compra cuando la conciliación de PayKlik resuelve un pago indeterminado.
+  - El central envía a cada punto de venta sus eventos de stock con reintentos, y cada uno los anota en su bitácora comparados con su existencia.
+- Resultado funcional:
+  - Pruebas en verde: backend 223, central 40, tienda 15, PayKlik 4, LogiExpress 4.
+  - E2E en vivo con datos limpios, incluidos PayKlik lento (sin doble cobro), LogiExpress lento o caído (rastreo y "Reintentar guía") y tienda caída para eventos de stock ("Reenviar").
+- Impedimentos, responsable e impacto:
+  - Cambios aditivos en `payments` (Edson: adaptador REST; ver ADR-015 §36) y en `OrderSagaService` (Jairo: retomar tras conciliar).
+  - Dos reglas nuevas en `SecurityConfig`.
+  - Diagramas de despliegue, componentes y modelo de datos pendientes de reflejar los dos sistemas nuevos.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+### Fecha: 2026-10-07 — Integrante: Kevin Girón
+
+- Trabajo realizado:
+  - Revisión contra la hoja de calificación.
+  - Arreglo del resumen consolidado de la orden (`query`): consumidor de eventos de pago y creación de la proyección sin carrera (`ON CONFLICT` + bloqueo de fila).
+  - Temporizador de reservas configurable por entorno.
+  - Lista de lo que le toca a cada integrante y de los cambios de diagramas (documento personal y ADR-015 §43).
+- Resultado funcional: backend **227 pruebas** en verde, incluida la concurrencia real del resumen (orden, pago y despacho a la vez, 10 rondas).
+- Impedimentos, responsable e impacto: los diagramas (DOC-01, Jairo) no reflejan lo construido desde el 23-09. Riesgo de "código huérfano" en la calificación.
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
 ### Fecha: YYYY-MM-DD — Integrante: nombre
 
 - Ayer: pendiente.

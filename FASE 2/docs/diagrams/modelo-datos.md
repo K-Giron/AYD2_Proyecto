@@ -446,3 +446,24 @@ Estados según `docs/contracts/orders/order-states.md` (propuesta `PROPOSED`).
 - Matriz EaC: `docs/qa/QA-03-matriz-eac.md`
 - Trazabilidad CUN → código → datos → despliegue: `docs/qa/trazabilidad-cun-mvp.md`
 - Vistas arquitectónicas de Fase 1: `Docs/DDA.md` §6 y `Docs/diagramas/`
+
+## 7. NUEVO · Ampliación de Fase 2 (Kevin Girón, 2026-10-07)
+
+> Sección agregada; no modifica las anteriores. El detalle está en
+> `nuevos-fase2/` (diagramas generados desde las migraciones reales).
+
+| Sistema / módulo | Tablas | Migraciones | Diagrama |
+|---|---|---|---|
+| `onlinestore` (monolito) | `online_catalog_products`, `online_catalog_images`, `online_store_receipts`, `online_store_transfers`, `online_store_sync_log`, `online_store_stock_events` | V1010, V1012, V1013 | `NUEVO-modelo-datos-sgo-logic-nuevas` |
+| `inventorysync` (monolito) | `inventorysync_order_origins`, `inventory_bridge_dead_letters` | V1007, V1009 | ídem |
+| `customers` (monolito) | `customers`, `customer_contacts` | V1008, V4003 | ídem |
+| `logistics` (monolito) | `shipments.origin_code`; estado `READY_FOR_PICKUP`; fuentes de tracking `LOGIEXPRESS`, `TIENDA POS-xx`, `CONSOLA` | V1011 | ídem |
+| `integration` (monolito) | `erp_sales.channel`, `point_of_sale`, `source_reference` | V2004 | ídem |
+| `query` (monolito) | `order_summary_projections` alimentada por orden, pago, despacho e incidencia; alta con `ON CONFLICT` | — | — |
+| Almacén central (`inventory-db`) | 14 tablas, incluida la bandeja `pos_stock_events` | V1–V19 | `NUEVO-modelo-datos-central` |
+| Tienda POS-01 (`store-db`) | 9 tablas | V1–V5 | `NUEVO-modelo-datos-tienda-pos01` |
+| PayKlik (`payklik-db`) | `transactions` (llave de idempotencia única por comercio; sin PAN/CVV), `operation_settings` | V1 | `NUEVO-modelo-datos-payklik` |
+| LogiExpress (`logiexpress-db`) | `guides` (número LGX, referencia del comercio única, punto de retiro), `guide_events`, `operation_settings` | V1 | `NUEVO-modelo-datos-logiexpress` |
+
+Regla que se suma a §5: **cada sistema tiene su propia base y solo se integra
+por API, eventos o archivos; nunca lee tablas de otro sistema.**
