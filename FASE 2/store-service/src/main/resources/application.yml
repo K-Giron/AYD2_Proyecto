@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: store-service
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: UTC
+  datasource:
+    url: jdbc:postgresql://${STORE_POSTGRES_HOST:localhost}:${STORE_POSTGRES_PORT:5432}/${STORE_POSTGRES_DB:store_local}
+    username: ${STORE_POSTGRES_USER:store_local}
+    password: ${STORE_POSTGRES_PASSWORD:local_only_change_me}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    baseline-on-migrate: false
+    clean-disabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
+          no-store: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+store:
+  # Un contenedor = una tienda. Otra tienda física es otro contenedor con otro código.
+  code: ${STORE_CODE:POS-01}
+  name: ${STORE_NAME:Tienda Centro}
+  invoice:
+    # Emisor de las facturas de esta tienda (datos de demostración).
+    legal-name: ${STORE_LEGAL_NAME:MegaStore, S.A.}
+    tax-id: ${STORE_TAX_ID:1234567-8}
+    address: ${STORE_ADDRESS:6a. Avenida 10-25, Zona 1, Ciudad de Guatemala}
+    timezone: ${STORE_TIMEZONE:America/Guatemala}
+  central:
+    # Almacén central (inventory-service). Cuenta de equipo con rol TIENDA,
+    # ligada a este mismo punto de venta.
+    url: ${STORE_CENTRAL_URL:http://localhost:8083}
+    username: ${STORE_CENTRAL_USER:tienda-pos01@almacencentral.local}
+    password: ${STORE_CENTRAL_PASSWORD:TiendaPos01}
+  monolith:
+    # Opcional: traer el carrito web de un cliente identificado (sgo-logic).
+    url: ${STORE_MONOLITH_URL:http://localhost:8080}
+    username: ${STORE_MONOLITH_USER:terminal-pos01@megastore.com}
+    password: ${STORE_MONOLITH_PASSWORD:TerminalPos01}
+  sync:
+    # Facturas y traslados pendientes se reintentan cada 30 s; las
+    # recepciones del central se bajan cada 15 s (y con el botón Sincronizar).
+    push-interval: ${STORE_SYNC_PUSH_INTERVAL:PT30S}
+    pull-interval: ${STORE_SYNC_PULL_INTERVAL:PT15S}
+    enabled: ${STORE_SYNC_ENABLED:true}
