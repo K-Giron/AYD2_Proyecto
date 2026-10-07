@@ -408,7 +408,7 @@ async function loadTracking(orderId) {
     if (!isValidUuid(orderId)) { toast("Ingresa un identificador de orden válido.", "error"); return; }
     localStorage.setItem(LAST_ORDER_KEY, orderId); el("tracking-result").innerHTML = `<p class="empty-state">Consultando el recorrido completo.</p>`;
     const [orderResult, shipmentsResult, notificationsResult, paymentsResult, fiscalResult] = await Promise.allSettled([
-        apiCall("GET", `/api/v1/orders/${orderId}`), apiCall("GET", `/api/v1/shipments?orderId=${orderId}`), apiCall("GET", `/api/v1/notifications?sourceAggregateId=${orderId}`), apiCall("GET", `/api/v1/payment-attempts?orderId=${orderId}`), apiCall("GET", `/api/v1/invoices/orders/${orderId}`)
+        apiCall("GET", `/api/v1/orders/${orderId}`), apiCall("GET", `/api/v1/shipments?orderId=${orderId}`), apiCall("GET", `/api/v1/notifications?sourceAggregateId=${orderId}`), apiCall("GET", `/api/v1/payments/attempts?orderId=${orderId}`), apiCall("GET", `/api/v1/invoices/orders/${orderId}`)
     ]);
     const order = orderResult.status === "fulfilled" ? orderResult.value : null;
     const shipments = shipmentsResult.status === "fulfilled" ? shipmentsResult.value : [];

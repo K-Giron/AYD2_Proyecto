@@ -12,16 +12,27 @@ if (existingSession) {
 
 let selectedRole = "CLIENTE";
 
+function selectLoginRole(role) {
+    selectedRole = role;
+    document.querySelectorAll(".auth-role-btn").forEach((button) => {
+        const active = button.dataset.role === role;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+    });
+    document.getElementById("login-error").classList.add("hidden");
+    document.getElementById("register-alternative").classList.toggle("hidden", role !== "CLIENTE");
+}
+
 document.querySelectorAll(".auth-role-btn").forEach((button) => {
+    button.addEventListener("click", () => selectLoginRole(button.dataset.role));
+});
+
+document.querySelectorAll("[data-demo-user]").forEach((button) => {
     button.addEventListener("click", () => {
-        selectedRole = button.dataset.role;
-        document.querySelectorAll(".auth-role-btn").forEach((b) => {
-            b.classList.toggle("active", b === button);
-            b.setAttribute("aria-selected", String(b === button));
-        });
-        document.getElementById("login-error").classList.add("hidden");
-        // Solo los clientes se registran; el personal interno usa cuentas asignadas.
-        document.getElementById("register-alternative").classList.toggle("hidden", selectedRole !== "CLIENTE");
+        selectLoginRole(button.dataset.demoRole);
+        document.getElementById("login-email").value = button.dataset.demoUser;
+        document.getElementById("login-password").value = button.dataset.demoPassword;
+        document.getElementById("login-password").focus();
     });
 });
 
