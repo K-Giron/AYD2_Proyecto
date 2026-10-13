@@ -189,6 +189,20 @@ Kevin pidió que nada quedara simulado en estas integraciones. La hoja de califi
   - Pruebas: backend 223, inventory-service 40, store-service 15, payklik-service 4, logiexpress-service 4.
 - Al menos tres integrantes registran su aprobación antes de pasar a `Accepted` (igual que el resto de ADRs de esta fase).
 
+## Registro de aprobaciones
+
+Para pasar de `Proposed` a `Accepted` se requiere la aprobación de al menos
+tres integrantes (mismo criterio que el resto de ADR de esta fase). Cada uno
+anota la fecha y si aprueba, aprueba con observaciones o rechaza.
+
+| Integrante | Rol en la revisión | Fecha | Decisión | Observaciones |
+|---|---|---|---|---|
+| Kevin Girón | Autor | 2026-10-07 | Propone | — |
+| Jairo Gómez | Saga (§37), diagramas y release | | | J1 verificado el 2026-10-10 en la bitácora (§11) |
+| Jorge Pumay | Inventario: CD-WEB, ADR-011 y ADR-014 actualizados | | | |
+| Edson Sosa | Seguridad (roles STORE, POS_EVENTS) y PayKlik (§36) | | | |
+| Andy Sánchez | ERP y POS (§29–35), FIS-03 y README | | | |
+
 ## Referencias
 
 - `BITACORA_FASE_2.md`, entradas del 2026-10-01 y 2026-10-02 (Kevin Girón).

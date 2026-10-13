@@ -95,6 +95,42 @@ llamadas de la UI envían el token.
 - SEC-01 escanea base, mensajes y logs en busca de PAN/CVV.
 - Jairo, Andy y Kevin revisan la matriz de autorización antes de aceptar el ADR.
 
+## Actualización Fase 2 (2026-10-13)
+
+Roles y reglas que se agregaron con ADR-015, tal como están en
+`SecurityConfig` y `application.yml` al 2026-10-13:
+
+| Rol | Cuenta | Para qué |
+|---|---|---|
+| `ONLINE_STORE` | `tienda-online@megastore.com` (también tiene `SUPPORT`, `LOGISTICS` y `FINANCE`) | Administrar la tienda online: recepción, catálogo, traslados y bitácora (`/api/v1/online-store/**`) |
+| `STORE` | `terminal-pos01@megastore.com` (también tiene `SUPPORT`) | El sistema de la tienda física confirma la entrega de un pedido web al cliente (`POST /api/v1/store-pickups/*/handoff`) |
+| `POS_EVENTS` | `central-eventos@megastore.com` (cuenta de servicio, no de persona) | El almacén central entrega los eventos de stock de POS-ONLINE (`POST /api/v1/online-store/stock-events`) |
+
+Reglas nuevas en la tabla de autorización:
+
+| Recurso | Roles |
+|---|---|
+| `GET /api/v1/inventory/stock`, `GET /api/v1/online-catalog/**` | público (catálogo publicado) |
+| `GET /api/v1/online-store/inventory`, `/movements` | `ONLINE_STORE`, `SUPPORT`, `LOGISTICS`, `FINANCE` |
+| `POST /api/v1/online-store/stock-events` | `POS_EVENTS` |
+| Resto de `/api/v1/online-store/**` | `ONLINE_STORE` |
+| `GET /api/v1/invoices/orders/*` (factura del cliente) | `CLIENT`, `FINANCE`, `ONLINE_STORE` |
+| `/api/v1/reports/**` (informe de ventas) | `FINANCE` |
+| `POST /api/v1/store-pickups/*/handoff` | `STORE` |
+
+Los sistemas propios tienen su propio control de acceso:
+- `inventory-service` (almacén central) usa JWT propio con los roles
+  `ALMACEN`, `FINANZAS`, `LOGISTICA` y `TIENDA` (una cuenta por punto de venta).
+- `payklik-service` y `logiexpress-service` exigen `X-Api-Key` del comercio
+  en su API.
+- Sus portales y el de la tienda física (`store-service`) se usan dentro de
+  la red interna, sin contraseña de operador. Es una decisión consciente del
+  alcance académico, documentada en ADR-015.
+
+EaC-12 sigue cubierto: PayKlik rechaza PAN y CVV (`SENSITIVE_DATA`) y nunca los
+guarda. `SensitiveDataLeakScanTest` ahora confirma cada candidato con Luhn y
+descarta UUID, para no fallar al azar (E5).
+
 ## Referencias
 
 - `backend/src/main/java/com/megastore/sgologic/security/`
