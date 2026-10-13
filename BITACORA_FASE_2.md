@@ -695,6 +695,23 @@ es el [run 35944837459](https://github.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5/act
 - Horas reales y estimadas restantes: pendiente de registrar por Kevin.
 - Persona que quedaría bloqueada y acción temporal: ninguna.
 
+### Fecha: 2026-10-13 — Integrante: Kevin Girón
+
+- Trabajo realizado:
+  - Revisión del cierre contra `planificacion.md` después del merge de Jairo (diagramas, DDA, Kanban, planning).
+  - Para no dejar huecos antes de Fase 3, completé las tareas documentales y técnicas que estaban sin avance:
+    - Jorge (G2, G3): sección "Actualización Fase 2" en ADR-011 y ADR-014.
+    - Edson (E3, E4, E5): ADR-013 con los roles STORE, POS_EVENTS y ONLINE_STORE; matriz de trazabilidad actualizada; `SensitiveDataLeakScanTest` ya no falla al azar (descarta UUID y valida con Luhn).
+    - Andy (A2, A3): FIS-03 con ERP automático, archivo real y POS real; README de `FASE 2` con los 12 contenedores, puertos, cuentas, variables y la limpieza de datos.
+  - Mi parte: retrospectiva actualizada, figuras de PayKlik y LogiExpress en el DDA (ya no "simulador") y registro de aprobaciones de ADR-015.
+- Resultado funcional: ver §7 (ejecución del 2026-10-13).
+- Impedimentos, responsable e impacto:
+  - Las retrospectivas y las entradas diarias de Jorge, Edson y Andy son personales y no se redactan en su nombre: siguen pendientes.
+  - ADR-015 sigue en `Proposed` hasta tener tres aprobaciones.
+  - El tag `v2.0.0` apunta a un `main` anterior al PR #6 (release pendiente de Jairo).
+- Horas reales y estimadas restantes: pendiente de registrar por Kevin.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
 ## 5. Bloqueos
 
 | Fecha | Tarea | Causa reproducible | Impacto | Puede desbloquear | Próxima revisión | Estado |
@@ -760,6 +777,7 @@ es el [run 35944837459](https://github.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5/act
 | 2026-09-23 | ORD-05 / QA-04 — cinco recorridos E2E | JWT + MockMvc; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers; fixtures deterministas | E2E: 5 pruebas; suite completa: `BUILD SUCCESS`, 139 pruebas, 0 fallos, 0 errores, 0 omitidas | `OrderJourneysE2ETest` y `docs/evidence/functional/ORD-05-QA-04-cinco-flujos-e2e.md` | Saga completa, compensación, despacho, entrega y resolución administrativa de reembolso verificados por HTTP |
 | 2026-09-23 | Merge `feature/pruebas-e2e` → `develop` | Se conservaron Saga/E2E y correcciones A1/A4–A8; conflicto de bitácora resuelto; mensaje de validación sensible neutralizado y UUID excluido del detector de PAN | `BUILD SUCCESS`; 148 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire, `PaymentRequestTest`, `SensitiveDataLeakScanTest` y `OrderJourneysE2ETest` | `develop` reúne ambos trabajos sin fuga en logs ni falsos positivos del escaneo SEC-01 |
 | 2026-10-10 | J1 — reanudación de Saga después de conciliar pago | `./mvnw -Dtest=OrderSagaReconciledPaymentTest test`; Java 25 | `BUILD SUCCESS`; 3 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local y `OrderSagaReconciledPaymentTest` | Aprobado, rechazado e indeterminado continúan o compensan sin repetir el cobro |
+| 2026-10-13 | Cierre de E5 y documentación | `./mvnw clean verify` del backend con Java 25 y Testcontainers (PostgreSQL, RabbitMQ, Mailpit) | `BUILD SUCCESS`: 228 pruebas, 0 fallos, 0 errores, 0 omitidas; `SensitiveDataLeakScanTest` 2 de 2 con el detector nuevo (descarta UUID, valida Luhn) | Surefire local | E5 cerrado; la prueba de fuga ya no depende del azar |
 
 ## 8. Retrospectiva individual
 
@@ -786,7 +804,21 @@ es el [run 35944837459](https://github.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5/act
 
 1. Decisiones y patrones consolidados con éxito: reutilizar el patrón Outbox/Inbox (ADR-002/BB-04) en `logistics` e `incidents` en vez de inventar un mecanismo propio de notificación de eventos evitó acoplar esos módulos a Notifications/Query — ambos consumidores nuevos (`ShipmentStatusNotificationConsumer`, `IncidentNotificationConsumer`, `ShipmentStatusChangedConsumer`, `IncidentRegisteredConsumer`) se integraron sin que `logistics` o `incidents` conocieran quién los consume. Igual de útil fue el patrón *after-commit scheduling* (`TransactionSynchronizationManager.registerSynchronization().afterCommit()`), que ya existía en `NotificationService` y que tuve que reaplicar en `ShipmentService` al envolverlo en `@Transactional`: confirma que es un patrón de equipo, no una solución puntual.
 2. Supuestos o diagramas de Fase 1 que fallaron o exigieron refactorización: el diseño original de `incidents` no contemplaba un `customerId` en la incidencia — el CDU de Fase 1 resolvía "historial del cliente" únicamente a través de `orderId`, lo cual no permite ver el historial de un cliente a través de todas sus órdenes. Se agregó `customer_id` opcional (V1006) sin que `incidents` necesite leer tablas de `orders`. Además, envolver `createDispatch` en `@Transactional` para poder publicar al Outbox expuso que el diagrama de secuencia de despacho de Fase 1 no consideraba el reintento asíncrono de guía como una operación que debe esperar al commit — un supuesto implícito que solo se hizo visible al fallar `AsyncIntegrationPersistenceTest`.
-3. Mejoras técnicas concretas para mantenibilidad futura: los diagramas de bloques, componentes y despliegue en `Docs/diagramas/` (Fase 1, agosto) no mencionan ningún módulo real de Fase 2 (`logistics`, `notifications`, `incidents`, `query`, `inventory`, `payments`, `orders`) — deberían regenerarse antes de la entrega. También falta una funcionalidad de "Informe de ventas" (auditar y consolidar) en el backend; no existe ningún código ni mención en CUN/modelo de datos.
+3. Mejoras técnicas concretas para mantenibilidad futura (actualizado 2026-10-13):
+   - **Lo que señalé el 24-09 ya se resolvió.** Los diagramas de Fase 2 existen en `FASE 2/docs/diagrams/nuevos-fase2/` y están enlazados desde el DDA. El informe de ventas existe (`salesreport`, CDU-13).
+   - **Lección principal de la segunda parte.** Separar cada responsabilidad en su propio sistema con su base fue lo que hizo verificables las integraciones:
+     - El almacén central consolida el inventario.
+     - Cada punto de venta tiene su almacén.
+     - PayKlik y LogiExpress son proveedores con su propia API.
+
+     Con eso se pudieron provocar fallas reales del proveedor (lento, caído) y comprobar reintentos y conciliación, en vez de suponerlos.
+   - **Errores que no estaban en el diseño de Fase 1 y que conviene prevenir desde el diseño de Fase 3:**
+     - Un pago conciliado después del timeout no retomaba la Saga.
+     - Un reintento tardío de guía pisaba la guía ya asociada por rastreo.
+     - Dos consumidores creando a la vez la misma proyección perdían datos.
+
+     Los tres tienen ahora su prueba de regresión (`OrderSagaReconciledPaymentTest`, `lateTimeoutNeverOverridesAGuideFoundByTracking`, `OrderSummaryConcurrencyIntegrationTest`). En Fase 3, cada flujo asíncrono nuevo debería diseñarse con su caso de "respuesta tardía" y de "llegada concurrente" desde el CDU.
+   - **Mantenibilidad.** Los modelos físicos se generaron desde las migraciones Flyway para que el diagrama no se desactualice respecto al código; vale la pena conservar esa práctica.
 
 ## 9. Burndown o resumen consolidado
 

@@ -1693,19 +1693,20 @@ esas tablas no tienen conectores adicionales.*
 *Figura 22. Persistencia local de ventas, líneas, artículos, existencias,
 traslados, recepciones y eventos de sincronización de POS-01.*
 
-##### PayKlik simulado — `payklik-db`
+##### PayKlik (sistema propio `payklik-service`) — `payklik-db`
 
-![Modelo físico del simulador PayKlik](<../FASE 2/docs/diagrams/nuevos-fase2/ModeloDatos-04-PayKlik.jpg>)
+![Modelo físico de PayKlik](<../FASE 2/docs/diagrams/nuevos-fase2/ModeloDatos-04-PayKlik.jpg>)
 
-*Figura 23. Transacciones del simulador de pagos y parámetros operativos para
-reproducir latencia y modos de respuesta.*
+*Figura 23. Transacciones de la pasarela PayKlik (llave de idempotencia única
+por comercio, sin PAN/CVV) y estado del servicio, que permite reproducir
+latencia y caídas reales del proveedor.*
 
-##### LogiExpress simulado — `logiexpress-db`
+##### LogiExpress (sistema propio `logiexpress-service`) — `logiexpress-db`
 
-![Modelo físico del simulador LogiExpress](<../FASE 2/docs/diagrams/nuevos-fase2/ModeloDatos-05-LogiExpress.jpg>)
+![Modelo físico de LogiExpress](<../FASE 2/docs/diagrams/nuevos-fase2/ModeloDatos-05-LogiExpress.jpg>)
 
-*Figura 24. Guías, historial de eventos de cada guía y parámetros operativos
-del simulador logístico.*
+*Figura 24. Guías, historial de eventos de cada guía y estado del servicio del
+transportista LogiExpress.*
 
 La separación documenta la decisión de integración por contratos y evita que
 una relación conceptual se interprete como clave foránea entre sistemas.
