@@ -10,6 +10,43 @@
 
 ---
 
+## Evidencia de Sprint Planning y cierre de J6
+
+**Responsable:** Jairo Gómez<br>
+**Verificación:** 10 de octubre de 2026
+
+El Sprint Backlog inicial está contenido en la sección 5 y asigna identificador,
+descripción, dueño, dependencias y criterio de aceptación a cada tarjeta. La
+captura siguiente corresponde al inicio observable del sprint: 54 tarjetas en
+`To Do` y las otras cinco columnas vacías.
+
+![Kanban al inicio del sprint](<../../FASE 2/docs/evidence/bitacora/2026-09-14_14-02.png>)
+
+*Captura inicial del Kanban, registrada por Jairo Gómez el 14 de septiembre de
+2026. Su propósito es demostrar el punto de partida; no prueba aceptación
+técnica de las tarjetas.*
+
+### Feedback de Fase 1
+
+Se revisaron `Docs/`, `FASE 2/docs/`, la bitácora y la tarjeta DEC-07. No se
+encontró una captura, rúbrica comentada, mensaje ni transcripción verificable
+con observaciones del docente. Por esa razón no se crean IDs `OBS-F1-XX` ni se
+atribuyen soluciones a comentarios inexistentes. DEC-07 queda documentada como
+limitación de evidencia de entrada, con la siguiente trazabilidad:
+
+| Fuente revisada | Resultado | Tratamiento |
+|---|---|---|
+| DDA y documentación de Fase 1 | No contiene retroalimentación del docente | Se conserva como línea base arquitectónica, no como feedback |
+| `BITACORA_FASE_2.md` | Registra que la evidencia no estaba disponible | Se mantiene la limitación de forma explícita |
+| Tarjeta Trello DEC-07 | Define el criterio, pero no adjunta observaciones reales | No se inventan observaciones ni tarjetas derivadas |
+
+J6 se considera documentalmente cerrado porque el backlog y la captura inicial
+son verificables y la ausencia de feedback fue registrada con honestidad. Si el
+equipo recupera la fuente original, deberá sustituir esta limitación por la
+matriz `OBS-F1-XX → solución → tarjeta → evidencia`.
+
+---
+
 ## 1. Decisión de planificación
 
 La Fase 2 se construirá como un **monolito modular**, tal como establece ADR-001, con una capa de integración basada en puertos/adaptadores, Outbox, broker y trabajadores asíncronos. El trabajo se divide en cinco líneas verticales de negocio. Cada línea incluye código, persistencia, adaptadores simulados, pruebas y documentación; ningún integrante recibe únicamente documentación o únicamente interfaz.

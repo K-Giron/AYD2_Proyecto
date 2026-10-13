@@ -240,11 +240,20 @@ La colaboración sigue una estrategia basada en ramas:
 
 - `main`: versión estable de la entrega.
 - `develop`: integración y revisión conjunta antes de publicar.
+- `release/<version>`: estabilización final; solamente admite correcciones
+  bloqueantes, evidencia y documentación del release.
+- `hotfix/<descripcion>`: corrección urgente creada desde `main` después de una
+  publicación.
 - `docs/<tema>`: trabajo documental o arquitectónico acotado.
 
 Cada cambio debe mantener coherencia entre el DDA, las matrices, los diagramas,
 el prototipo y el guion. Antes de integrar una rama se revisan enlaces, figuras,
 nomenclatura, trazabilidad y ausencia de contradicciones.
+
+Un `hotfix/*` se crea desde `main`, se valida y se integra nuevamente tanto a
+`main` como a `develop`, evitando que la corrección desaparezca del siguiente
+release. Los commits deben conservar el prefijo de carné acordado por el
+equipo.
 
 ### Criterio de terminado
 

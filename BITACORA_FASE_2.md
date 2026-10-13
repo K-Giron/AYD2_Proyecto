@@ -8,7 +8,7 @@
 | Equipo | Grupo 5 |
 | Integrantes | Jairo Gómez, Jorge Pumay, Edson Sosa, Andy Sánchez y Kevin Girón |
 | Periodo planificado | 10 al 23 de septiembre de 2026 |
-| Objetivo del sprint | Construir e integrar una base ejecutable de SGO-Logic para que cada responsable incorpore progresivamente su módulo. Pendiente de ratificación por el equipo. |
+| Objetivo del sprint | Construir e integrar una base ejecutable de SGO-Logic para que cada responsable incorpore progresivamente su módulo. El tablero cerró con 54 tarjetas en `Done`; la evidencia técnica y las limitaciones se detallan en esta bitácora. |
 | Enlace al Kanban | [MegaStore - Fase 2](https://trello.com/b/uyoJQ4RH/megastore-fase-2) |
 
 
@@ -16,14 +16,14 @@
 
 | ID | Descripción | Dueño | Estado | Dependencias | Evidencia |
 |---|---|---|---|---|---|
-| BB-01 | Crear estructura FASE 2, README, bitácora y plantillas ADR | Jairo | Implementado; validación cruzada pendiente | Ninguna | `FASE 2/README.md`, estructura del backend y tarjeta [DzYqM3ew](https://trello.com/c/DzYqM3ew) |
+| BB-01 | Crear estructura FASE 2, README, bitácora y plantillas ADR | Jairo | Cerrado; implementación y validación cruzada registradas | Ninguna | `FASE 2/README.md`, `FASE 2/docs/evidence/functional/VALIDACION_CRUZADA_BB01_BB05.md` y tarjeta [DzYqM3ew](https://trello.com/c/DzYqM3ew) |
 | BB-02 | Registrar ADR-009 de stack y arquitectura ejecutable | Jairo | Redacción implementada; cierre formal bloqueado por aprobaciones | Gate 0 y aprobación de al menos tres integrantes | `FASE 2/docs/adr/ADR-009-stack-y-topologia-ejecutable.md` y tarjeta [FRHUOgHv](https://trello.com/c/FRHUOgHv) |
-| BB-05 | Docker Compose y configuración por ambiente | Jairo | Implementado y validado localmente; prueba por no autor pendiente | ADR-009 y componentes compartidos | `FASE 2/docker-compose.yml`, `.env.example` y tarjeta [eu881SUz](https://trello.com/c/eu881SUz) |
+| BB-05 | Docker Compose y configuración por ambiente | Jairo | Cerrado; validado localmente, por CI y mediante revisión cruzada | ADR-009 y componentes compartidos | `FASE 2/docker-compose.yml`, `.env.example`, `FASE 2/docs/evidence/functional/VALIDACION_CRUZADA_BB01_BB05.md` y tarjeta [eu881SUz](https://trello.com/c/eu881SUz) |
 | ORD-01 a ORD-05 | Carrito, orden, Saga, compensación y datos/E2E | Jairo | Implementados en `develop`; 5 recorridos E2E verdes | Puertos de Inventory, Payments, Fiscal y Logistics | `OrderSagaService`, `OrderJourneysE2ETest` y evidencia ORD-05/QA-04 |
 | QA-01 | Contrato e integración continua | Jairo | Implementado y validado en GitHub Actions | Repositorio, secretos y stack | `.github/workflows/qa-integracion-base.yml`; run `35944837459` verde para `1294231` |
 | QA-04 | Automatizar el camino feliz completo | Jairo | Parcial avanzado: Saga/E2E hasta despacho, entrega y devolución; falta demostrar ERP/POS dentro del recorrido de diez pasos | ORD-05 y productores/consumidores restantes | `OrderJourneysE2ETest` y `docs/evidence/functional/ORD-05-QA-04-cinco-flujos-e2e.md` |
-| DOC-01 | Consolidar DDA, diagramas y ADR | Jairo | Parcial: ER y trazabilidad presentes; contratos/ADR todavía `Proposed` y documentos antiguos por reconciliar | Aprobación de dueños de decisión | `Docs/DDA.md`, `docs/diagrams/SGO-Logic-Modelo-ER.drawio` y `docs/contracts/contract-status.md` |
-| DOC-03 | Bitácora, capturas Kanban y burndown | Jairo | Parcial avanzado: registro técnico actualizado; captura final y burndown final pendientes | Registro diario de todos y estado real de Trello | Esta bitácora y tarjeta [MnIkXzvZ](https://trello.com/c/MnIkXzvZ) |
+| DOC-01 | Consolidar DDA, diagramas y ADR | Jairo | Cerrado en el alcance J3: DDA, CDU, vistas arquitectónicas y modelos físicos actualizados y enlazados | Aprobaciones de ADR administradas por sus respectivos dueños | `Docs/DDA.md`, `FASE 2/docs/diagrams/nuevos-fase2/NUEVO-modelos-datos-fase2.drawio` y `docs/contracts/contract-status.md` |
+| DOC-03 | Bitácora, capturas Kanban y burndown | Jairo | Cerrado en el alcance de Jairo; captura inicial, captura final, retrospectiva propia y resumen 54 → 0 incorporados | Aportes personales de retrospectiva de los demás integrantes | Esta bitácora, §§3 y 8–10, y tarjeta [MnIkXzvZ](https://trello.com/c/MnIkXzvZ) |
 | BB-04 | Outbox transaccional, dispatcher, reintento y DLQ | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y ratificación de rangos | `V3001`, `integration/outbox`, `OutboxIntegrationTest` y `docs/qa/trazabilidad-cun-mvp.md` |
 | BB-07 | Autenticación, autorización y sanitización | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | ADR-013 y decisión JWT | `security/`, `ADR-013`, `SecurityAuthorizationTest` y `SensitiveDataSanitizerTest` |
 | AUD-01 | Registro auditable transversal | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | BB-03 y correlación | `V3002`, `audit/api`, `AuditIntegrationTest` y `docs/diagrams/modelo-datos.md` §3.7 |
@@ -36,7 +36,9 @@
 | QA-02 | Línea base `T` y carga `8T` | Edson | Implementado en rama `docs/rev-edson-cruzadas`; pendiente push/PR | ORD-05/QRY-01 para EaC-03 completo | `tests/k6/`, `tests/data/seed-load.sql` y `docs/evidence/performance/QA-02-linea-base-y-8T.md` |
 | Resto del backlog | Consultar planificación oficial | Según planificación | Pendiente | Contratos e implementaciones del equipo | Pendiente |
 
-Los estados anteriores describen únicamente los artefactos presentes; no equivalen a tarjetas `Done` ni inventan aceptación del equipo.
+Los estados anteriores reflejan el corte documental de 2026-10-12. Las entradas
+diarias posteriores conservan el estado que era verdadero en su fecha y no se
+reescriben retroactivamente como si el trabajo ya hubiera estado cerrado.
 
 ## 3. Captura inicial del Kanban
 
@@ -69,7 +71,8 @@ Copiar un bloque por fecha e integrante sin completar información retroactiva.
 - Resultado funcional o numérico: el comando único `./tests/smoke/verify-platform.sh` terminó correctamente; `./mvnw clean verify` ejecutó 13 pruebas con 0 fallos, 0 errores y 0 omitidas; los tres servicios alcanzaron `healthy`; Actuator y `/api/v1/platform/status` respondieron correctamente y se verificó `X-Correlation-Id`.
 - Trazabilidad: BB-01 establece la base común; BB-02 prepara la decisión relacionada con ADR-001; BB-05 prepara el entorno reproducible; DOC-03 conserva la evidencia académica verificable.
 - Impedimentos: faltan aprobación de al menos tres integrantes para ADR-009, actualización manual del estado de las tarjetas en Trello y entregas posteriores de los módulos propietarios para avanzar ORD-01 a ORD-05.
-- Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
+- Horas reales: no fueron registradas en esa fecha; se conserva la ausencia de
+  la métrica sin inventar una estimación retroactiva.
 - Personas o tareas desbloqueadas: la base técnica permite que Jorge, Edson, Andy y Kevin comiencen sus módulos sin crear otro backend; la disponibilidad o adopción efectiva por ellos aún no está verificada.
 
 ### Evidencia visual del estado actualizado el 2026-09-14
@@ -78,15 +81,12 @@ Copiar un bloque por fecha e integrante sin completar información retroactiva.
 
 La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01]`/`[BB-05]` en `Ready for Testing`. Los nombres de archivo se conservan como fueron entregados y no se usan para inferir el orden cronológico entre ambas capturas.
 
-### Espacio para captura de QA-01
+### Evidencia de QA-01
 
-> **INSERTAR AQUÍ LA CAPTURA DE LA EJECUCIÓN DEL WORKFLOW QA-01**
->
-> Fecha: pendiente.
->
-> Ruta sugerida: `FASE 2/docs/evidence/bitacora/qa-01-ejecucion-verde.png`
->
-> Enlace a la ejecución: pendiente.
+La ejecución de GitHub Actions `35944837459`, asociada al commit de integración
+`1294231`, terminó en verde con compilación, pruebas y smoke test de Docker
+Compose. Este resultado también está registrado en §7. La evidencia consultable
+es el [run 35944837459](https://github.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5/actions/runs/35944837459); no se exige una captura duplicada para sustituir ese enlace.
 
 ### Fecha: 2026-09-22 — Integrante: Kevin Girón
 
@@ -187,7 +187,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Resultado funcional o numérico: el artefacto editable `FASE 2/docs/diagrams/SGO-Logic-Modelo-ER.drawio` contiene tres páginas; su XML es válido, no contiene identificadores duplicados ni relaciones colgantes. La exportación `FASE 2/docs/diagrams/SGO-Logic-Modelo-ER.jpg` queda referenciada desde el DDA.
 - Hoy y trazabilidad a CUN/EaC/restricción/ADR: el modelo cubre CUN-01 a CUN-12, hace visibles las decisiones ADR-001 a ADR-008 y fortalece el gate de EaC-07/CUN-12 al separar claramente diseño objetivo, implementación física y brechas.
 - Impedimentos, responsable e impacto: el ER completo revela que las migraciones actuales todavía no materializan Outbox, auditoría transversal, conciliaciones históricas, intentos SAT, movimientos de inventario y postventa completa. Jairo continuará la integración priorizando las brechas transversales para el entregable.
-- Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
+- Horas reales: no fueron registradas en esa fecha; se conserva la ausencia de
+  la métrica sin inventar una estimación retroactiva.
 - Personas o tareas desbloqueadas: el equipo puede derivar migraciones y pruebas desde una fuente de datos única y verificar cada entrega contra el gate DDA → ER → código → prueba.
 
 ### Fecha: 2026-09-23 (continuación) — Integrante: Jairo Gómez
@@ -207,7 +208,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
   - El smoke Compose creó una orden aislada, detectó y corrigió que `Map.copyOf` no admite `previousStatus=null`, y luego comprobó el recorrido real: Outbox `PUBLISHED` → Inbox `PROCESSED` → resumen de orden `CREATED`. Backend, frontend, PostgreSQL y RabbitMQ terminaron saludables.
 - Hoy y trazabilidad: ADR-002, ADR-004, CUN-09, CUN-12, EaC-01, EaC-02 y EaC-07. La implementación reduce la brecha crítica del modelo ER, pero BB-04 permanece parcial hasta disponer de consumidores de ERP/POS/Notifications y productores de los demás agregados; AUD-01 permanece parcial hasta incorporar eventos directos de pagos, fiscal, logística e incidencias y medir recuperación menor a un segundo.
 - Impedimentos y siguiente acción: seguridad backend todavía no existe; la cuenta de Finanzas y los encabezados `X-Actor-Id`/`X-Actor-Role` son mecanismos demostrativos y no deben presentarse como autenticación productiva. La siguiente prioridad es reutilizar el Inbox idempotente para conectar Notifications, ERP y POS.
-- Horas reales y estimadas restantes: pendientes de registrar por Jairo.
+- Horas reales: no fueron registradas en esa fecha; no se reconstruyen
+  retroactivamente.
 
 ### Fecha: 2026-09-23 (segunda continuación) — Integrante: Jairo Gómez
 
@@ -224,7 +226,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Hoy y trazabilidad: UI-01, ORD-01/ORD-02, INV-01, NOT-01, CUN-01, CUN-02, CUN-11, ADR-002 y ADR-008. El catálogo es público; la modificación del carrito y el checkout requieren sesión. Notifications consume por contrato público y conserva idempotencia por consumidor.
 - Evidencia E2E: Chromium completó carrito → reserva → PayKlik → SAT → orden `CONFIRMED` para `f4ab0563-81b4-408a-b62b-8e2698e1bdb5`. RabbitMQ entregó el evento tanto a Query como a Notifications; ambos Inbox quedaron `PROCESSED` y se observó una solicitud `ORDER_CONFIRMED`, canal `EMAIL`, estado `SENT`, un intento.
 - Impedimentos y siguiente acción: la autenticación continúa siendo una simulación de frontend y no debe presentarse como seguridad productiva. CUN-11 continúa parcial hasta recibir eventos de despacho/incidencias, almacenar cada intento y disponer de DLQ del trabajador. La siguiente prioridad es conectar ERP y POS al mismo patrón Outbox/Inbox.
-- Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
+- Horas reales: no fueron registradas en esa fecha; se conserva la ausencia de
+  la métrica sin inventar una estimación retroactiva.
 ### Fecha: 2026-09-23 — Integrante: Edson Sosa
 
 - Ayer: revisión cruzada de las entregas de Andy (fiscal/ERP/POS) y Jorge (inventario), aprobación de Edson sobre ADR-009/010/012, modelo de datos y matriz de trazabilidad CUN (commits `56de66d`, `e08b939`, `340eb1e`). En la prueba manual se detectó y corrigió el bloqueo optimista A8 de los flujos asíncronos (commits `4525bae`, `2b0aab1`).
@@ -377,7 +380,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Resultado funcional o numérico: `./mvnw test` terminó con `BUILD SUCCESS`; 134 pruebas, 0 fallos, 0 errores y 0 omitidas; Flyway aplicó 16 migraciones desde cero. Todos los archivos JavaScript pasaron `node --check`, `docker compose config --quiet` terminó correctamente y no quedaron marcadores ni rutas sin resolver.
 - Hoy y trazabilidad a CUN/EaC/restricción/ADR: se consolidaron ORD-01/ORD-02 con PAY-01/02/03, AUD-01/02, BB-04, BB-07, QRY-01, NOT-01 y SEC-01 sin romper el flujo comercial del MVP descrito en el DDA.
 - Impedimentos, responsable e impacto: no hay impedimento técnico local para continuar; queda publicar la rama y realizar la revisión/aceptación del equipo antes de integrar a `develop` remoto.
-- Horas reales y estimadas restantes: pendientes de registrar por Jairo.
+- Horas reales: no fueron registradas en esa fecha; no se reconstruyen
+  retroactivamente.
 - Persona que quedaría bloqueada y acción temporal: nadie queda bloqueado localmente; el equipo debe basarse en el commit de integración para evitar reintroducir las implementaciones duplicadas.
 
 ### Fecha: 2026-09-23 (continuación final) — Integrante: Jairo Gómez
@@ -393,7 +397,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Resultado funcional o numérico: `OrderJourneysE2ETest` ejecutó **5 pruebas, 0 fallos y 0 errores** contra PostgreSQL y RabbitMQ reales mediante Testcontainers. La regresión completa `./mvnw test` terminó con **BUILD SUCCESS: 139 pruebas, 0 fallos, 0 errores y 0 omitidas**. Las pruebas verifican autenticación JWT, HTTP, persistencia, idempotencia, stock, fiscal, despacho, tracking e incidencia, sin sustituir los puertos por mocks.
 - Hoy y trazabilidad a CUN/EaC/restricción/ADR: ORD-03, ORD-04, ORD-05, QA-04; CUN-01 a CUN-04, CUN-07 a CUN-10; EaC-01, EaC-03, EaC-04, EaC-05, EaC-07, EaC-09, EaC-11 y EaC-12; ADR-001 a ADR-007, ADR-010 y ADR-012.
 - Impedimentos, responsable e impacto: el quinto flujo acredita la resolución administrativa `REFUNDED` disponible en INC-01, pero **no debe presentarse como CUN-10 completo**: siguen pendientes la nota de crédito fiscal, el reintegro de inventario y la orquestación de reembolso real. Es trabajo del módulo de postventa, no una cancelación de Orders.
-- Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
+- Horas reales: no fueron registradas en esa fecha; se conserva la ausencia de
+  la métrica sin inventar una estimación retroactiva.
 - Persona que quedaría bloqueada y acción temporal: nadie queda bloqueado para demostrar ORD-05; la integración final a `main` queda deliberadamente fuera de este trabajo hasta que finalice el equipo.
 
 ### Fecha: 2026-09-23 (cierre técnico en `develop`) — Integrante: Jairo Gómez
@@ -404,7 +409,8 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Estado documental/administrativo: la bitácora ya registra el merge y la evidencia técnica, pero DOC-03 no puede cerrarse hasta agregar captura final real del Kanban y burndown final. BB-02 y DOC-01 requieren aprobaciones/ratificación de ADR y reconciliar documentos que aún describen la Saga como pendiente. No se modifica el DDA para ocultar o reducir alcance.
 - Revisión contra la rúbrica: se contrastaron los 80 puntos base de la Hoja de Calificación con los doce CDU, EaC, código y pruebas; el diagnóstico, brechas y orden de cierre quedaron en `FASE 2/docs/qa/AUDITORIA.md`.
 - Impedimentos y responsables: las aprobaciones corresponden al equipo; la captura final requiere el estado real del tablero; ERP/POS depende de la integración transversal con los módulos propietarios. REL-01 y el merge/tag final permanecen fuera de este cierre hasta decisión del equipo.
-- Horas reales y estimadas restantes: pendientes de registrar por Jairo; no se infieren métricas.
+- Horas reales: no fueron registradas en esa fecha; se conserva la ausencia de
+  la métrica sin inventar una estimación retroactiva.
 
 ### Fecha: 2026-09-24 — Integrante: Kevin Girón
 
@@ -689,15 +695,6 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 - Horas reales y estimadas restantes: pendiente de registrar por Kevin.
 - Persona que quedaría bloqueada y acción temporal: ninguna.
 
-### Fecha: YYYY-MM-DD — Integrante: nombre
-
-- Ayer: pendiente.
-- Resultado funcional o numérico: pendiente.
-- Hoy y trazabilidad a CUN/EaC/restricción/ADR: pendiente.
-- Impedimentos, responsable e impacto: pendiente.
-- Horas reales y estimadas restantes: pendiente.
-- Persona que quedaría bloqueada y acción temporal: pendiente.
-
 ## 5. Bloqueos
 
 | Fecha | Tarea | Causa reproducible | Impacto | Puede desbloquear | Próxima revisión | Estado |
@@ -762,8 +759,28 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 | 2026-09-23 | Merge de `develop` en `docs/rev-edson-cruzadas` | Conflictos resueltos en pagos (validación tipada + `PaymentMethod` del api), README y bitácora; Java 25 + Testcontainers | `BUILD SUCCESS`; 143 pruebas, 0 fallos, 0 errores, 0 omitidas; `docker compose config --quiet` correcto | Surefire y este registro | La rama queda con el carrito/órdenes de Jairo y los bugfixes A1/A4–A8 sin perder ninguna parte |
 | 2026-09-23 | ORD-05 / QA-04 — cinco recorridos E2E | JWT + MockMvc; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers; fixtures deterministas | E2E: 5 pruebas; suite completa: `BUILD SUCCESS`, 139 pruebas, 0 fallos, 0 errores, 0 omitidas | `OrderJourneysE2ETest` y `docs/evidence/functional/ORD-05-QA-04-cinco-flujos-e2e.md` | Saga completa, compensación, despacho, entrega y resolución administrativa de reembolso verificados por HTTP |
 | 2026-09-23 | Merge `feature/pruebas-e2e` → `develop` | Se conservaron Saga/E2E y correcciones A1/A4–A8; conflicto de bitácora resuelto; mensaje de validación sensible neutralizado y UUID excluido del detector de PAN | `BUILD SUCCESS`; 148 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire, `PaymentRequestTest`, `SensitiveDataLeakScanTest` y `OrderJourneysE2ETest` | `develop` reúne ambos trabajos sin fuga en logs ni falsos positivos del escaneo SEC-01 |
+| 2026-10-10 | J1 — reanudación de Saga después de conciliar pago | `./mvnw -Dtest=OrderSagaReconciledPaymentTest test`; Java 25 | `BUILD SUCCESS`; 3 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local y `OrderSagaReconciledPaymentTest` | Aprobado, rechazado e indeterminado continúan o compensan sin repetir el cobro |
 
 ## 8. Retrospectiva individual
+
+### Integrante: Jairo Gómez
+
+1. **Decisiones y patrones que funcionaron:** el monolito modular con puertos y
+   adaptadores permitió que `orders` coordinara reserva, pago, fiscal y despacho
+   sin escribir datos de módulos ajenos. La reanudación de la Saga después de
+   conciliar un pago conserva la llave idempotente y evita el doble cobro;
+   `OrderSagaReconciledPaymentTest` verificó aprobado, rechazado e indeterminado
+   con 3 pruebas aprobadas el 2026-10-10.
+2. **Supuesto que tuvo que corregirse:** el CDU-01 de Fase 1 vinculaba agregar o
+   quitar productos con una reserva ya creada. El código reserva al iniciar
+   checkout. Se documentó esa política porque un carrito puede permanecer
+   abierto o abandonarse y no debe bloquear inventario durante ese tiempo; la
+   reserva del checkout sí expira automáticamente si la compra no concluye.
+3. **Mejora de mantenibilidad:** conservar dos niveles de arquitectura —objetivo
+   de Fase 1 y realización de Fase 2— y enlazarlos desde el DDA. Las vistas de
+   `nuevos-fase2` ahora identifican módulos, adaptadores, doce contenedores,
+   cinco bases físicas y CDU implementados, con fuentes editables y
+   exportaciones regenerables.
 
 ### Integrante: Kevin Girón (carnet 202010844)
 
@@ -773,23 +790,54 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 
 ## 9. Burndown o resumen consolidado
 
-La captura de estado actualizado permite registrar un conteo observable del tablero, sin equipararlo a avance aceptado del producto.
+El corte final se obtuvo del tablero público de Trello el 2026-10-10, no de
+inferencias sobre ramas o commits. La captura inicial mostraba 54 tarjetas en
+`To Do`; la captura final muestra las mismas 54 en `Done` y cero en las otras
+columnas.
 
-> Los conteos siguientes corresponden a la captura disponible y se conservan
-> como evidencia histórica; no representan el estado técnico posterior al
-> merge `1294231`. El conteo final debe obtenerse de una nueva captura real de
-> Trello, sin inferir movimientos a `Done` desde Git.
+| Estado | Inicial | Final | Evidencia |
+|---|---:|---:|---|
+| `To Do` | 54 | 0 | Capturas inicial y final |
+| `Blocked` | 0 | 0 | Captura final |
+| `In Progress` | 0 | 0 | Captura final |
+| `Ready for Testing` | 0 | 0 | Captura final |
+| `Test/QA` | 0 | 0 | Captura final |
+| `Done` | 0 | 54 | Captura final |
 
-| Categoría | Cantidad | Justificación |
-|---|---:|---|
-| Completadas (`Done`) | 0 | Columna vacía en la captura |
-| En curso | 1 | DOC-03 |
-| Bloqueadas | 1 | BB-02 |
-| Listas para pruebas | 2 | BB-01 y BB-05 |
-| Pendientes (`To Do`) | 50 | Conteo visible en la captura |
+Este conteo demuestra movimiento del tablero, no certifica por sí solo que
+cada criterio técnico esté satisfecho. La evidencia de código, pruebas, DDA y
+diagramas se mantiene en los archivos enlazados por cada tarjeta.
 
 ## 10. Captura final del Kanban
 
-- Estado: pendiente.
-- Ruta o enlace de evidencia: pendiente.
-- Fecha y responsable de captura: pendiente.
+- Estado: captura final incorporada.
+- Tablero: [MegaStore - Fase 2](https://trello.com/b/uyoJQ4RH/megastore-fase-2).
+- Ruta: `FASE 2/docs/evidence/bitacora/2026-10-10-kanban-final.png`.
+- Fecha y responsable: 2026-10-10, Jairo Gómez.
+- Conteo visible: `To Do` 0, `Blocked` 0, `In Progress` 0,
+  `Ready for Testing` 0, `Test/QA` 0 y `Done` 54.
+
+![Captura final del Kanban](<FASE 2/docs/evidence/bitacora/2026-10-10-kanban-final.png>)
+
+## 11. Estado de cierre de Jairo Gómez
+
+**Corte verificado:** 2026-10-12.
+
+Esta tabla reconcilia el estado histórico de las entradas diarias con los
+criterios J1–J6 de `planificacion.md`. Un estado histórico como `Blocked` o
+`In Progress` describe el tablero de aquella fecha y no contradice el cierre
+posterior.
+
+| Tarea | Estado de cierre | Evidencia o condición restante |
+|---|---|---|
+| J1 — Saga | Cerrada | `OrderSagaReconciledPaymentTest`: 3 pruebas, 0 fallos y 0 errores. |
+| J2 — Política de reserva | Cerrada | DDA §§3.5–3.6: consulta en carrito y reserva al iniciar checkout. |
+| J3 — Diagramas | Cerrada | CDU, bloques, componentes, despliegue y modelos físicos están integrados; la vista principal del almacén central incluye sus 14 tablas Flyway. |
+| J4 — Release | Excluida de esta ejecución | No se hicieron ramas, commits, merges ni tags por instrucción expresa. Formalmente REL-01 solo puede cerrarse si se autoriza ese flujo Git. |
+| J5 — Scrum | Cerrada en el alcance de Jairo | Retrospectiva propia, burndown 54 → 0 y capturas inicial y final incorporadas. Los aportes personales de otros integrantes no se fabrican ni se atribuyen a Jairo. |
+| J6 — Sprint Planning | Cerrada | Backlog y captura inicial enlazados; ausencia de feedback docente documentada sin inventar observaciones. |
+
+Por tanto, la parte de Jairo puede declararse cerrada **con la exclusión
+documentada de J4**. El cumplimiento literal de REL-01 continúa fuera del
+alcance mientras se mantenga la prohibición de crear ramas, commits, merges o
+tags.
