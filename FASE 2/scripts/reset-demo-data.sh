@@ -72,6 +72,16 @@ TRUNCATE cart_items, carts,
          online_store_receipts, online_catalog_images, online_catalog_products,
          online_store_transfers, online_store_sync_log, online_store_stock_events
     CASCADE;
+-- Crédito propio: se borran decisiones, obligaciones e historial cargado, y el
+-- cliente demo (V4005) recupera su perfil y su saldo de origen.
+TRUNCATE credit_operations, credit_decisions, credit_history_records, credit_customer_profiles CASCADE;
+INSERT INTO credit_customer_profiles (
+    customer_id, completed_purchases, on_time_payment_rate, return_rate,
+    critical_incidents, has_overdue_credit, available_credit, observed_at
+) VALUES (
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 8, 1.0000, 0.1250,
+    0, FALSE, 2500.00, CURRENT_TIMESTAMP
+);
 ALTER SEQUENCE seq_online_transfer RESTART WITH 1;
 -- Lo recibido por la tienda online (ubicación CD-WEB) es operación, no semilla.
 DELETE FROM inventory_stock_movements

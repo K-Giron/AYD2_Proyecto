@@ -72,6 +72,18 @@ class CreditCustomerProfile {
     BigDecimal getAvailableCredit() { return availableCredit; }
     Instant getObservedAt() { return observedAt; }
 
+    /** Devuelve al saldo el monto de una obligación pagada o anulada. */
+    void restoreAvailableCredit(BigDecimal amount) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("El monto a restituir debe ser mayor que cero.");
+        }
+        availableCredit = availableCredit.add(amount);
+    }
+
+    void updateOverdueFlag(boolean overdue) {
+        hasOverdueCredit = overdue;
+    }
+
     void consumeAvailableCredit(BigDecimal amount) {
         if (amount == null || amount.signum() <= 0) {
             throw new IllegalArgumentException("El monto de crédito debe ser mayor que cero.");

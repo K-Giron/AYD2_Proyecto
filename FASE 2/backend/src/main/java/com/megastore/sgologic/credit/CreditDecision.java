@@ -37,6 +37,9 @@ class CreditDecision {
     @Column(name = "reason_code", nullable = false, updatable = false, length = 64)
     private String reasonCode;
 
+    @Column(name = "inputs_snapshot", updatable = false, columnDefinition = "TEXT")
+    private String inputsSnapshot;
+
     @Column(name = "correlation_id", nullable = false, updatable = false)
     private UUID correlationId;
 
@@ -48,7 +51,8 @@ class CreditDecision {
 
     static CreditDecision create(UUID customerId, BigDecimal requestedAmount, String currency,
                                  boolean eligible, BigDecimal approvedLimit, String ruleVersion,
-                                 String reasonCode, UUID correlationId, Instant evaluatedAt) {
+                                 String reasonCode, String inputsSnapshot, UUID correlationId,
+                                 Instant evaluatedAt) {
         CreditDecision decision = new CreditDecision();
         decision.id = UUID.randomUUID();
         decision.customerId = customerId;
@@ -58,6 +62,7 @@ class CreditDecision {
         decision.approvedLimit = approvedLimit;
         decision.ruleVersion = ruleVersion;
         decision.reasonCode = reasonCode;
+        decision.inputsSnapshot = inputsSnapshot;
         decision.correlationId = correlationId;
         decision.evaluatedAt = evaluatedAt;
         return decision;
@@ -70,5 +75,6 @@ class CreditDecision {
     BigDecimal getApprovedLimit() { return approvedLimit; }
     String getRuleVersion() { return ruleVersion; }
     String getReasonCode() { return reasonCode; }
+    String getInputsSnapshot() { return inputsSnapshot; }
     Instant getEvaluatedAt() { return evaluatedAt; }
 }

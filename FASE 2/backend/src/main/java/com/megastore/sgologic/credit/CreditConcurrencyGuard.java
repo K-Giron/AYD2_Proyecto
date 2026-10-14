@@ -22,6 +22,11 @@ class CreditConcurrencyGuard {
                 .stream().sorted().forEach(this::advisoryTransactionLock);
     }
 
+    /** Serializa la reconstrucción del perfil con las concesiones del mismo cliente. */
+    void lockCustomer(UUID customerId) {
+        advisoryTransactionLock("credit:customer:" + customerId);
+    }
+
     private void advisoryTransactionLock(String lockKey) {
         jdbc.query("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))",
                 statement -> statement.setString(1, lockKey), resultSet -> null);

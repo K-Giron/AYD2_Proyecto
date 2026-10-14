@@ -5,6 +5,6 @@
 @org.springframework.modulith.ApplicationModule(
         id = "credit",
         displayName = "Own Credit",
-        allowedDependencies = {"shared", "audit :: audit-api", "integration :: outbox"}
+        allowedDependencies = {"shared", "audit :: audit-api", "integration :: outbox", "messaging"}
 )
 package com.megastore.sgologic.credit;

@@ -42,6 +42,9 @@ requestCredit(orderId, customerId, amount, currency,
 | `CREDIT_DECISION_RECORDED` | `CREDIT_DECISION` | Auditoría de evaluación |
 | `CREDIT_GRANTED` | `CREDIT_OPERATION` | Concesión y notificación |
 | `CREDIT_REJECTED` | `CREDIT_OPERATION` | Rechazo y notificación |
+| `CREDIT_OVERDUE` | `CREDIT_OPERATION` | La obligación venció sin pago |
+| `CREDIT_SETTLED` | `CREDIT_OPERATION` | El cliente pagó y se liberó la línea |
+| `CREDIT_CANCELLED` | `CREDIT_OPERATION` | La orden se canceló y se liberó la línea |
 
 Payload permitido para operación: `orderId`, `customerId`,
 `creditOperationId`, `decisionId`, `status`, `amount`, `currency`,
@@ -73,9 +76,71 @@ financialOperationId + financialOperationType(PAYKLIK|OWN_CREDIT)
 Durante la transición, `paymentAttemptId` se acepta únicamente como alias de
 una operación `PAYKLIK`. Crédito nunca crea un intento PayKlik ficticio.
 
+## Ciclo de vida de la obligación
+
+```text
+GRANTED --(plazo vencido)--> OVERDUE --(pago)--> SETTLED
+GRANTED --(pago)-----------> SETTLED
+GRANTED --(orden cancelada)-> CANCELLED
+REJECTED  (terminal desde el inicio, sin vencimiento)
+```
+
+- **Vencimiento:** un proceso programado (cada hora por defecto) marca como
+  `OVERDUE` toda operación `GRANTED` cuyo `dueDate` es anterior al día actual.
+  Activa `has_overdue_credit` del cliente, de modo que la política rechaza
+  nuevas concesiones con `OVERDUE_CREDIT`.
+- **Pago:** `POST /api/v1/credit/operations/{id}/settle` (rol `FINANCE`).
+  Devuelve el monto a la línea y recalcula la marca de mora. Es idempotente:
+  repetirlo o ejecutarlo en paralelo libera la línea una sola vez. Sobre una
+  operación `REJECTED` o `CANCELLED` responde `409`.
+- **Anulación:** `credit` escucha `ORDER_STATUS_CHANGED` con `newStatus =
+  CANCELLED` (Inbox, cola `sgo.credit.order-status.v1`). Si la orden tenía una
+  operación `GRANTED`, la pasa a `CANCELLED` y devuelve la línea. Si no hay
+  operación, o ya está pagada, vencida o rechazada, no hace nada.
+- **Concurrencia:** todo cambio que toca el saldo se serializa con el mismo
+  bloqueo por cliente que usan las concesiones y la reconstrucción del perfil.
+
+## Trazabilidad de la decisión
+
+Cada decisión guarda en `credit_decisions.inputs_snapshot` (JSON) el perfil que
+se evaluó, el monto solicitado, la versión de la regla y los umbrales vigentes.
+La auditoría de `CREDIT_DECISION_RECORDED` incluye esa misma instantánea. Solo
+contiene cifras de negocio; no hay datos personales ni de pago. Las decisiones
+anteriores a la migración `V4008` quedan sin instantánea.
+
+## Reglas de elegibilidad (`credit-rules-v1`)
+
+Se evalúan en este orden y la primera que falla fija la razón:
+
+1. Sin perfil crediticio: `INSUFFICIENT_HISTORY`.
+2. Crédito vencido activo: `OVERDUE_CREDIT`.
+3. Menos compras que el mínimo: `INSUFFICIENT_HISTORY`.
+4. Puntualidad menor al mínimo: `LATE_PAYMENT_HISTORY`.
+5. Tasa de devoluciones mayor al máximo: `HIGH_RETURN_RATE`.
+6. Incidentes críticos mayores al máximo: `CRITICAL_INCIDENTS`.
+7. Monto mayor al límite disponible: `INSUFFICIENT_LIMIT`.
+
+Los umbrales son inclusivos: igualar el mínimo o el máximo aprueba.
+
+| Parámetro | Variable | Valor |
+|---|---|---|
+| Compras completadas mínimas | `SGO_CREDIT_MINIMUM_PURCHASES` | 3 |
+| Puntualidad mínima | `SGO_CREDIT_MINIMUM_ON_TIME_RATE` | 0.80 |
+| Devoluciones máximas | `SGO_CREDIT_MAXIMUM_RETURN_RATE` | 0.30 |
+| Incidentes críticos máximos | `SGO_CREDIT_MAXIMUM_CRITICAL_INCIDENTS` | 1 |
+| Tope del límite | `SGO_CREDIT_MAXIMUM_LIMIT` | 5000.00 |
+| Plazo en días | `SGO_CREDIT_TERM_DAYS` | 30 |
+| Ventana de historial (meses) | `SGO_CREDIT_HISTORY_WINDOW_MONTHS` | 12 |
+| Fracción de compras que fija el límite | `SGO_CREDIT_LIMIT_RATIO` | 0.40 |
+
+El límite del cliente es `min(0.40 × compras de la ventana, tope)` menos el
+crédito vigente (`GRANTED` y `OVERDUE`). Cambiar cualquier valor exige cambiar
+`SGO_CREDIT_RULE_VERSION` para que cada decisión indique con qué reglas se tomó.
+
 ## Alcance de cartera
 
-Este contrato registra la concesión y consume la línea disponible. El ciclo de
-abonos, liquidación, mora, devolución y restitución de línea requiere un
-contrato de cartera adicional; no debe simularse aumentando el saldo desde la
-interfaz de compra.
+El contrato cubre concesión, vencimiento, pago íntegro y anulación. Los abonos
+parciales, intereses y recargos por mora quedan fuera de esta versión: el pago
+liquida la operación completa y no se simulan aumentando el saldo desde la
+interfaz de compra. El historial proveniente del ERP se recibe por el contrato
+[credit-history-v1](credit-history-v1.md).

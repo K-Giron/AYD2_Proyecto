@@ -78,6 +78,52 @@ class CreditEligibilityPolicyTest {
         assertThat(result.approvedLimit()).isEqualByComparingTo("5000.00");
     }
 
+    @Test
+    void ruleBoundariesAreInclusiveAsDocumented() {
+        // Exactamente en el umbral: 3 compras, 80 % puntual, 30 % devoluciones, 1 incidente y el límite.
+        var atEveryThreshold = policy.evaluate(profile(3, "0.80", "0.30", 1, false, "1000.00"),
+                new BigDecimal("1000.00"));
+
+        assertThat(atEveryThreshold.eligible()).isTrue();
+        assertThat(atEveryThreshold.reasonCode()).isEqualTo("ELIGIBLE");
+    }
+
+    @Test
+    void oneStepBeyondEachBoundaryIsRejectedWithItsOwnReason() {
+        assertThat(policy.evaluate(profile(2, "1.00", "0.00", 0, false, "1000.00"), BigDecimal.TEN)
+                .reasonCode()).isEqualTo("INSUFFICIENT_HISTORY");
+        assertThat(policy.evaluate(profile(5, "0.7999", "0.00", 0, false, "1000.00"), BigDecimal.TEN)
+                .reasonCode()).isEqualTo("LATE_PAYMENT_HISTORY");
+        assertThat(policy.evaluate(profile(5, "1.00", "0.3001", 0, false, "1000.00"), BigDecimal.TEN)
+                .reasonCode()).isEqualTo("HIGH_RETURN_RATE");
+        assertThat(policy.evaluate(profile(5, "1.00", "0.00", 2, false, "1000.00"), BigDecimal.TEN)
+                .reasonCode()).isEqualTo("CRITICAL_INCIDENTS");
+        assertThat(policy.evaluate(profile(5, "1.00", "0.00", 0, false, "1000.00"), new BigDecimal("1000.01"))
+                .reasonCode()).isEqualTo("INSUFFICIENT_LIMIT");
+    }
+
+    @Test
+    void decisionKeepsTheInputsAndThresholdsItWasBasedOn() {
+        var result = policy.evaluate(profile(5, "0.90", "0.10", 0, false, "1500.00"),
+                new BigDecimal("800.00"));
+
+        assertThat(result.inputsSnapshot())
+                .contains("\"ruleVersion\":\"credit-rules-v1\"")
+                .contains("\"requestedAmount\":800.00")
+                .contains("\"completedPurchases\":5")
+                .contains("\"onTimePaymentRate\":0.90")
+                .contains("\"availableCredit\":1500.00")
+                .contains("\"minimumCompletedPurchases\":3")
+                .contains("\"maximumLimit\":5000.00");
+    }
+
+    @Test
+    void snapshotOfAnUnknownCustomerMarksTheMissingProfile() {
+        var result = policy.evaluate(null, new BigDecimal("100.00"));
+
+        assertThat(result.inputsSnapshot()).contains("\"profile\":null");
+    }
+
     private CreditCustomerProfile profile(int purchases, String onTimeRate, String returnRate,
                                           int incidents, boolean overdue, String availableCredit) {
         return CreditCustomerProfile.of(UUID.randomUUID(), purchases, new BigDecimal(onTimeRate),
