@@ -86,6 +86,9 @@ class CreditHistoryIngestIntegrationTest {
 
         assertThat(decision.eligible()).isTrue();
         assertThat(decision.approvedLimit()).isEqualByComparingTo("1200.00");
+        String snapshot = jdbc.queryForObject("SELECT inputs_snapshot FROM credit_decisions WHERE id = ?",
+                String.class, decision.decisionId());
+        assertThat(snapshot).contains("\"completedPurchases\":4").contains("\"availableCredit\":1200.00");
     }
 
     @Test

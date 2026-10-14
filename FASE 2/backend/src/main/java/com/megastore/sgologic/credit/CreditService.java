@@ -60,7 +60,7 @@ class CreditService implements CreditPort {
                 profiles.findById(request.customerId()).orElse(null), request.amount());
         CreditDecision decision = decisions.save(CreditDecision.create(
                 request.customerId(), request.amount(), currency, result.eligible(),
-                result.approvedLimit(), policy.ruleVersion(), result.reasonCode(),
+                result.approvedLimit(), policy.ruleVersion(), result.reasonCode(), result.inputsSnapshot(),
                 request.correlationId(), clock.instant()));
         publishDecision(decision, request.correlationId());
         return toEvaluation(decision);
@@ -153,7 +153,8 @@ class CreditService implements CreditPort {
                 "CREDIT_DECISION_RECORDED", 1, correlationId, correlationId, payload));
         audit.record(new AuditEntryRequest("CREDIT_DECISION", decision.getId(), decision.getCustomerId(),
                 "CREDIT_DECISION_RECORDED", decision.isEligible() ? "APPROVED" : "REJECTED",
-                null, "{\"reasonCode\":\"" + decision.getReasonCode() + "\"}",
+                null, "{\"reasonCode\":\"" + decision.getReasonCode() + "\",\"inputs\":"
+                + decision.getInputsSnapshot() + "}",
                 correlationId, correlationId, null));
     }
 
