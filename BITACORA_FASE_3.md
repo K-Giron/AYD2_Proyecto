@@ -76,6 +76,69 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
 - Horas reales y estimadas restantes: pendiente de registrar por Kevin.
 - Persona que quedaría bloqueada y acción temporal: ninguna; Andy ya puede usar la nube (`http://136.65.180.39`) para carga y estrés.
 
+### Fecha: 2026-10-14 — Integrante: Andy Sánchez
+
+- Trabajo realizado (AND3-01, AND3-05, AND3-06 y AND3-07):
+  - Integró las actualizaciones de `develop` en
+    `feature/201904024-fase3-rendimiento`, contrastó el arnés contra los
+    contratos reales y conservó los aportes cruzados de la bitácora.
+  - Alineó cinco scripts de carga y cinco de estrés con
+    `credit-history-v1`, carritos, opciones de pago y Saga
+    `PAYKLIK|OWN_CREDIT`; eliminó las rutas provisionales.
+  - El dataset ahora genera cinco cohortes crediticias reproducibles e
+    idempotentes por `sourceReference`.
+  - Agregó barreras `ALLOW_MUTATIONS` y `ALLOW_STRESS`, `RUN_ID` por corrida y
+    configuración opcional de inventario para evitar ejecutar carga destructiva
+    por accidente.
+  - Actualizó el smoke externo para usar el `customerId` firmado del login y
+    recorrer carrito, opciones, checkout, Saga y consulta de orden.
+  - Actualizó el Manual Técnico con crédito, variables, GCP, CI/CD, respaldo,
+    rollback y los resultados de rendimiento ejecutados.
+  - Realizó la revisión estática cruzada del CI/CD en
+    `docs/evidence/devops/REV-ANDY-2026-10-14-CICD.md`.
+- Validación local y resultados:
+  - Instaló y utilizó Docker Desktop 29.8.2; los 12 contenedores del ambiente
+    local quedaron activos.
+  - Los 12 archivos JavaScript del arnés y su librería pasan comprobación de
+    sintaxis con Node; el ejecutor PowerShell pasa el analizador sintáctico.
+  - Corrigió tres problemas del arnés encontrados al ejecutar: lectura de
+    `locationId` en el dataset, tratamiento de la salida nativa de k6 desde
+    PowerShell y aislamiento de `RUN_ID` entre escenarios.
+  - El smoke local aprobó al ampliar la espera de la Saga a 90 sondeos. El
+    dataset creó 500 historiales sintéticos en cinco cohortes y aplicó un
+    incremento de 10,000 unidades al inventario de prueba.
+  - Ejecutó los cinco escenarios de carga y los cinco de estrés. Los cinco de
+    carga cumplieron sus umbrales; LOAD-02 quedó con observación sobre acciones
+    auxiliares y LOAD-05 con una limitación del selector de órdenes.
+  - STRESS-01 aprobó la rampa a 160 VUs y STRESS-05 recuperó p95 de 38.10 ms y
+    p99 de 62.73 ms, sin errores en la ventana de recuperación.
+  - STRESS-03 se repitió con datos aislados: 58,124 comprobaciones correctas,
+    0 % de errores y PayKlik con p95 de 1,470.14 ms y p99 de 1,972.71 ms. Frente
+    a la primera medición, p95 mejoró 28.39 % y p99 34.91 %.
+  - STRESS-04 identificó un cuello de botella abierto: backlog máximo de 5,566,
+    28 % de error en creación y drenaje incompleto en dos minutos.
+  - La captura posterior a STRESS-05 confirma que los 12 contenedores seguían
+    activos y consumían aproximadamente 2.3 GiB; se documenta como recuperación,
+    no como consumo máximo del pico.
+  - Consolidó métricas, archivos de evidencia, defectos y conclusiones en
+    `docs/evidence/performance/FASE3-REPORTE-CARGA-ESTRES.md`.
+  - Ejecutó el smoke independiente contra GCP. El primer intento detectó que
+    Actuator no se publica mediante nginx; ajustó el arnés a la ruta pública
+    `/api/v1/platform/status` y repitió la prueba. El resultado final fue 11/11
+    comprobaciones, 0 % de errores, p95 HTTP de 331.21 ms y recorrido completo
+    de checkout, Saga PayKlik y consulta de orden en 2.06 s.
+- Pendiente:
+  - Ajustar la capacidad del flujo de notificaciones y repetir STRESS-04.
+  - Si el tiempo lo permite, ampliar el conjunto de órdenes de LOAD-05 y repetir
+    el pico de checkout con telemetría de recursos.
+  - Los releases `v2` a `v4` permanecen como cierre del equipo y corresponden
+    al frente de publicación de Kevin.
+- Impedimento actual: no se capturó telemetría de recursos durante el pico y el
+  cuello de botella de notificaciones requiere un ajuste del servicio antes de
+  una segunda medición. Esto se registra como limitación, sin ocultar que el
+  smoke externo y el resto del recorrido quedaron aprobados.
+- Horas reales: pendiente de registrar por Andy.
+
 ### Fecha: 2026-10-12 — Integrante: Jairo Gómez
 
 - Trabajo registrado:
@@ -145,22 +208,6 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   `23b9b79`.
 - Horas reales: no registradas en la bitácora de Fase 3.
 
-### Fecha: 2026-10-13 y 2026-10-14 — Integrante: Andy Sánchez
-
-- Trabajo desarrollado en `origin/feature/201904024-fase3-rendimiento`:
-  - Preparó cinco escenarios de carga y cinco de estrés, dataset, ejecutores
-    Bash/PowerShell, smoke cloud y Manual Técnico (`ad23f4f`).
-  - Alineó los escenarios con los contratos reales de historial, carritos,
-    opciones y Saga; añadió barreras `ALLOW_MUTATIONS`/`ALLOW_STRESS` y realizó
-    revisión estática del CI/CD (`5a7cdd1`).
-- Validación registrada en la rama:
-  - Sintaxis de los archivos JavaScript y PowerShell correcta.
-  - Se conservan exactamente cinco escenarios de carga y cinco de estrés.
-- Estado verificable: arnés y manual desarrollados, todavía no contenidos en
-  `develop`; las diez mediciones y sus métricas permanecen pendientes.
-- Impedimento declarado: falta ejecutar k6/Docker en una ventana autorizada.
-- Horas reales: no registradas.
-
 ### Fecha: 2026-10-14 — Integrante: Jairo Gómez
 
 - Trabajo de estabilización y presentación en nube:
@@ -200,7 +247,7 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
 | Jairo Gómez | Crédito base, checkout/Saga dual, integración ERP/reporte/notificaciones, pruebas, ADR/DDA/diagramas, Manual de Usuario, navegación y catálogo | Integrado y desplegado desde `develop` |
 | Jorge Pumay | Historial ERP, dataset, reglas trazables, ciclo de obligación, seguridad y correcciones de logística | Integrado en `develop` |
 | Kevin Girón | CI/CD, Compose productivo, GCP, scripts de backup/deploy/rollback, runbook y release `v1` | Integrado; pipeline y nube operativos |
-| Andy Sánchez | Arnés 5+5, Manual Técnico, smoke independiente y revisión estática del CI/CD | Desarrollado en rama; falta integrar y ejecutar |
+| Andy Sánchez | Arnés 5+5, ejecución y análisis k6, Manual Técnico, smoke independiente y revisión estática del CI/CD | Ejecutado y documentado en rama; listo para integrar |
 | Edson Sosa | Sin commit de Fase 3 identificable en el periodo auditado | Falta evidencia atribuible |
 
 ## 4. Evidencia de integración y operación
@@ -227,6 +274,6 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   idempotencia/concurrencia en la evidencia automatizada.
 - El proceso de aprobación de PR se considera administrado por el equipo; esta
   bitácora conserva únicamente hechos verificables del historial.
-- Para cerrar toda la fase faltan integrar y ejecutar rendimiento, completar
+- Para cerrar toda la fase faltan integrar los resultados de rendimiento, completar
   capturas del Manual de Usuario, registrar cualquier aporte de Edson y
   publicar `v2`, `v3` y `v4` desde `main`.
