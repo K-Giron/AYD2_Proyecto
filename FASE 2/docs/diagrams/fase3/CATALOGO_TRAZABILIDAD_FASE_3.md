@@ -1,6 +1,6 @@
 # Catálogo de trazabilidad — vistas arquitectónicas de Fase 3
 
-**Corte documental:** 13 de octubre de 2026  
+**Corte documental:** 14 de octubre de 2026
 **Fuente editable:** `NUEVO-vistas-arquitectonicas-fase3.drawio`  
 **Decisión principal:** ADR-016
 
@@ -18,7 +18,7 @@ de sus tablas.
 | Rechazo sin deuda y continuación PayKlik | Secuencia | `CREDIT_REJECTED` → nueva ejecución `PAYKLIK` | `OrderJourneysE2ETest` |
 | Resultado auditable y notificable | Componentes | Outbox → RabbitMQ → Inbox → `notifications` | pruebas de consumidor y E2E |
 | Cliente solo opera sus carritos/órdenes | Componentes | claim JWT `customer_id` + `CustomerAccessGuard` | `SecurityAuthorizationTest` |
-| Despliegue coherente | Despliegue | frontend, backend modular, PostgreSQL, RabbitMQ y servicios existentes | `docker compose config`, smoke local pendiente de cierre |
+| Despliegue coherente | Despliegue | frontend, backend modular, PostgreSQL, RabbitMQ y servicios existentes | CI `38616631224`, deploy `38618417187`, smoke externo verde |
 
 ## Límites explícitos
 
@@ -27,6 +27,8 @@ de sus tablas.
 - El claim firmado identifica al cliente canónico de demostración. Un catálogo
   real de cuentas individuales o un proveedor de identidad depende del frente
   de seguridad de Edson.
-- La vista de despliegue documenta Compose/local. La nube, pipeline, imágenes y
-  rollback dependen de Kevin y no se declaran terminados aquí.
-- El ADR permanece `Proposed` hasta revisión de Jorge, Edson, Andy y Kevin.
+- La vista de despliegue representa la misma topología Compose ejecutada en la
+  VM GCP. Pipeline, seis imágenes, health check, backup y rollback están
+  implementados; la publicación de `v2` a `v4` continúa pendiente.
+- ADR-016 fue ratificado como `Accepted` el 14 de octubre de 2026 contra
+  implementación, pruebas, CI y comportamiento desplegado.
