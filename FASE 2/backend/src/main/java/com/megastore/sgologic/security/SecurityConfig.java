@@ -74,6 +74,9 @@ class SecurityConfig {
                             // Factura del cliente (CUI, serie, XML), sin datos internos del documento fiscal.
                             .requestMatchers(HttpMethod.GET, "/api/v1/invoices/orders/*")
                             .hasAnyRole("CLIENT", "FINANCE", "ONLINE_STORE")
+                            // Historial del ERP para el crédito propio (credit-history-v1).
+                            .requestMatchers("/api/v1/credit/**")
+                            .hasRole("FINANCE")
                             .requestMatchers("/api/v1/reports/**")
                             .hasRole("FINANCE")
                             .requestMatchers("/api/v1/fiscal-documents/**", "/api/v1/integrations/erp/**",

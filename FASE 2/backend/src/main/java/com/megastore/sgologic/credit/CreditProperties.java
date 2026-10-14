@@ -16,6 +16,8 @@ class CreditProperties {
     private BigDecimal maximumLimit = new BigDecimal("5000.00");
     private int termDays = 30;
     private String ruleVersion = "credit-rules-v1";
+    private int historyWindowMonths = 12;
+    private BigDecimal limitRatio = new BigDecimal("0.40");
 
     int getMinimumCompletedPurchases() { return minimumCompletedPurchases; }
     void setMinimumCompletedPurchases(int value) { minimumCompletedPurchases = value; }
@@ -29,6 +31,10 @@ class CreditProperties {
     void setMaximumLimit(BigDecimal value) { maximumLimit = value; }
     int getTermDays() { return termDays; }
     void setTermDays(int value) { termDays = value; }
+    int getHistoryWindowMonths() { return historyWindowMonths; }
+    void setHistoryWindowMonths(int value) { historyWindowMonths = value; }
+    BigDecimal getLimitRatio() { return limitRatio; }
+    void setLimitRatio(BigDecimal value) { limitRatio = value; }
     String getRuleVersion() { return ruleVersion; }
     void setRuleVersion(String value) { ruleVersion = value; }
 }
