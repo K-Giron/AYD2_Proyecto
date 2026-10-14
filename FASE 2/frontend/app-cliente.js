@@ -12,6 +12,7 @@ let CATALOG = [];
 
 let activeCart = null;
 let catalogAvailability = new Map();
+let paymentOptionsKey = null;
 
 function el(id) { return document.getElementById(id); }
 function escapeHtml(value) { return String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -147,6 +148,7 @@ async function setQuantity(productId, quantity) {
         ? await apiCall("DELETE", `/api/v1/carts/${cart.id}/items/${productId}`)
         : await apiCall("PUT", `/api/v1/carts/${cart.id}/items/${productId}`, { productName: product.name, unitPrice: product.price, quantity });
     renderCatalog(); renderCart();
+    if (el("view-checkout").classList.contains("active")) await refreshPaymentOptions(true);
 }
 
 async function consumePurchaseIntent() {
@@ -177,18 +179,67 @@ function renderCart() {
     renderCartCount();
 }
 
+function selectedPaymentRoute() {
+    return document.querySelector("input[name=payment-route]:checked")?.value || "PAYKLIK";
+}
+
+function updatePaymentRouteUi() {
+    const credit = selectedPaymentRoute() === "OWN_CREDIT";
+    el("payklik-methods").classList.toggle("hidden", credit);
+    el("confirm-purchase-btn").textContent = credit ? "Comprar y pagar en 30 días" : "Reservar y pagar";
+    el("checkout-financial-legal").textContent = credit
+        ? "La orden se confirma después de aprobar el crédito, reservar inventario y certificar la factura."
+        : "La orden se confirma únicamente después de inventario, PayKlik y SAT.";
+}
+
+async function refreshPaymentOptions(force = false) {
+    const cart = activeCart;
+    if (!cart?.id || !cart.items?.length) {
+        paymentOptionsKey = null;
+        el("credit-payment-option").classList.add("hidden");
+        el("credit-options-status").textContent = "Agrega productos para evaluar el crédito propio.";
+        document.querySelector("input[name=payment-route][value=PAYKLIK]").checked = true;
+        updatePaymentRouteUi();
+        return;
+    }
+    const key = `${cart.id}:${cart.total}`;
+    if (!force && paymentOptionsKey === key) return;
+    paymentOptionsKey = key;
+    el("credit-options-status").textContent = "Evaluando crédito propio…";
+    try {
+        const result = await apiCall("GET", `/api/v1/carts/${cart.id}/payment-options`);
+        if (activeCart?.id !== cart.id || String(activeCart?.total) !== String(cart.total)) return;
+        const credit = result.options?.find(option => option.route === "OWN_CREDIT" && option.enabled);
+        el("credit-payment-option").classList.toggle("hidden", !credit);
+        if (credit) {
+            el("credit-payment-detail").textContent = `Límite disponible ${money(credit.approvedLimit)} · vence ${new Date(`${credit.dueDatePreview}T00:00:00`).toLocaleDateString("es-GT")}.`;
+            el("credit-options-status").textContent = "Tienes crédito propio disponible para esta compra.";
+        } else {
+            if (selectedPaymentRoute() === "OWN_CREDIT") {
+                document.querySelector("input[name=payment-route][value=PAYKLIK]").checked = true;
+            }
+            el("credit-options-status").textContent = "PayKlik está disponible para completar tu compra.";
+        }
+    } catch {
+        el("credit-payment-option").classList.add("hidden");
+        document.querySelector("input[name=payment-route][value=PAYKLIK]").checked = true;
+        el("credit-options-status").textContent = "Crédito no disponible por el momento; puedes pagar con PayKlik.";
+    }
+    updatePaymentRouteUi();
+}
+
 function selectView(name) {
     document.querySelectorAll(".store-tab").forEach(tab => tab.classList.toggle("active", tab.dataset.view === name));
     document.querySelectorAll(".store-view").forEach(view => view.classList.toggle("active", view.id === `view-${name}`));
     if (name === "favorites") renderFavorites();
-    if (name === "checkout") { renderCart(); refreshActiveCart(); }
+    if (name === "checkout") { renderCart(); refreshActiveCart().then(() => refreshPaymentOptions(true)); }
     if (name === "tracking") loadRecentOrders();
     if (name === "returns") loadReturnOptions();
     if (location.hash !== `#${name}`) history.replaceState(null, "", `#${name}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-const FLOW_STEPS = ["Orden creada", "Inventario reservado", "Pago procesado", "Documento fiscal", "Despacho iniciado"];
+const FLOW_STEPS = ["Orden creada", "Inventario reservado", "Pago o crédito aprobado", "Documento fiscal", "Despacho iniciado"];
 function renderFlow(current, completed = false) {
     el("checkout-result").innerHTML = `<div class="flow-status">${FLOW_STEPS.map((label, index) => `<div class="flow-step ${completed || index < current ? "done" : index === current ? "current" : ""}">${label}</div>`).join("")}</div>`;
 }
@@ -288,8 +339,9 @@ async function completePurchase() {
     if (!destination) { toast(deliveryMode() === "PICKUP" ? "Elige dónde recoger tu compra." : "Escribe la dirección de entrega.", "error"); return; }
     if (!fiscalName || !taxIdentifier) { toast("Completa los datos fiscales.", "error"); return; }
     const total = (activeCart?.items || []).reduce((sum, item) => sum + Number(item.lineTotal), 0);
-    const payment = await askPayKlikPayment(total);
-    if (!payment) { toast("Pago cancelado: tu carrito sigue igual.", ""); return; }
+    const paymentRoute = selectedPaymentRoute();
+    const payment = paymentRoute === "PAYKLIK" ? await askPayKlikPayment(total) : null;
+    if (paymentRoute === "PAYKLIK" && !payment) { toast("Pago cancelado: tu carrito sigue igual.", ""); return; }
     button.disabled = true;
     try {
         const cart = await ensureCart();
@@ -300,13 +352,17 @@ async function completePurchase() {
         renderFlow(1);
         const sagaKey = `saga-${order.id}`;
         const saga = await waitForSaga(order.id, sagaKey, {
-            paymentMethod: payment.paymentMethod, currency: "GTQ", paymentReference: payment.paymentReference,
+            paymentRoute,
+            paymentMethod: payment?.paymentMethod || null, currency: "GTQ", paymentReference: payment?.paymentReference || null,
             taxIdentifier, customerName: fiscalName, destination
         });
         if (!saga) throw new Error("SAT sigue procesando el documento. Puedes reanudar la compra sin duplicar cobros.");
         if (saga.sagaStatus !== "COMPLETED") throw new Error(saga.detail || `La Saga quedó en ${saga.sagaStatus}.`);
         renderFlow(5, true);
-        el("checkout-result").innerHTML += `<div class="checkout-success"><strong>Compra confirmada y en preparación</strong><br />Orden ${escapeHtml(order.id)}<br />CUI ${escapeHtml(saga.fiscalCui)} · Serie ${escapeHtml(saga.fiscalSeries)}<br />${payment.paymentMethod === "TRANSFER" ? "Pago por transferencia" : "Pago con tarjeta"} · ${escapeHtml(destination)}<br /><button type="button" class="btn btn-primary btn-sm" data-invoice-order="${escapeHtml(order.id)}" style="margin-top:.6rem">Ver factura</button></div>`;
+        const financialDetail = paymentRoute === "OWN_CREDIT"
+            ? `Crédito propio · paga antes del ${escapeHtml(saga.creditDueDate)}`
+            : payment.paymentMethod === "TRANSFER" ? "Pago por transferencia" : "Pago con tarjeta";
+        el("checkout-result").innerHTML += `<div class="checkout-success"><strong>Compra confirmada y en preparación</strong><br />Orden ${escapeHtml(order.id)}<br />CUI ${escapeHtml(saga.fiscalCui)} · Serie ${escapeHtml(saga.fiscalSeries)}<br />${financialDetail} · ${escapeHtml(destination)}<br /><button type="button" class="btn btn-primary btn-sm" data-invoice-order="${escapeHtml(order.id)}" style="margin-top:.6rem">Ver factura</button></div>`;
         localStorage.removeItem(CART_CONTEXT_KEY); activeCart = null; await loadRecentOrders(); renderCatalog(); renderCart();
         await showInvoice(order.id);
     } catch (error) {
@@ -503,6 +559,7 @@ function bindEvents() {
     // Al volver a la pestaña, el carrito pudo haber cambiado en otro canal.
     document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshActiveCart(); });
     document.querySelectorAll("input[name=delivery]").forEach(radio => radio.addEventListener("change", updateDeliveryFields));
+    document.querySelectorAll("input[name=payment-route]").forEach(radio => radio.addEventListener("change", updatePaymentRouteUi));
     loadPickupPoints();
     updateDeliveryFields();
     el("tracking-load-btn").addEventListener("click", () => loadTracking(el("tracking-order-input").value));
@@ -530,6 +587,7 @@ async function initialize() {
     renderCatalog(); renderFavorites(); renderCart();
     const lastOrderId = localStorage.getItem(LAST_ORDER_KEY); if (lastOrderId) el("tracking-order-input").value = lastOrderId;
     await Promise.allSettled([ensureCart(), loadAvailability(), loadRecentOrders()]);
+    await refreshPaymentOptions(true);
     await consumePurchaseIntent();
     const requestedView = location.hash.slice(1);
     if (["catalog", "favorites", "checkout", "tracking", "returns"].includes(requestedView)) selectView(requestedView);

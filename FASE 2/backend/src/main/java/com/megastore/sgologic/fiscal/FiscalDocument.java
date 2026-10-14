@@ -24,8 +24,15 @@ public class FiscalDocument {
     @Column(name = "order_id", nullable = false, updatable = false)
     private UUID orderId;
 
-    @Column(name = "payment_attempt_id", nullable = false, updatable = false)
+    @Column(name = "payment_attempt_id", updatable = false)
     private UUID paymentAttemptId;
+
+    @Column(name = "financial_operation_id", nullable = false, updatable = false)
+    private UUID financialOperationId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "financial_operation_type", nullable = false, updatable = false, length = 24)
+    private FinancialOperationType financialOperationType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "document_type", nullable = false, length = 24)
@@ -94,7 +101,8 @@ public class FiscalDocument {
         // Requerido por JPA.
     }
 
-    static FiscalDocument create(UUID id, UUID orderId, UUID paymentAttemptId,
+    static FiscalDocument create(UUID id, UUID orderId, UUID financialOperationId,
+                                 FinancialOperationType financialOperationType,
                                  FiscalDocumentType documentType, UUID originalDocumentId,
                                  String taxIdentifier, String customerName, BigDecimal total,
                                  String currency, String cui, String series, String xmlPayload,
@@ -102,7 +110,10 @@ public class FiscalDocument {
         FiscalDocument document = new FiscalDocument();
         document.id = id;
         document.orderId = orderId;
-        document.paymentAttemptId = paymentAttemptId;
+        document.financialOperationId = financialOperationId;
+        document.financialOperationType = financialOperationType;
+        document.paymentAttemptId = financialOperationType == FinancialOperationType.PAYKLIK
+                ? financialOperationId : null;
         document.documentType = documentType;
         document.originalDocumentId = originalDocumentId;
         document.taxIdentifier = taxIdentifier;
@@ -153,6 +164,8 @@ public class FiscalDocument {
     public UUID getId() { return id; }
     public UUID getOrderId() { return orderId; }
     public UUID getPaymentAttemptId() { return paymentAttemptId; }
+    public UUID getFinancialOperationId() { return financialOperationId; }
+    public FinancialOperationType getFinancialOperationType() { return financialOperationType; }
     public FiscalDocumentType getDocumentType() { return documentType; }
     public UUID getOriginalDocumentId() { return originalDocumentId; }
     public String getTaxIdentifier() { return taxIdentifier; }

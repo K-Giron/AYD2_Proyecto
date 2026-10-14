@@ -11,6 +11,8 @@ public record OrderResponse(
         UUID customerId,
         SalesChannel channel,
         OrderStatus status,
+        PaymentRoute paymentRoute,
+        UUID financialOperationId,
         List<OrderLineResponse> items,
         BigDecimal total,
         UUID correlationId,
@@ -19,7 +21,7 @@ public record OrderResponse(
 ) {
     static OrderResponse from(CustomerOrder order) {
         return new OrderResponse(order.getId(), order.getCartId(), order.getCustomerId(),
-                order.getChannel(), order.getStatus(),
+                order.getChannel(), order.getStatus(), order.getPaymentRoute(), order.getFinancialOperationId(),
                 order.getItems().stream().map(OrderLineResponse::from).toList(),
                 order.getTotal(), order.getCorrelationId(), order.getCreatedAt(), order.getUpdatedAt());
     }

@@ -61,11 +61,12 @@ async function sgoLogin(email, password) {
         return { ok: false, message: (data && data.message) || "Correo o contraseña incorrectos." };
     }
     const roles = Array.isArray(data.roles) ? data.roles : [];
-    const fallbackCustomerId = localAccount?.customerId || (roles.includes("CLIENT")
+    const fallbackCustomerId = data.customerId || localAccount?.customerId || (roles.includes("CLIENT")
         ? "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" : null);
     const customerId = roles.includes("CLIENT")
-        ? await sgoResolveServerCustomerId(data.accessToken, localAccount?.email || normalizedEmail,
-            localAccount?.name || normalizedEmail, fallbackCustomerId)
+        ? data.customerId || await sgoResolveServerCustomerId(data.accessToken,
+            localAccount?.email || normalizedEmail, localAccount?.name || normalizedEmail,
+            fallbackCustomerId)
         : null;
     if (localAccount && customerId && localAccount.customerId !== customerId) {
         sgoUpdateLocalAccount(localAccount.email, { customerId });

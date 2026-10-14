@@ -5,7 +5,8 @@ import java.util.UUID;
 
 public record FiscalProcessingRequest(
         UUID orderId,
-        UUID paymentAttemptId,
+        UUID financialOperationId,
+        FinancialOperationType financialOperationType,
         String taxIdentifier,
         String customerName,
         BigDecimal total,

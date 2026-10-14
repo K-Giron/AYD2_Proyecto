@@ -56,6 +56,14 @@ management:
       enabled: false
 
 sgo:
+  credit:
+    minimum-completed-purchases: ${SGO_CREDIT_MINIMUM_PURCHASES:3}
+    minimum-on-time-payment-rate: ${SGO_CREDIT_MINIMUM_ON_TIME_RATE:0.80}
+    maximum-return-rate: ${SGO_CREDIT_MAXIMUM_RETURN_RATE:0.30}
+    maximum-critical-incidents: ${SGO_CREDIT_MAXIMUM_CRITICAL_INCIDENTS:1}
+    maximum-limit: ${SGO_CREDIT_MAXIMUM_LIMIT:5000.00}
+    term-days: ${SGO_CREDIT_TERM_DAYS:30}
+    rule-version: ${SGO_CREDIT_RULE_VERSION:credit-rules-v1}
   simulators:
     payklik:
       mode: ${SGO_SIMULATORS_PAYKLIK_MODE:SUCCESS}
@@ -168,6 +176,10 @@ sgo:
     exchange: ${SGO_OUTBOX_EXCHANGE:sgo.events}
     dead-letter-exchange: ${SGO_OUTBOX_DLX:sgo.events.dlx}
     dead-letter-queue: ${SGO_OUTBOX_DLQ:sgo.events.dlq}
+  orders:
+    payment-options:
+      credit-timeout-ms: ${SGO_CREDIT_OPTIONS_TIMEOUT_MS:2000}
+      call-pool-size: ${SGO_CREDIT_OPTIONS_CALL_POOL_SIZE:4}
   security:
     enabled: ${SGO_SECURITY_ENABLED:true}
     jwt:
@@ -177,6 +189,7 @@ sgo:
     users:
       - username: ${SGO_SECURITY_CLIENT_USER:cliente@megastore.com}
         password: ${SGO_SECURITY_CLIENT_PASSWORD:Cliente123}
+        customer-id: ${SGO_SECURITY_CLIENT_CUSTOMER_ID:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa}
         roles: [CLIENT]
       # La consola de personal interno cubre despacho (LOGISTICS) y atencion
       # (SUPPORT); por eso la cuenta demo acumula ambos roles.

@@ -48,6 +48,19 @@ public class FiscalService implements FiscalProcessingPort {
                                           FiscalDocumentType documentType, UUID originalDocumentId,
                                           String taxIdentifier, String customerName, BigDecimal total,
                                           String currency, UUID correlationId, String idempotencyKey) {
+        return requestDocument(orderId, paymentAttemptId, FinancialOperationType.PAYKLIK,
+                documentType, originalDocumentId, taxIdentifier, customerName, total,
+                currency, correlationId, idempotencyKey);
+    }
+
+    public FiscalDocument requestDocument(UUID orderId, UUID financialOperationId,
+                                          FinancialOperationType financialOperationType,
+                                          FiscalDocumentType documentType, UUID originalDocumentId,
+                                          String taxIdentifier, String customerName, BigDecimal total,
+                                          String currency, UUID correlationId, String idempotencyKey) {
+        if (financialOperationId == null || financialOperationType == null) {
+            throw new IllegalArgumentException("La referencia financiera es obligatoria.");
+        }
         Optional<FiscalDocument> existing = repository.findByIdempotencyKey(idempotencyKey);
         if (existing.isPresent()) {
             return existing.get();
@@ -70,7 +83,8 @@ public class FiscalService implements FiscalProcessingPort {
         String normalizedCurrency = currency.trim().toUpperCase();
         String xml = xmlGenerator.generate(documentId, orderId, documentType, originalDocumentId,
                 taxIdentifier.trim(), customerName.trim(), total, normalizedCurrency, cui, series);
-        FiscalDocument document = FiscalDocument.create(documentId, orderId, paymentAttemptId, documentType,
+        FiscalDocument document = FiscalDocument.create(documentId, orderId, financialOperationId,
+                financialOperationType, documentType,
                 originalDocumentId, taxIdentifier.trim(), customerName.trim(), total, normalizedCurrency,
                 cui, series, xml, correlationId, idempotencyKey, clock.instant());
         repository.save(document);
@@ -153,7 +167,8 @@ public class FiscalService implements FiscalProcessingPort {
 
     @Override
     public FiscalProcessingResult requestInvoice(FiscalProcessingRequest request) {
-        return toResult(requestDocument(request.orderId(), request.paymentAttemptId(),
+        return toResult(requestDocument(request.orderId(), request.financialOperationId(),
+                request.financialOperationType(),
                 FiscalDocumentType.INVOICE, null, request.taxIdentifier(), request.customerName(),
                 request.total(), request.currency(), request.correlationId(), request.idempotencyKey()));
     }

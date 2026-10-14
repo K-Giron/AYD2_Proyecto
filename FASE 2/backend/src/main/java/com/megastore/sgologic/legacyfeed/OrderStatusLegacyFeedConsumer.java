@@ -71,7 +71,8 @@ class OrderStatusLegacyFeedConsumer {
             BigDecimal[] split = ErpIntegrationService.splitIva(order.getTotal());
             erpService.registerConfirmedSale(order.getId(), split[0], split[1], order.getTotal(), "GTQ",
                     event.occurredAt() == null ? order.getUpdatedAt() : event.occurredAt(),
-                    order.getChannel().name(), "POS-ONLINE", order.getId().toString());
+                    order.getChannel().name(), "POS-ONLINE", order.getId().toString(),
+                    order.getPaymentRoute() == null ? "PAYKLIK" : order.getPaymentRoute().name());
         }
         String payload = payloads.forOrder(order, newStatus, event);
         for (int store = 1; store <= STORE_COUNT; store++) {

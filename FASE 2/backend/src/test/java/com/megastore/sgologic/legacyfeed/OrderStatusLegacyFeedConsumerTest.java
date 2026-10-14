@@ -8,6 +8,7 @@ import com.megastore.sgologic.messaging.BusinessEventEnvelope;
 import com.megastore.sgologic.messaging.InboxService;
 import com.megastore.sgologic.orders.CustomerOrder;
 import com.megastore.sgologic.orders.OrdersService;
+import com.megastore.sgologic.orders.PaymentRoute;
 import com.megastore.sgologic.orders.SalesChannel;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -46,10 +47,15 @@ class OrderStatusLegacyFeedConsumerTest {
     }
 
     private void orderTotal(String total) {
+        orderTotal(total, PaymentRoute.PAYKLIK);
+    }
+
+    private void orderTotal(String total, PaymentRoute paymentRoute) {
         CustomerOrder order = mock(CustomerOrder.class);
         when(order.getId()).thenReturn(orderId);
         when(order.getTotal()).thenReturn(new BigDecimal(total));
         when(order.getChannel()).thenReturn(SalesChannel.WEB);
+        when(order.getPaymentRoute()).thenReturn(paymentRoute);
         when(order.getItems()).thenReturn(List.of());
         when(order.getUpdatedAt()).thenReturn(Instant.now());
         when(orders.getOrder(orderId)).thenReturn(order);
@@ -63,8 +69,21 @@ class OrderStatusLegacyFeedConsumerTest {
         consumer.process(event("CONFIRMED"));
 
         verify(erp).registerConfirmedSale(eq(orderId), eq(new BigDecimal("1000.00")), eq(new BigDecimal("120.00")),
-                eq(new BigDecimal("1120.00")), eq("GTQ"), any(), eq("WEB"), eq("POS-ONLINE"), eq(orderId.toString()));
+                eq(new BigDecimal("1120.00")), eq("GTQ"), any(), eq("WEB"), eq("POS-ONLINE"),
+                eq(orderId.toString()), eq("PAYKLIK"));
         verify(pos, times(32)).publish(any(), eq("ORDER_CONFIRMED"), eq(orderId), anyInt(), anyString(), any());
+    }
+
+    @Test
+    void confirmedCreditSaleKeepsItsFinancialRouteInTheErp() {
+        orderTotal("399.00", PaymentRoute.OWN_CREDIT);
+        when(shipments.getShipmentsForOrder(orderId)).thenReturn(List.of());
+
+        consumer.process(event("CONFIRMED"));
+
+        verify(erp).registerConfirmedSale(eq(orderId), eq(new BigDecimal("356.25")), eq(new BigDecimal("42.75")),
+                eq(new BigDecimal("399.00")), eq("GTQ"), any(), eq("WEB"), eq("POS-ONLINE"),
+                eq(orderId.toString()), eq("OWN_CREDIT"));
     }
 
     @Test
@@ -80,7 +99,7 @@ class OrderStatusLegacyFeedConsumerTest {
         ArgumentCaptor<String> payload = ArgumentCaptor.forClass(String.class);
         verify(pos, times(32)).publish(any(), eq("ORDER_PREPARING"), eq(orderId), anyInt(), payload.capture(), any());
         assertThat(payload.getValue()).contains("\"pickupStore\":\"POS-01\"", "\"origin\":\"CD-WEB\"", "\"status\":\"PREPARING\"");
-        verify(erp, never()).registerConfirmedSale(any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(erp, never()).registerConfirmedSale(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test

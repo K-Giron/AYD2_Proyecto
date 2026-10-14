@@ -2,6 +2,8 @@ package com.megastore.sgologic.salesreport;
 
 import com.megastore.sgologic.audit.api.AuditEntryRequest;
 import com.megastore.sgologic.audit.api.AuditRecorder;
+import com.megastore.sgologic.credit.api.CreditOperationResult;
+import com.megastore.sgologic.credit.api.CreditPort;
 import com.megastore.sgologic.fiscal.FiscalProcessingPort;
 import com.megastore.sgologic.fiscal.FiscalProcessingResult;
 import com.megastore.sgologic.integration.ErpIntegrationService;
@@ -9,6 +11,7 @@ import com.megastore.sgologic.integration.ErpSaleView;
 import com.megastore.sgologic.orders.CustomerOrder;
 import com.megastore.sgologic.orders.OrderStatus;
 import com.megastore.sgologic.orders.OrdersService;
+import com.megastore.sgologic.orders.PaymentRoute;
 import com.megastore.sgologic.payments.api.PaymentPort;
 import com.megastore.sgologic.payments.api.PaymentResult;
 import org.springframework.security.core.Authentication;
@@ -49,16 +52,19 @@ public class SalesReportService {
 
     private final OrdersService ordersService;
     private final PaymentPort paymentPort;
+    private final CreditPort creditPort;
     private final FiscalProcessingPort fiscalPort;
     private final ErpIntegrationService erpService;
     private final AuditRecorder auditRecorder;
     private final Clock clock;
     private final ZoneId zone = ZoneId.of("America/Guatemala");
 
-    public SalesReportService(OrdersService ordersService, PaymentPort paymentPort, FiscalProcessingPort fiscalPort,
+    public SalesReportService(OrdersService ordersService, PaymentPort paymentPort, CreditPort creditPort,
+                              FiscalProcessingPort fiscalPort,
                               ErpIntegrationService erpService, AuditRecorder auditRecorder, Clock clock) {
         this.ordersService = ordersService;
         this.paymentPort = paymentPort;
+        this.creditPort = creditPort;
         this.fiscalPort = fiscalPort;
         this.erpService = erpService;
         this.auditRecorder = auditRecorder;
@@ -122,30 +128,47 @@ public class SalesReportService {
 
     private SalesReport.Row webRow(CustomerOrder order) {
         boolean sold = SOLD.contains(order.getStatus());
-        Optional<PaymentResult> payment = paymentPort.latestForOrder(order.getId());
+        boolean ownCredit = order.getPaymentRoute() == PaymentRoute.OWN_CREDIT;
+        Optional<PaymentResult> payment = ownCredit
+                ? Optional.empty() : paymentPort.latestForOrder(order.getId());
+        Optional<CreditOperationResult> credit = ownCredit
+                ? creditPort.latestForOrder(order.getId()) : Optional.empty();
         Optional<FiscalProcessingResult> fiscal = fiscalPort.latestForOrder(order.getId());
         Optional<ErpSaleView> erp = erpService.saleFor(order.getId());
-        String paymentStatus = payment.map(PaymentResult::status).orElse("SIN_PAGO");
+        String financialRoute = order.getPaymentRoute() == null ? "SIN_RUTA" : order.getPaymentRoute().name();
+        String paymentStatus = ownCredit
+                ? credit.map(result -> "CREDIT_" + result.status().name()).orElse("SIN_CREDITO")
+                : payment.map(PaymentResult::status).orElse("SIN_PAGO");
+        boolean financiallyApproved = "APPROVED".equals(paymentStatus) || "CREDIT_GRANTED".equals(paymentStatus);
         String fiscalStatus = fiscal.map(result -> result.status().name()).orElse("SIN_FACTURA");
 
         List<String> issues = new ArrayList<>();
-        if (sold && !"APPROVED".equals(paymentStatus)) {
-            issues.add("Venta confirmada sin pago aprobado");
+        if (sold && !financiallyApproved) {
+            issues.add("Venta confirmada sin autorización financiera válida");
         }
         if (sold && !"APPROVED".equals(fiscalStatus)) {
             issues.add("Venta confirmada sin factura certificada por SAT");
         }
-        if (!sold && "APPROVED".equals(paymentStatus)) {
-            issues.add("Pago aprobado sin venta confirmada (" + order.getStatus() + "): revisar o reembolsar");
+        if (!sold && financiallyApproved) {
+            issues.add("Operación financiera aprobada sin venta confirmada (" + order.getStatus()
+                    + "): revisar compensación");
         }
         if (sold && erp.isEmpty()) {
             issues.add("No registrada en el ERP");
         }
-        erp.ifPresent(sale -> erpIssues(sale, order.getTotal(), issues));
+        erp.ifPresent(sale -> {
+            erpIssues(sale, order.getTotal(), issues);
+            if (!financialRoute.equals(sale.financialRoute())) {
+                issues.add("Ruta financiera en ERP (" + sale.financialRoute()
+                        + ") distinta a la orden (" + financialRoute + ")");
+            }
+        });
 
         return new SalesReport.Row(order.getId(), order.getCreatedAt(), order.getChannel().name(), "POS-ONLINE",
                 order.getId().toString(), sold ? order.getStatus().name() : "NO_CONFIRMADA", order.getTotal(),
-                paymentStatus, payment.map(PaymentResult::providerReference).orElse(null), fiscalStatus,
+                financialRoute, paymentStatus,
+                ownCredit ? credit.map(result -> result.creditOperationId().toString()).orElse(null)
+                        : payment.map(PaymentResult::providerReference).orElse(null), fiscalStatus,
                 fiscal.map(result -> result.series() + " " + result.cui()).orElse(null),
                 erp.map(ErpSaleView::status).orElse("SIN_REGISTRAR"), erp.map(ErpSaleView::grandTotal).orElse(null),
                 erp.map(ErpSaleView::batchStatus).orElse(null), issues);
@@ -155,7 +178,8 @@ public class SalesReportService {
         List<String> issues = new ArrayList<>();
         erpIssues(sale, sale.grandTotal(), issues);
         return new SalesReport.Row(sale.saleId(), sale.confirmedAt(), "STORE", sale.pointOfSale(), sale.reference(),
-                "VENDIDA_EN_TIENDA", sale.grandTotal(), "COBRADO_EN_TIENDA", null, "FACTURA_TIENDA", sale.reference(),
+                "VENDIDA_EN_TIENDA", sale.grandTotal(), sale.financialRoute(),
+                "COBRADO_EN_TIENDA", null, "FACTURA_TIENDA", sale.reference(),
                 sale.status(), sale.grandTotal(), sale.batchStatus(), issues);
     }
 

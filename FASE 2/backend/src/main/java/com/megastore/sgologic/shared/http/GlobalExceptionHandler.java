@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -36,6 +37,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleInvalidParameter(MethodArgumentTypeMismatchException exception,
                                                             HttpServletRequest request) {
         return error(HttpStatus.BAD_REQUEST, "INVALID_PARAMETER", "Uno de los parámetros no es válido.", request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException exception,
+                                                        HttpServletRequest request) {
+        return error(HttpStatus.FORBIDDEN, "FORBIDDEN",
+                "No tiene permisos para acceder a este recurso.", request);
     }
 
     @ExceptionHandler(Exception.class)

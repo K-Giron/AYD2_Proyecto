@@ -1891,6 +1891,58 @@ Wireframes no funcionales del flujo principal: iniciar compra en la app móvil �
 
 ## 9. Conclusiones Arquitectónicas
 
+### 9.1 Actualización de Fase 3 — crédito propio
+
+La campaña **“Compra ahora, paga en 30 días”** amplía el frente financiero sin
+reemplazar PayKlik. El objetivo de aumentar el ticket promedio en 40 % se trata
+como hipótesis de negocio que deberá medirse; no se declara como beneficio ya
+obtenido. Marketing/Comercialización patrocina la oferta, Finanzas/Riesgo define
+su apetito y reglas, el Cliente decide la ruta y TI opera y observa la solución.
+
+Se añaden cuatro capacidades funcionales: evaluar elegibilidad, ofrecer la
+alternativa únicamente cuando corresponda, conceder o rechazar una obligación
+propia y notificar el resultado. La decisión arquitectónica completa se registra
+en [ADR-016](<../FASE 2/docs/adr/ADR-016-credito-propio-y-saga-financiera-dual.md>).
+
+La realización implementada mantiene el monolito modular: `credit` posee perfil,
+decisión y operación; publica una API explícita para `orders`; la Saga conserva
+rutas separadas de PayKlik y crédito y converge en el paso fiscal; `fiscal`
+referencia una operación financiera neutral; `audit` registra la decisión; y
+`notifications` consume eventos por Outbox/Inbox sin bloquear la compra. No se
+ha creado un microservicio ni una base independiente de crédito.
+
+```text
+Checkout -> orders -> credit::api -> perfil/proyección + decisión
+                    |              -> Outbox -> notifications
+                    +-> PayKlik (solo ruta PAYKLIK)
+                    +-> fiscal(financialOperationId, type) -> SAT
+                    +-> audit
+```
+
+Los estados nuevos son `CREDIT_PENDING`, `CREDIT_APPROVED` y
+`CREDIT_REJECTED`. Un rechazo no crea deuda ni intento PayKlik y permite una
+elección posterior de PayKlik mientras la orden sea recuperable. Una concesión
+se identifica de forma única por orden y llave idempotente y fija vencimiento a
+30 días. La política inicial es configurable, falla de forma cerrada ante
+historial ausente y conserva `ruleVersion` y un código público de resultado.
+
+| Requisito Fase 3 | Decisión / código | Evidencia prevista o existente |
+|---|---|---|
+| Alternativa solo para elegibles | ADR-016; `PaymentOptionsService` | `PaymentOptionsServiceTest` |
+| Decisión basada en historial | `CreditEligibilityPolicy`; perfil y versión de reglas | `CreditEligibilityPolicyTest` |
+| PayKlik independiente | Rutas `PaymentRoute`; degradación segura | prueba de opciones y regresión PayKlik |
+| Concesión sin duplicados | `credit_operations` con unicidad por orden/llave | E2E de compra con crédito |
+| Factura sin pago ficticio | operación financiera neutral; migración V4004 | E2E y compatibilidad fiscal legado |
+| Auditoría y notificación | Outbox `CREDIT_*`, Audit e Inbox | pruebas de consumidores y escaneo EaC-12 |
+| Límite modular | `credit :: api` | `ModularArchitectureTest` |
+
+Antes de producción quedan dos gates explícitos: ligar `customerId` a una
+identidad JWT individual (la cuenta `CLIENT` compartida de la demo no prueba
+autorización por propietario) y acordar fuente, frescura y reconciliación de la
+proyección histórica. También deberán incorporarse carga, estrés, cinco pruebas
+de integración y el total de E2E exigido por el enunciado antes de declarar la
+Fase 3 terminada.
+
 El diseño establece a SGO-Logic como una capa de orquestación e integración omnicanal que conserva ERP-Core y los POS existentes. Los drivers funcionales, de calidad y de restricción quedan atendidos mediante el monolito modular, los puertos y adaptadores, la mensajería confiable, la Saga orquestada y los controles transversales documentados en ADR-001 a ADR-008.
 
 Las vistas de contexto, bloques, componentes y despliegue mantienen una misma frontera y una derivación trazable desde las necesidades del negocio. Los supuestos de la sección 2.6 deben confirmarse antes de dimensionar o implementar, sin que representen entregables faltantes de la Fase 1. Este DDA constituye la línea base arquitectónica aprobada para la evolución posterior de SGO-Logic.

@@ -1,6 +1,7 @@
 package com.megastore.sgologic.orders;
 
 import com.megastore.sgologic.fiscal.FiscalProcessingPort;
+import com.megastore.sgologic.credit.api.CreditPort;
 import com.megastore.sgologic.logistics.api.DispatchPort;
 import com.megastore.sgologic.payments.api.PaymentMethod;
 import com.megastore.sgologic.payments.api.PaymentPort;
@@ -30,11 +31,13 @@ class OrderSagaReconciledPaymentTest {
 
     private final OrdersService orders = mock(OrdersService.class);
     private final PaymentPort payments = mock(PaymentPort.class);
+    private final CreditPort credits = mock(CreditPort.class);
     private final FiscalProcessingPort fiscal = mock(FiscalProcessingPort.class);
     private final DispatchPort dispatch = mock(DispatchPort.class);
-    private final OrderSagaService saga = new OrderSagaService(orders, payments, fiscal, dispatch);
+    private final OrderSagaService saga = new OrderSagaService(orders, payments, credits, fiscal, dispatch);
     private final UUID orderId = UUID.randomUUID();
-    private final RunOrderSagaRequest request = new RunOrderSagaRequest(PaymentMethod.CARD, "GTQ", "tok_payklik_ab12",
+    private final RunOrderSagaRequest request = new RunOrderSagaRequest(PaymentRoute.PAYKLIK,
+            PaymentMethod.CARD, "GTQ", "tok_payklik_ab12",
             "CF", "Consumidor Final", "Recoger en Tienda Centro (POS-01)");
 
     private CustomerOrder order(OrderStatus status) {
@@ -61,7 +64,7 @@ class OrderSagaReconciledPaymentTest {
         when(orders.transition(eq(orderId), eq(OrderStatus.PAYMENT_APPROVED), anyString(), anyString(), any()))
                 .thenReturn(approved);
         CustomerOrder fiscalPending = order(OrderStatus.FISCAL_PENDING);
-        when(orders.requestFiscalDocument(eq(orderId), any(), any(), any(), any(), any(), any(), any()))
+        when(orders.requestFiscalDocument(eq(orderId), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new OrderFiscalOutcome(fiscalPending, null));
 
         OrderSagaResponse response = saga.run(orderId, request, "saga-1", "customer:test", UUID.randomUUID());
@@ -83,7 +86,7 @@ class OrderSagaReconciledPaymentTest {
         OrderSagaResponse response = saga.run(orderId, request, "saga-2", "customer:test", UUID.randomUUID());
 
         assertThat(response.sagaStatus()).isEqualTo("COMPENSATED");
-        verify(orders, never()).requestFiscalDocument(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(orders, never()).requestFiscalDocument(any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
