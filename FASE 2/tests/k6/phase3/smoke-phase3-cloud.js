@@ -16,7 +16,9 @@ import {
 } from './lib/common.js';
 
 const ORDER_PATH = __ENV.ORDER_PATH_TEMPLATE || '/api/v1/orders/{orderId}';
-const READINESS_PATH = __ENV.READINESS_PATH || '/actuator/health/readiness';
+// Producción no publica Actuator: nginx expone únicamente las rutas /api/.
+// Este endpoint entrega el mismo estado UP sin abrir la administración interna.
+const READINESS_PATH = __ENV.READINESS_PATH || '/api/v1/platform/status';
 
 export const options = {
     vus: 1,

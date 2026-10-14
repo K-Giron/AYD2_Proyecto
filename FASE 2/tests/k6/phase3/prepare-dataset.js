@@ -41,12 +41,12 @@ export function setup() {
             throw new Error(`No se pudieron consultar ubicaciones: HTTP ${locations.status}`);
         }
         const location = (jsonOrNull(locations) || []).find((candidate) => candidate.code === 'CD-01');
-        if (!location?.id) {
+        if (!location?.locationId) {
             throw new Error('No existe la ubicación CD-01 requerida para el inventario de pruebas.');
         }
         const movement = requestJson('POST', '/api/v1/inventory/stock-movements', supportToken, {
             productId: TEST_PRODUCT.id,
-            locationId: location.id,
+            locationId: location.locationId,
             type: 'INBOUND',
             quantity: inventoryTopUp,
             reason: `Dataset rendimiento Fase 3 (${__ENV.RUN_ID || 'manual'})`,

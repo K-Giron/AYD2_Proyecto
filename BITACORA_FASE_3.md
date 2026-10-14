@@ -80,19 +80,45 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
     ejecutada.
   - Realizó la revisión estática cruzada del CI/CD en
     `docs/evidence/devops/REV-ANDY-2026-10-14-CICD.md`.
-- Validación local:
+- Validación local y resultados:
+  - Instaló y utilizó Docker Desktop 29.8.2; los 12 contenedores del ambiente
+    local quedaron activos.
   - Los 12 archivos JavaScript del arnés y su librería pasan comprobación de
-    sintaxis con Node.
-  - El ejecutor PowerShell pasa el analizador sintáctico.
-  - Se conservan exactamente cinco escenarios de carga y cinco de estrés.
-  - Los scripts Linux y `mvnw` están en LF conforme a `.gitattributes`.
+    sintaxis con Node; el ejecutor PowerShell pasa el analizador sintáctico.
+  - Corrigió tres problemas del arnés encontrados al ejecutar: lectura de
+    `locationId` en el dataset, tratamiento de la salida nativa de k6 desde
+    PowerShell y aislamiento de `RUN_ID` entre escenarios.
+  - El smoke local aprobó al ampliar la espera de la Saga a 90 sondeos. El
+    dataset creó 500 historiales sintéticos en cinco cohortes y aplicó un
+    incremento de 10,000 unidades al inventario de prueba.
+  - Ejecutó los cinco escenarios de carga y los cinco de estrés. Los cinco de
+    carga cumplieron sus umbrales; LOAD-02 quedó con observación sobre acciones
+    auxiliares y LOAD-05 con una limitación del selector de órdenes.
+  - STRESS-01 aprobó la rampa a 160 VUs y STRESS-05 recuperó p95 de 38.10 ms y
+    p99 de 62.73 ms, sin errores en la ventana de recuperación.
+  - STRESS-03 se repitió con datos aislados: 58,124 comprobaciones correctas,
+    0 % de errores y PayKlik con p95 de 1,470.14 ms y p99 de 1,972.71 ms. Frente
+    a la primera medición, p95 mejoró 28.39 % y p99 34.91 %.
+  - STRESS-04 identificó un cuello de botella abierto: backlog máximo de 5,566,
+    28 % de error en creación y drenaje incompleto en dos minutos.
+  - La captura posterior a STRESS-05 confirma que los 12 contenedores seguían
+    activos y consumían aproximadamente 2.3 GiB; se documenta como recuperación,
+    no como consumo máximo del pico.
+  - Consolidó métricas, archivos de evidencia, defectos y conclusiones en
+    `docs/evidence/performance/FASE3-REPORTE-CARGA-ESTRES.md`.
+  - Ejecutó el smoke independiente contra GCP. El primer intento detectó que
+    Actuator no se publica mediante nginx; ajustó el arnés a la ruta pública
+    `/api/v1/platform/status` y repitió la prueba. El resultado final fue 11/11
+    comprobaciones, 0 % de errores, p95 HTTP de 331.21 ms y recorrido completo
+    de checkout, Saga PayKlik y consulta de orden en 2.06 s.
 - Pendiente:
-  - Configurar `.env.performance` fuera de Git con las cuentas entregadas.
-  - Recibir la ventana autorizada, preparar el dataset y ejecutar las diez
-    pruebas contra el tag indicado por Kevin.
-  - Completar métricas, análisis de cuello de botella y repetición controlada.
-  - Ejecutar el smoke independiente y adjuntar runs/artefactos del pipeline,
-    rollback y releases `v2` a `v4`.
-- Impedimento actual: k6/Docker no están disponibles en el equipo local; las
-  mediciones no se simulan ni se marcan como ejecutadas.
+  - Ajustar la capacidad del flujo de notificaciones y repetir STRESS-04.
+  - Si el tiempo lo permite, ampliar el conjunto de órdenes de LOAD-05 y repetir
+    el pico de checkout con telemetría de recursos.
+  - Adjuntar runs/artefactos del pipeline, rollback y releases `v2` a `v4` que
+    correspondan al frente de Kevin.
+- Impedimento actual: no se capturó telemetría de recursos durante el pico y el
+  cuello de botella de notificaciones requiere un ajuste del servicio antes de
+  una segunda medición. La versión exacta de GCP no se expone en la ruta pública,
+  por lo que la evidencia externa registra fecha y URL, sin afirmar un tag.
 - Horas reales: pendiente de registrar por Andy.

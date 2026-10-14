@@ -2,7 +2,8 @@
 
 **Responsable:** Andy Sánchez  
 **Revisor asignado:** Kevin Girón  
-**Estado:** Actualizado contra `develop` (`e551994`); pendiente de resultados k6 y revisión  
+**Estado:** Actualizado con resultados k6 locales y smoke GCP; pendiente de revisión
+
 **Última actualización:** 2026-10-14  
 **Alcance:** construcción, configuración, ejecución, pruebas, operación y
 recuperación de SGO-Logic.
@@ -14,8 +15,10 @@ oral de sus autores. Distingue el comportamiento comprobado del trabajo aún no
 integrado. Un elemento marcado `PENDIENTE` no debe presentarse como disponible.
 
 La versión descrita integra crédito propio, Saga dual, historial ERP, CI/CD y
-despliegue en Google Cloud. Los resultados de carga/estrés permanecen abiertos:
-solo se cerrarán con resúmenes k6 asociados a un SHA o tag identificable.
+despliegue en Google Cloud. Las cinco pruebas de carga y las cinco de estrés se
+ejecutaron localmente sobre la base `5a7cdd1`; el reporte conserva los resúmenes,
+las limitaciones y la segunda medición controlada. El smoke externo de GCP quedó
+aprobado; el ajuste del cuello de botella de notificaciones permanece abierto.
 
 ## 2. Alcance funcional
 
@@ -39,8 +42,10 @@ solo se cerrarán con resúmenes k6 asociados a un SHA o tag identificable.
 - Despliegue en nube mediante pipeline con gates.
 - Cinco pruebas de cada tipo: unitarias, integración, E2E, carga y estrés.
 
-**Estado de esta ampliación:** integrada. Permanecen pendientes las diez
-ejecuciones no funcionales, el análisis antes/después y el cierre documental.
+**Estado de esta ampliación:** integrada. Las diez ejecuciones no funcionales,
+el análisis antes/después y el smoke externo están documentados. Permanecen
+pendientes la repetición de notificaciones después de un ajuste y la revisión
+del manual por una persona no autora.
 
 ## 3. Arquitectura
 
@@ -260,6 +265,12 @@ Los resultados crudos quedan en `tests/k6/phase3/results/`. La conclusión se
 registra en `docs/evidence/performance/FASE3-REPORTE-CARGA-ESTRES.md` con
 throughput, p50, p95, p99, errores, recursos, límite y recuperación.
 
+La ejecución local del 14 de octubre de 2026 completó los cinco casos de carga
+y los cinco de estrés. STRESS-03 se repitió con identificadores aislados y pasó
+con 0 % de errores; STRESS-04 encontró un backlog máximo de 5,566 que no drenó
+en la ventana de dos minutos. Estos resultados locales no representan la
+capacidad de la VM de producción. El smoke externo se documenta por separado.
+
 ## 10. CI/CD
 
 ### 10.1 Pipeline integrado
@@ -344,7 +355,8 @@ restaurar el actual.
 Andy debe ejecutarlo sin acceso al host, usando solo URL y cuentas de prueba.
 Las cinco rutas mínimas serán:
 
-1. Readiness de la plataforma.
+1. Estado público de la plataforma (`/api/v1/platform/status`); Actuator no se
+   publica mediante nginx en producción.
 2. Autenticación.
 3. Consulta de opciones/elegibilidad.
 4. Checkout mediante crédito o PayKlik.
@@ -354,6 +366,11 @@ El script `tests/k6/phase3/smoke-phase3-cloud.js` usa las rutas definitivas:
 crea carrito, agrega producto, consulta opciones, hace checkout, ejecuta la Saga
 y consulta la orden. El reporte debe indicar fecha, SHA/tag, URL sin
 credenciales, códigos HTTP y conclusión.
+
+**Resultado 2026-10-14:** aprobado contra la URL pública de GCP con 11/11
+comprobaciones, 0 % de errores, p95 HTTP de 331.21 ms y recorrido completo en
+2.06 s. Actuator permanece interno; el arnés usa
+`/api/v1/platform/status` para el estado público.
 
 ## 14. Revisión cruzada de CI/CD
 
@@ -388,10 +405,10 @@ La revisión estática y sus pendientes están registrados en
 | Crédito propio y elegibilidad | INTEGRADO | Jorge/Jairo |
 | Ruta dual completa y eventos | INTEGRADO | Jairo/Edson |
 | Endpoints definitivos para k6 | ALINEADOS EN EL ARNÉS | Andy |
-| Cinco ejecuciones de carga | PENDIENTE DE EJECUCIÓN | Andy |
-| Cinco ejecuciones de estrés | PENDIENTE DE VENTANA AUTORIZADA | Andy/Kevin |
-| Análisis antes/después | PENDIENTE de primeras mediciones | Andy |
-| Nube y URL | DISPONIBLE; smoke independiente pendiente | Kevin/Andy |
+| Cinco ejecuciones de carga | EJECUTADAS EN LOCAL; observaciones documentadas | Andy |
+| Cinco ejecuciones de estrés | EJECUTADAS EN LOCAL; STRESS-04 abierto | Andy |
+| Análisis antes/después | COMPLETADO para STRESS-03 | Andy |
+| Nube y URL | DISPONIBLE; smoke independiente APROBADO 11/11 | Kevin/Andy |
 | Deploy y release `v1` | IMPLEMENTADOS | Kevin |
 | Rollback ensayado y releases `v2`–`v4` | PENDIENTE de evidencia | Kevin |
 | Manual revisado por no autor | PENDIENTE | Kevin |

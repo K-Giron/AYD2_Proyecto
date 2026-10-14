@@ -385,9 +385,14 @@ reporte controlado está en
 `docs/manuals/MANUAL_TECNICO_FASE_3.md`.
 
 El arnés ya usa los contratos integrados de carritos, opciones de pago, Saga
-dual e historial `credit-history-v1`. Los resultados permanecen pendientes
-hasta medir un SHA o release autorizado; ningún valor estimado se presenta como
-evidencia.
+dual e historial `credit-history-v1`. El 14 de octubre de 2026 se ejecutaron en
+Docker local los cinco escenarios de carga y los cinco de estrés sobre la base
+`5a7cdd1`. La repetición controlada de STRESS-03 completó 58,124 comprobaciones
+sin errores y mantuvo PayKlik dentro de sus umbrales; STRESS-04 dejó abierto un
+cuello de botella de aceptación y drenaje de notificaciones. Las métricas,
+limitaciones y el veredicto están en el reporte enlazado. El smoke independiente
+contra GCP terminó con 11/11 comprobaciones y 0 % de errores. Las mediciones de
+estrés fueron únicamente locales y no se presentan como capacidad de producción.
 
 ## Integración continua — QA-01
 
