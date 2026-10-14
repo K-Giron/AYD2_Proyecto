@@ -41,7 +41,7 @@ conserva en una proyección local.
 | `onTime` | Obligatorio en `PAYMENT` (¿llegó dentro del plazo?). Se ignora en los demás. |
 | `critical` | En `INCIDENT`, marca severidad crítica. |
 
-Cualquier violación rechaza **todo** el lote con `400 INVALID_CREDIT_HISTORY` y
+Cualquier violación rechaza **todo** el lote con `400 INVALID_CREDIT_REQUEST` y
 no persiste nada.
 
 ## Respuesta
