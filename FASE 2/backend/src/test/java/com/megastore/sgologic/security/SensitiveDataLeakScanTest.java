@@ -22,6 +22,7 @@ import org.testcontainers.rabbitmq.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -57,6 +59,8 @@ class SensitiveDataLeakScanTest {
             "(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1,12}\\b");
     private static final String PAN_SQL_REGEX = "(?<![0-9.\\-])[0-9]([ .\\-]?[0-9]){12,}(?![0-9.\\-])";
     private static final String CVV_SQL_REGEX = "(?i)\\y(cvv2?|cvc2?|securitycode)\\y";
+    private static final UUID DEMO_CUSTOMER_ID =
+            UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     @Container
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
@@ -118,6 +122,13 @@ class SensitiveDataLeakScanTest {
                 "SELECT count(*) FROM outbox_event", Integer.class)).isGreaterThanOrEqualTo(1);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM audit_events WHERE order_id = ?::uuid", Integer.class, orderId))
+                .isGreaterThanOrEqualTo(1);
+        // La actividad de crédito realmente ocurrió y quedó dentro del escaneo.
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM credit_decisions WHERE customer_id = ?", Integer.class, DEMO_CUSTOMER_ID))
+                .isGreaterThanOrEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM credit_operations WHERE customer_id = ?", Integer.class, DEMO_CUSTOMER_ID))
                 .isGreaterThanOrEqualTo(1);
 
         assertThat(findings)
@@ -203,6 +214,52 @@ class SensitiveDataLeakScanTest {
                 "documentType", "INVOICE", "taxIdentifier", "CF-1234567",
                 "customerName", "Cliente Prueba", "total", 150.00, "currency", "GTQ"))
                 .andExpect(status().isAccepted());
+
+        // Crédito propio (EDS3-03): historia ERP, decisión y concesión reales,
+        // para que el escaneo cubra las tablas y los eventos del módulo.
+        postJson("/api/v1/credit/history", finance, null, Map.of(
+                "contractVersion", "credit-history-v1",
+                "correlationId", UUID.randomUUID().toString(),
+                "entries", List.of(Map.of(
+                        "customerId", DEMO_CUSTOMER_ID.toString(),
+                        "sourceReference", "sec-credit-" + UUID.randomUUID(),
+                        "type", "PURCHASE",
+                        "occurredAt", Instant.now().minusSeconds(3600).toString(),
+                        "amount", 100.00,
+                        "critical", false)))).andExpect(status().isOk());
+        String creditCart = mockMvc.perform(post("/api/v1/carts")
+                        .header("Authorization", "Bearer " + client)
+                        .header("Idempotency-Key", "sec-credit-cart-" + UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "customerId", DEMO_CUSTOMER_ID.toString(), "channel", "WEB"))))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String creditCartId = objectMapper.readTree(creditCart).get("id").asText();
+        mockMvc.perform(put("/api/v1/carts/" + creditCartId + "/items/"
+                        + "11111111-1111-1111-1111-111111111102")
+                        .header("Authorization", "Bearer " + client)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "productName", "Producto de crédito", "unitPrice", 399.00, "quantity", 1))))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/carts/" + creditCartId + "/payment-options")
+                        .header("Authorization", "Bearer " + client))
+                .andExpect(status().isOk());
+        String creditOrder = mockMvc.perform(post("/api/v1/carts/" + creditCartId + "/checkout")
+                        .header("Authorization", "Bearer " + client)
+                        .header("Idempotency-Key", "sec-credit-checkout-" + UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String creditOrderId = objectMapper.readTree(creditOrder).get("id").asText();
+        mockMvc.perform(post("/api/v1/orders/" + creditOrderId + "/saga")
+                        .header("Authorization", "Bearer " + client)
+                        .header("Idempotency-Key", "sec-credit-saga-" + UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "paymentRoute", "OWN_CREDIT", "currency", "GTQ",
+                                "taxIdentifier", "CF-SEC", "customerName", "Cliente SEC",
+                                "destination", "Zona 1"))))
+                .andExpect(status().isOk());
 
         // Consulta de evidencia por Finanzas y un 401 sin token.
         mockMvc.perform(get("/api/v1/audit/events").param("orderId", orderId)

@@ -77,4 +77,5 @@ class CreditDecision {
     String getReasonCode() { return reasonCode; }
     String getInputsSnapshot() { return inputsSnapshot; }
     Instant getEvaluatedAt() { return evaluatedAt; }
+    UUID getCorrelationId() { return correlationId; }
 }

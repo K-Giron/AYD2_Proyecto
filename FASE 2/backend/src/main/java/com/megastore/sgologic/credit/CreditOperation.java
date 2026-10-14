@@ -135,4 +135,5 @@ class CreditOperation {
     String getRuleVersion() { return ruleVersion; }
     String getReasonCode() { return reasonCode; }
     Instant getCreatedAt() { return createdAt; }
+    UUID getCorrelationId() { return correlationId; }
 }

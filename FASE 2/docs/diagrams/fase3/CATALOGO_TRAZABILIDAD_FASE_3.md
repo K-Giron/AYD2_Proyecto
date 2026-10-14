@@ -16,7 +16,9 @@ de sus tablas.
 | Conceder sin cobro PayKlik ficticio | Componentes / datos | `CreditService`, `credit_operations`, referencia fiscal neutral | `OrderJourneysE2ETest` |
 | Reintento sin efectos duplicados | Secuencia / datos | llave idempotente, unicidad y advisory locks transaccionales | `CreditServiceIntegrationTest`, `OrderJourneysE2ETest` |
 | Rechazo sin deuda y continuación PayKlik | Secuencia | `CREDIT_REJECTED` → nueva ejecución `PAYKLIK` | `OrderJourneysE2ETest` |
-| Resultado auditable y notificable | Componentes | Outbox → RabbitMQ → Inbox → `notifications` | pruebas de consumidor y E2E |
+| Resultado auditable y notificable | Componentes | Outbox → RabbitMQ → Inbox → `notifications` | `CreditNotificationIntegrationTest` (reintento/DLQ), `CreditNotificationOutageE2ETest` |
+| Explicación de la decisión consultable | Componentes / datos | `CreditExplanationService` (`GET /credit/operations/{operationId}`) | `CreditExplanationIntegrationTest`, `CreditSecurityTest` |
+| PayKlik se conserva con crédito caído o lento | Secuencia | fallback de opciones con límite de tiempo | `CreditDegradationE2ETest`, `PaymentOptionsIntegrationTest` |
 | Cliente solo opera sus carritos/órdenes | Componentes | claim JWT `customer_id` + `CustomerAccessGuard` | `SecurityAuthorizationTest` |
 | Despliegue coherente | Despliegue | frontend, backend modular, PostgreSQL, RabbitMQ y servicios existentes | CI `38616631224`, deploy `38618417187`, smoke externo verde |
 
