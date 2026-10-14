@@ -55,6 +55,10 @@ class ErpSale {
     @Column(name = "source_reference", length = 64)
     private String sourceReference;
 
+    /** PAYKLIK, OWN_CREDIT o STORE; nunca se infiere del estado de cobro. */
+    @Column(name = "financial_route", nullable = false, length = 24)
+    private String financialRoute;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -78,6 +82,7 @@ class ErpSale {
         sale.channel = "WEB";
         sale.pointOfSale = "POS-ONLINE";
         sale.sourceReference = orderId.toString();
+        sale.financialRoute = "PAYKLIK";
         sale.createdAt = now;
         sale.updatedAt = now;
         return sale;
@@ -86,10 +91,19 @@ class ErpSale {
     static ErpSale register(UUID orderId, BigDecimal netTotal, BigDecimal taxTotal, BigDecimal grandTotal,
                             String currency, Instant confirmedAt, String channel, String pointOfSale,
                             String sourceReference, Instant now) {
+        return register(orderId, netTotal, taxTotal, grandTotal, currency, confirmedAt,
+                channel, pointOfSale, sourceReference,
+                "STORE".equals(channel) ? "STORE" : "PAYKLIK", now);
+    }
+
+    static ErpSale register(UUID orderId, BigDecimal netTotal, BigDecimal taxTotal, BigDecimal grandTotal,
+                            String currency, Instant confirmedAt, String channel, String pointOfSale,
+                            String sourceReference, String financialRoute, Instant now) {
         ErpSale sale = register(orderId, netTotal, taxTotal, grandTotal, currency, confirmedAt, now);
         sale.channel = channel;
         sale.pointOfSale = pointOfSale;
         sale.sourceReference = sourceReference;
+        sale.financialRoute = financialRoute;
         return sale;
     }
 
@@ -118,4 +132,5 @@ class ErpSale {
     String getChannel() { return channel; }
     String getPointOfSale() { return pointOfSale; }
     String getSourceReference() { return sourceReference; }
+    String getFinancialRoute() { return financialRoute; }
 }

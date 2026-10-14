@@ -33,7 +33,8 @@ class ErpIntegrationController {
     @PostMapping("/sales")
     ResponseEntity<ErpSaleResponse> register(@Valid @RequestBody RegisterErpSaleRequest body) {
         ErpSale sale = service.registerConfirmedSale(body.orderId(), body.netTotal(), body.taxTotal(),
-                body.grandTotal(), body.currency(), body.confirmedAt());
+                body.grandTotal(), body.currency(), body.confirmedAt(), "WEB", "POS-ONLINE",
+                body.orderId().toString(), body.financialRoute());
         return ResponseEntity.status(HttpStatus.CREATED).body(ErpSaleResponse.from(sale));
     }
 
@@ -89,13 +90,18 @@ class ErpIntegrationController {
             @NotNull @DecimalMin("0.00") BigDecimal taxTotal,
             @NotNull @DecimalMin("0.01") BigDecimal grandTotal,
             @NotBlank @Pattern(regexp = "[A-Za-z]{3}") String currency,
-            @NotNull Instant confirmedAt
+            @NotNull Instant confirmedAt,
+            String financialRoute
     ) {
+        RegisterErpSaleRequest {
+            if (financialRoute == null || financialRoute.isBlank()) financialRoute = "PAYKLIK";
+        }
     }
 
-    record ErpSaleResponse(UUID id, UUID orderId, String status, UUID batchId, Instant confirmedAt) {
+    record ErpSaleResponse(UUID id, UUID orderId, String financialRoute, String status,
+                           UUID batchId, Instant confirmedAt) {
         static ErpSaleResponse from(ErpSale sale) {
-            return new ErpSaleResponse(sale.getId(), sale.getOrderId(), sale.getStatus().name(),
+            return new ErpSaleResponse(sale.getId(), sale.getOrderId(), sale.getFinancialRoute(), sale.getStatus().name(),
                     sale.getBatchId(), sale.getConfirmedAt());
         }
     }

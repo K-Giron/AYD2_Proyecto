@@ -7,7 +7,7 @@
 @org.springframework.modulith.ApplicationModule(
         id = "salesreport",
         displayName = "Sales Report",
-        allowedDependencies = {"shared", "orders", "payments :: payments-api", "fiscal", "integration",
+        allowedDependencies = {"shared", "orders", "payments :: payments-api", "credit :: credit-api", "fiscal", "integration",
                 "audit :: audit-api"}
 )
 package com.megastore.sgologic.salesreport;

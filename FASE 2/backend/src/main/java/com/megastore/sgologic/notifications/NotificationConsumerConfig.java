@@ -14,6 +14,7 @@ class NotificationConsumerConfig {
     static final String QUEUE = "sgo.notifications.order-status.v1";
     static final String SHIPMENT_QUEUE = "sgo.notifications.shipment-status.v1";
     static final String INCIDENT_QUEUE = "sgo.notifications.incident-registered.v1";
+    static final String CREDIT_QUEUE = "sgo.notifications.credit-result.v1";
 
     /** Debe coincidir exactamente con {@code ShipmentService.SHIPMENT_STATUS_CHANGED} (logistics). */
     static final String SHIPMENT_STATUS_CHANGED_EVENT = "SHIPMENT_STATUS_CHANGED";
@@ -59,5 +60,26 @@ class NotificationConsumerConfig {
         return BindingBuilder.bind(notificationIncidentRegisteredQueue)
                 .to(businessEventsExchange)
                 .with(INCIDENT_REGISTERED_EVENT);
+    }
+
+    @Bean
+    Queue notificationCreditResultQueue() {
+        return QueueBuilder.durable(CREDIT_QUEUE).build();
+    }
+
+    @Bean
+    Binding notificationCreditGrantedBinding(Queue notificationCreditResultQueue,
+                                               TopicExchange businessEventsExchange) {
+        return BindingBuilder.bind(notificationCreditResultQueue)
+                .to(businessEventsExchange)
+                .with("CREDIT_GRANTED");
+    }
+
+    @Bean
+    Binding notificationCreditRejectedBinding(Queue notificationCreditResultQueue,
+                                                TopicExchange businessEventsExchange) {
+        return BindingBuilder.bind(notificationCreditResultQueue)
+                .to(businessEventsExchange)
+                .with("CREDIT_REJECTED");
     }
 }

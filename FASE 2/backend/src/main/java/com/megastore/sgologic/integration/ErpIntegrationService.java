@@ -65,13 +65,24 @@ public class ErpIntegrationService {
     public ErpSale registerConfirmedSale(UUID orderId, BigDecimal netTotal, BigDecimal taxTotal,
                                          BigDecimal grandTotal, String currency, Instant confirmedAt,
                                          String channel, String pointOfSale, String sourceReference) {
+        return registerConfirmedSale(orderId, netTotal, taxTotal, grandTotal, currency, confirmedAt,
+                channel, pointOfSale, sourceReference,
+                "STORE".equals(channel) ? "STORE" : "PAYKLIK");
+    }
+
+    public ErpSale registerConfirmedSale(UUID orderId, BigDecimal netTotal, BigDecimal taxTotal,
+                                         BigDecimal grandTotal, String currency, Instant confirmedAt,
+                                         String channel, String pointOfSale, String sourceReference,
+                                         String financialRoute) {
         Optional<ErpSale> existing = saleRepository.findByOrderId(orderId);
         if (existing.isPresent()) { return existing.get(); }
         if (netTotal.add(taxTotal).compareTo(grandTotal) != 0) {
             throw new IllegalArgumentException("El total ERP debe coincidir con neto mas impuesto.");
         }
+        String normalizedRoute = normalizeFinancialRoute(financialRoute);
         ErpSale sale = ErpSale.register(orderId, netTotal, taxTotal, grandTotal,
-                currency.trim().toUpperCase(), confirmedAt, channel, pointOfSale, sourceReference, clock.instant());
+                currency.trim().toUpperCase(), confirmedAt, channel, pointOfSale, sourceReference,
+                normalizedRoute, clock.instant());
         return saleRepository.save(sale);
     }
 
@@ -102,6 +113,7 @@ public class ErpIntegrationService {
         String batchStatus = sale.getBatchId() == null ? null
                 : batchRepository.findById(sale.getBatchId()).map(batch -> batch.getStatus().name()).orElse(null);
         return new ErpSaleView(sale.getOrderId(), sale.getChannel(), sale.getPointOfSale(), sale.getSourceReference(),
+                sale.getFinancialRoute(),
                 sale.getNetTotal(), sale.getTaxTotal(), sale.getGrandTotal(), sale.getCurrency(), sale.getConfirmedAt(),
                 sale.getStatus().name(), sale.getBatchId(), batchStatus);
     }
@@ -224,18 +236,19 @@ public class ErpIntegrationService {
         BigDecimal tax = sales.stream().map(ErpSale::getTaxTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal total = sales.stream().map(ErpSale::getGrandTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
         if (format == ErpExportFormat.CSV) {
-            return "recordType,saleId,channel,pointOfSale,reference,confirmedAt,netTotal,taxTotal,grandTotal,currency\n"
+            return "recordType,saleId,channel,pointOfSale,reference,financialRoute,confirmedAt,netTotal,taxTotal,grandTotal,currency\n"
                     + sales.stream().map(sale -> String.join(",", "SALE",
                             sale.getOrderId().toString(), sale.getChannel(), nullToEmpty(sale.getPointOfSale()),
-                            nullToEmpty(sale.getSourceReference()), sale.getConfirmedAt().toString(),
+                            nullToEmpty(sale.getSourceReference()), sale.getFinancialRoute(), sale.getConfirmedAt().toString(),
                             sale.getNetTotal().toPlainString(), sale.getTaxTotal().toPlainString(),
                             sale.getGrandTotal().toPlainString(), sale.getCurrency()))
                     .collect(Collectors.joining("\n"))
-                    + "\nTRAILER," + sales.size() + ",,,,," + net.toPlainString() + "," + tax.toPlainString() + ","
+                    + "\nTRAILER," + sales.size() + ",,,,,," + net.toPlainString() + "," + tax.toPlainString() + ","
                     + total.toPlainString() + "," + sales.getFirst().getCurrency();
         }
         return sales.stream().map(sale -> "<Sale id=\"" + sale.getOrderId() + "\" channel=\"" + sale.getChannel()
                         + "\" pointOfSale=\"" + xml(sale.getPointOfSale()) + "\" reference=\"" + xml(sale.getSourceReference())
+                        + "\" financialRoute=\"" + sale.getFinancialRoute()
                         + "\" confirmedAt=\"" + sale.getConfirmedAt() + "\"><Net>"
                         + sale.getNetTotal().toPlainString() + "</Net><Tax>"
                         + sale.getTaxTotal().toPlainString() + "</Tax><Total>"
@@ -252,5 +265,14 @@ public class ErpIntegrationService {
 
     private static String xml(String value) {
         return value == null ? "" : value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;");
+    }
+
+    private static String normalizeFinancialRoute(String financialRoute) {
+        if (financialRoute == null) return "PAYKLIK";
+        String normalized = financialRoute.trim().toUpperCase();
+        if (!java.util.Set.of("PAYKLIK", "OWN_CREDIT", "STORE").contains(normalized)) {
+            throw new IllegalArgumentException("Ruta financiera ERP no soportada: " + financialRoute);
+        }
+        return normalized;
     }
 }
