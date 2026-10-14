@@ -1,6 +1,27 @@
 // Portal de operación de LogiExpress: mensajeros (recolección y entrega),
 // rastreo de guías y estado de la API que consumen los comercios.
 
+function configurePortalLinks() {
+    const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+    const ports = {
+        main: localHosts.has(window.location.hostname) ? "8081" : "",
+        inventory: "8082",
+        store: "8084",
+    };
+    document.querySelectorAll("a[data-portal]").forEach(link => {
+        const port = ports[link.dataset.portal];
+        if (port === undefined) return;
+        const url = new URL(window.location.href);
+        url.port = port;
+        url.pathname = link.dataset.portalPath || "/";
+        url.search = "";
+        url.hash = "";
+        link.href = url.toString();
+    });
+}
+
+configurePortalLinks();
+
 function el(id) { return document.getElementById(id); }
 function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
