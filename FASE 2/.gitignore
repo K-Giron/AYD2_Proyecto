@@ -18,3 +18,5 @@ Thumbs.db
 *.jks
 *.keystore
 *.class
+tests/k6/phase3/.env.performance
+tests/k6/phase3/results/
