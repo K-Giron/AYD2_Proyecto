@@ -185,6 +185,35 @@ Flujo de demostración sugerido:
 5. En la tienda, "Entregar al cliente".
 6. En la consola, "Generar lote ERP ahora" e "Informe de ventas".
 
+## Despliegue en la nube y CI/CD (Fase 3, ADR-017)
+
+- **Pipeline** `.github/workflows/ci-cd.yml`:
+  - Pruebas de los 5 proyectos Java y del frontend.
+  - Imágenes Docker de las 6 aplicaciones en GHCR.
+  - Despliegue en una VM de Google Cloud al empujar un tag `vN`.
+  - **Si una prueba falla, no se publica ni se despliega.**
+- **Producción:** `deploy/docker-compose.prod.yml` (se combina con `docker-compose.yml`), plantilla `deploy/.env.production.example` (los valores reales viven en el secreto `PROD_ENV_FILE`).
+- **Scripts:**
+  - `deploy/scripts/deploy.sh`: despliegue con health check y rollback automático.
+  - `smoke.sh`: verificación de punta a punta.
+  - `backup.sh`: respaldo de las 5 bases.
+  - `vm-bootstrap.sh`: preparación inicial de la VM.
+- **Guías:**
+  - `docs/operacion/GUIA-GCP-Y-PIPELINE.md`: puesta en marcha, una sola vez.
+  - `docs/operacion/RUNBOOK.md`: operación, logs, rollback y respaldo.
+  - `docs/operacion/RELEASES-GITFLOW.md`: releases `v1` a `v4`.
+
+Prueba de humo contra cualquier ambiente: `bash deploy/scripts/smoke.sh http://<host>`.
+
+**Ambiente en la nube:**
+- Tienda y consola: http://136.65.180.39
+- Almacén central: :8082
+- Tienda POS-01: :8084
+- LogiExpress: :8085
+- PayKlik: :8086
+
+Las cuentas son las de la tabla anterior.
+
 ## Ejecución desde IntelliJ IDEA
 
 1. Abra `FASE 2/backend/pom.xml` como proyecto Maven.
