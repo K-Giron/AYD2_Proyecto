@@ -712,6 +712,54 @@ es el [run 35944837459](https://github.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5/act
 - Horas reales y estimadas restantes: pendiente de registrar por Kevin.
 - Persona que quedaría bloqueada y acción temporal: ninguna.
 
+### Fecha: 2026-09-22 — Integrante: Jorge Pumay
+
+> Entrada reconstruida a partir del historial de Git (5 commits `201213421:` de ese día) y de los ADR. En su fecha no se registraron horas ni conteos de pruebas propios; no se inventan ahora.
+
+- Trabajo realizado: módulo `inventory`. BB-03 (esquema relacional inicial: `inventory_locations` e `inventory_items` con `UNIQUE (product_id, location_id)`, migración `V1`), INV-01 (ubicaciones sembradas, 2 centros de distribución y 32 tiendas, y consulta de stock), INV-02 (reserva atómica e idempotente mediante un `UPDATE` condicional) e INV-04 (algoritmo de selección de origen). Se redactó ADR-011 (fuente lógica autoritativa de inventario).
+- Resultado funcional: la reserva compromete unidades en una sola sentencia atómica y una repetición con la misma llave idempotente no vuelve a reservar; sin `locationId` el origen se elige por prioridad centro de distribución y luego tienda, por código.
+- Hoy y trazabilidad: CUN-02/CDU-02, EaC-03, ADR-011 (`Proposed`) y ADR-014.
+- Impedimentos, responsable e impacto: ninguno registrado.
+- Horas reales: no registradas en esa fecha.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+### Fecha: 2026-09-23 — Integrante: Jorge Pumay
+
+> Entrada reconstruida a partir del historial de Git (3 commits `201213421:` de ese día).
+
+- Trabajo realizado: INV-03 (liberación automática de reservas vencidas con temporizador configurable), `locationType` y `locationCode` en la respuesta de la reserva, e INV-05 (prueba de concurrencia con Testcontainers: dos solicitudes simultáneas por la última unidad).
+- Resultado funcional: las reservas `ACTIVE` vencidas pasan a `EXPIRED` y devuelven lo reservado; solo una de dos solicitudes concurrentes por la última unidad obtiene la reserva.
+- Hoy y trazabilidad: CDU-02, EaC-03 (sin doble compromiso) y ADR-011/ADR-014.
+- Impedimentos, responsable e impacto: ninguno registrado.
+- Horas reales: no registradas en esa fecha.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
+### Fecha: 2026-10-13 — Integrante: Jorge Pumay
+
+- Trabajo realizado (Fase 3, crédito propio; JOR3-02 y JOR3-03):
+  - Contrato `credit-history-v1`: el ERP entrega compras, pagos (puntuales o no), devoluciones e incidentes. Ingesta idempotente por `sourceReference` único (`V4007`, `POST /api/v1/credit/history`, rol FINANCE). El perfil crediticio se reconstruye desde los hechos de la ventana de 12 meses en lugar de acumularse, y el límite pasó a ser el 40 % de las compras de la ventana con tope de 5000, menos el crédito vigente.
+  - Dataset de demostración con cinco clientes ficticios (uno aprobado y cuatro rechazados por poca historia, devoluciones, incidentes y pagos tardíos) en un solo CSV que consumen el script de carga y una prueba.
+  - Cada decisión guarda las entradas y umbrales con los que se tomó (`V4008`, `inputs_snapshot`); pruebas de límite exacto (UT-03) y de vencimiento a 30 días con reloj fijo (UT-05).
+- Resultado funcional o numérico: 41 pruebas de crédito y de arquitectura en verde; 7 recorridos E2E y 3 pruebas de la Saga sin regresión. Dos errores propios corregidos al probar: una columna de 16 caracteres para un nombre de contrato de 17, y un caso de prueba cuya historia superaba el 30 % de devoluciones y la regla lo rechazaba.
+- Hoy y trazabilidad: ADR-016, `credit-v1.md`, `credit-history-v1.md`; reglas versionadas `credit-rules-v1`.
+- Impedimentos, responsable e impacto: el JDK local era 21 y el proyecto exige 25; se resolvió con un JDK 25 portable sin tocar la instalación del sistema. La alimentación automática desde las ventas del ERP no se hizo porque cruza el módulo `integration` (Andy) y el flujo de órdenes (Jairo); queda como mejora acordada con ellos.
+- Horas reales: no registradas todavía; las registrará Jorge.
+- Persona que quedaría bloqueada y acción temporal: ninguna; el historial entra por el contrato mientras no exista la alimentación automática.
+
+### Fecha: 2026-10-14 — Integrante: Jorge Pumay
+
+- Trabajo realizado:
+  - JOR3-04 y JOR3-06: ciclo de vida de la obligación (`GRANTED` → `OVERDUE` / `SETTLED` / `CANCELLED`, `V4009`), pago idempotente y seguro ante concurrencia (`POST /api/v1/credit/operations/{id}/settle`), vencimiento automático que bloquea nuevas concesiones y anulación por evento `ORDER_STATUS_CHANGED` sin modificar `orders` ni la Saga. Se actualizó `credit-v1.md`, se creó `credit-history-v1.md` y se agregó la §8 de crédito al modelo de datos.
+  - Matriz 401/403 de los endpoints de crédito (`CreditSecurityTest`, 7 casos).
+  - Fase 2: G1 (revisión de los cambios en `inventory`, ver `REV-JORGE-2026-10-14-inventory.md`), G2 (ADR-011 y ADR-014 ya traían su actualización de Fase 2), G3 (CDU-07 enlaza la regla de origen y el componente) y G4 (temporizador de reservas probado en vivo).
+  - El CI de `develop` salió en rojo tras mi merge. Causa: una carrera en Logística entre el evento de tracking y la actualización de la guía de LogiExpress (bloqueo optimista, respuesta 500). Se agregó un reintento acotado de 3 intentos en `ShipmentController` con prueba.
+  - `.gitattributes` para forzar LF en `mvnw`, scripts y Dockerfile: con `core.autocrlf=true` en Windows, el build de Docker fallaba con `./mvnw: not found`.
+- Resultado funcional o numérico: suite completa antes del arreglo, 296 pruebas con 1 fallo (`SensitiveDataLeakScanTest`, 3 de 3 corridas en local); con el arreglo, 299 pruebas y 0 fallos, y la prueba pasó 4 de 4. Sobre `develop` integrado, 306 pruebas, 0 fallos. CI de GitHub (#30, `23b9b79`): verde en 10m9s. En el sistema real de 12 contenedores: carga del historial de demostración con 29 hechos aceptados y 5 perfiles reconstruidos, y 29 duplicados sin cambios en la segunda carga; reserva `ACTIVE` a las 06:25:48Z que pasó a `EXPIRED` a las 06:27:55Z con lo reservado de 2 a 0.
+- Hoy y trazabilidad: ADR-011, ADR-014, ADR-016, CDU-02, CDU-07, EaC-03; `INV-03-temporizador-reserva-evidencia.md`.
+- Impedimentos, responsable e impacto: (1) los ADR-011 y ADR-014 siguen en `Proposed` hasta tener tres aprobaciones del equipo. (2) El arreglo de Logística está en un módulo de Kevin; se le avisa. (3) Un primer diagnóstico mío («la prueba ya fallaba antes de mi merge») era incompleto: en local fallaba en `develop` limpio pero el CI de ese commit había salido verde, así que era una carrera intermitente y no una falla fija; se corrigió ante el equipo.
+- Horas reales: no registradas todavía; las registrará Jorge.
+- Persona que quedaría bloqueada y acción temporal: ninguna.
+
 ## 5. Bloqueos
 
 | Fecha | Tarea | Causa reproducible | Impacto | Puede desbloquear | Próxima revisión | Estado |
@@ -778,6 +826,9 @@ es el [run 35944837459](https://github.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5/act
 | 2026-09-23 | Merge `feature/pruebas-e2e` → `develop` | Se conservaron Saga/E2E y correcciones A1/A4–A8; conflicto de bitácora resuelto; mensaje de validación sensible neutralizado y UUID excluido del detector de PAN | `BUILD SUCCESS`; 148 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire, `PaymentRequestTest`, `SensitiveDataLeakScanTest` y `OrderJourneysE2ETest` | `develop` reúne ambos trabajos sin fuga en logs ni falsos positivos del escaneo SEC-01 |
 | 2026-10-10 | J1 — reanudación de Saga después de conciliar pago | `./mvnw -Dtest=OrderSagaReconciledPaymentTest test`; Java 25 | `BUILD SUCCESS`; 3 pruebas, 0 fallos, 0 errores, 0 omitidas | Surefire local y `OrderSagaReconciledPaymentTest` | Aprobado, rechazado e indeterminado continúan o compensan sin repetir el cobro |
 | 2026-10-13 | Cierre de E5 y documentación | `./mvnw clean verify` del backend con Java 25 y Testcontainers (PostgreSQL, RabbitMQ, Mailpit) | `BUILD SUCCESS`: 228 pruebas, 0 fallos, 0 errores, 0 omitidas; `SensitiveDataLeakScanTest` 2 de 2 con el detector nuevo (descarta UUID, valida Luhn) | Surefire local | E5 cerrado; la prueba de fuga ya no depende del azar |
+| 2026-10-14 | `./mvnw test` completo sobre `develop` con las ramas de crédito y Logística integradas | Java 25.0.4.1; PostgreSQL 17.11 y RabbitMQ 4.3.5 con Testcontainers | `BUILD SUCCESS`; 306 pruebas, 0 fallos, 0 errores, 0 omitidas | `FASE 2/backend/target/surefire-reports` | Verificación previa al push; el CI de GitHub (#30, `23b9b79`) salió verde en 10m9s |
+| 2026-10-14 | INV-03 en vivo: temporizador de reservas | 12 contenedores con `docker compose`; `SGO_INVENTORY_RESERVATION_TTL=PT2M` y barrido `PT10S` | Reserva `ACTIVE` a las 06:25:48Z → `EXPIRED` a las 06:27:55Z; reservado en `CD-01` de 2 a 0 | `FASE 2/docs/evidence/functional/INV-03-temporizador-reserva-evidencia.md` | Criterio «liberar inventario» verificado con el sistema real |
+| 2026-10-14 | Carga del historial de crédito de demostración contra el backend real | `scripts/load-credit-demo-history.sh`; 5 clientes ficticios; JWT de Finanzas | 1.ª carga: 29 aceptados y 5 perfiles reconstruidos; 2.ª: 29 duplicados y 0 cambios | Salida del script y consulta a `credit_customer_profiles` | Idempotencia y límites verificados en el sistema real |
 
 ## 8. Retrospectiva individual
 
@@ -819,6 +870,25 @@ es el [run 35944837459](https://github.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5/act
 
      Los tres tienen ahora su prueba de regresión (`OrderSagaReconciledPaymentTest`, `lateTimeoutNeverOverridesAGuideFoundByTracking`, `OrderSummaryConcurrencyIntegrationTest`). En Fase 3, cada flujo asíncrono nuevo debería diseñarse con su caso de "respuesta tardía" y de "llegada concurrente" desde el CDU.
    - **Mantenibilidad.** Los modelos físicos se generaron desde las migraciones Flyway para que el diagrama no se desactualice respecto al código; vale la pena conservar esa práctica.
+
+### Integrante: Jorge Pumay (carnet 201213421)
+
+1. **Decisiones y patrones que funcionaron.**
+   - *Reserva atómica por sentencia condicional* (Fase 2): reservar y descontar en un solo `UPDATE ... WHERE disponible >= cantidad` evitó la ventana de carrera entre «elegir» y «comprometer», y la prueba INV-05 lo demostró con dos solicitudes concurrentes por la última unidad. Una restricción `UNIQUE (product_id, location_id)` respalda el esquema.
+   - *Perfil crediticio reconstruido desde los hechos* (Fase 3): la ingesta del ERP es idempotente por `sourceReference` y el perfil se recalcula desde todos los hechos de la ventana. Por eso el orden de llegada no altera el resultado y reprocesar un lote no cambia totales. Lo comprobé en el sistema real: la segunda carga dio 29 duplicados y 0 cambios.
+   - *Compensación por evento, sin acoplar módulos*: al cancelarse una orden, `credit` anula la obligación y devuelve el saldo escuchando `ORDER_STATUS_CHANGED`. No toqué `orders` ni la Saga; `credit` solo tuvo que declarar su dependencia de `messaging`, igual que `query` y `notifications`.
+   - *Decisión auditable*: guardar con cada decisión las entradas y los umbrales evaluados permite reconstruir por qué se aprobó o rechazó aunque el perfil cambie después.
+   - *Bloqueo por cliente*: serializar concesiones, pagos y reconstrucción del perfil con el mismo bloqueo de base de datos evitó doble consumo y doble liberación del límite, con prueba de concurrencia.
+2. **Supuestos o diagramas que fallaron o exigieron corrección.**
+   - *Fase 1 → Fase 2*: ADR-011 declaró al módulo `inventory` como única fuente de inventario. Al aparecer el almacén central y la tienda online (ADR-015, de Kevin), hubo dos fuentes con responsabilidades distintas; el ADR tuvo que actualizarse y sigue `Proposed`. Además `CD-WEB` quedó tipificado como centro de distribución, de modo que el algoritmo genérico lo considera un origen más; hoy no causa problemas solo porque los productos de la web únicamente tienen existencia ahí.
+   - *Errores propios durante Fase 3*, corregidos antes de integrar: una columna demasiado corta para el nombre del contrato y un código de error documentado distinto del real (los atraparon las pruebas); y una lectura en caché dentro de la transacción que habría permitido liberar el saldo dos veces ante dos pagos simultáneos, que detecté al revisar mi propio diseño y corregí releyendo desde la base bajo el bloqueo.
+   - *Diagnóstico incompleto*: tras mi merge, el CI salió en rojo y afirmé que la prueba ya fallaba antes de mi cambio. En local era cierto, pero el CI del mismo commit había salido verde. Era una carrera intermitente de Logística, no una falla fija. Lo corregí ante el equipo y se arregló la causa.
+3. **Mejoras técnicas para la mantenibilidad futura.**
+   - Alimentar el historial crediticio automáticamente desde las ventas del ERP mediante eventos del módulo `integration`, en lugar de depender del endpoint.
+   - Hacer atómica la primera recepción en una ubicación (`INSERT ... ON CONFLICT DO NOTHING`) y que la Saga pase un `locationId` explícito en las compras web.
+   - Correr la suite completa y el build de las imágenes Docker antes de cada merge a `develop`, y mantener el `.gitattributes` que ya fuerza LF en `mvnw`, scripts y Dockerfile.
+   - Aprobar los ADR dentro del propio sprint: ADR-011 y ADR-014 siguen `Proposed` por falta de tres aprobaciones.
+   - Abonos parciales, intereses y recargos por mora del crédito quedan fuera del alcance actual y requieren un contrato de cartera adicional.
 
 ## 9. Burndown o resumen consolidado
 
