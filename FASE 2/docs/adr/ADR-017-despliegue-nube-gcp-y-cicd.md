@@ -1,7 +1,8 @@
 # ADR-017 — Despliegue en Google Cloud y pipeline CI/CD
 
 - **Fecha:** 2026-10-13
-- **Estado:** Proposed
+- **Estado:** Accepted
+- **Ratificación:** 2026-10-14
 - **Responsables:** Kevin Girón (KEV3-01 a KEV3-08)
 - **Revisores:** Andy Sánchez (validación cruzada del frente DevOps), Jairo Gómez
 
@@ -130,10 +131,29 @@ de infraestructura ≤ USD 1,200/mes (EaC-10).
 - [x] Primer despliegue (`v0-manual`, imágenes construidas en la VM porque GHCR
   aún no tenía imágenes): 12 de 12 contenedores sanos y smoke 10 de 10 dentro
   de la VM y **desde internet**. Uso de memoria: 2.6 de 7.7 GB.
-- [ ] Primer despliegue `v1` por el pipeline (requiere los secretos y variables de GitHub).
+- [x] Primer despliegue `v1` por el pipeline:
+  [run 38554309937](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38554309937),
+  con pruebas, imágenes, deploy y smoke en verde.
 - [ ] Un PR con una prueba rota muestra el job `deploy` sin ejecutarse (evidencia del gate).
 - [ ] Un rollback manual (`workflow_dispatch` con el tag anterior) queda registrado.
-- Al menos tres integrantes registran su aprobación para pasar a `Accepted`.
+- [x] Revisión estática cruzada de Andy Sánchez sobre workflow, Compose,
+  respaldo, health, smoke y rollback; observaciones conservadas como gates
+  operativos.
+
+## Ratificación
+
+La decisión de usar GCE, Docker Compose, GHCR y GitHub Actions se acepta porque
+la topología documentada ya opera sin reescribir el núcleo. Además del release
+`v1`, el SHA `274ee02` completó el
+[run de CI 38616631224](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38616631224)
+y el
+[run de despliegue 38618417187](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38618417187),
+incluidos health checks y smoke desde internet.
+
+La aceptación del ADR ratifica la decisión arquitectónica, no declara cerrado
+todo el frente. Continúan abiertos como evidencia operativa: ejecutar un gate
+negativo controlado, registrar un rollback manual a un tag anterior, comprobar
+una restauración de respaldo y publicar `v2`, `v3` y `v4`.
 
 ## Referencias
 

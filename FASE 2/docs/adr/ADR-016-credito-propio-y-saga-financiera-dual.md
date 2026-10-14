@@ -1,7 +1,8 @@
 # ADR-016 — Crédito propio y Saga financiera dual
 
 - **Fecha:** 2026-10-12
-- **Estado:** Proposed
+- **Estado:** Accepted
+- **Ratificación:** 2026-10-14
 - **Responsable del borrador:** Jairo Gómez
 - **Revisores:** Jorge Pumay, Edson Sosa, Andy Sánchez y Kevin Girón
 - **Resuelve:** incorporación de “Compra ahora, paga en 30 días” sin convertir el crédito en un pago PayKlik ficticio
@@ -153,11 +154,38 @@ obligaciones.
   pero no historial completo, PAN, CVV ni secretos.
 - La regresión de PayKlik, conciliación y seguridad permanece verde.
 
+## Ratificación
+
+La decisión se acepta después de contrastarla con la implementación integrada
+en `develop`, el contrato `credit :: api`, las migraciones V4004 a V4009 y la
+evidencia automatizada. El SHA `274ee02` completó el
+[run de CI 38616631224](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38616631224):
+cinco proyectos Java, validación del frontend y seis imágenes Docker en verde.
+El mismo SHA se desplegó mediante el
+[run 38618417187](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38618417187)
+y superó el smoke externo.
+
+La revisión confirmó:
+
+- separación semántica entre `PAYKLIK` y `OWN_CREDIT`;
+- ausencia de intentos PayKlik ficticios en crédito;
+- idempotencia por orden y llave, más serialización por cliente;
+- consumo acumulado y restitución controlada de la línea;
+- referencia fiscal neutral y clasificación coherente en ERP e informes;
+- dependencia de `orders` únicamente sobre la API pública de `credit`;
+- degradación a PayKlik ante falla o timeout de elegibilidad;
+- notificación asíncrona sin revertir la operación financiera.
+
+La aceptación arquitectónica no elimina los límites declarados: el IdP
+multiusuario, el gobierno de la fuente productiva del historial, los abonos
+parciales e intereses continúan fuera de esta versión y no se presentan como
+capacidades terminadas.
+
 ## Referencias
 
 - `Docs/planificacion/PLANIFICACION_FASE_3.md`
 - `Docs/planificacion/PLAN_EJECUCION_JAIRO_FASE_3.md`
-- `Proyecto Fase 3_convertido.md`
+- Enunciado académico de Fase 3 (fuente externa de requisitos)
 - ADR-002, ADR-003, ADR-005, ADR-007, ADR-008 y ADR-015
 - Migraciones `V4004__fiscal_generalize_financial_operation.sql` y
   `V4005__credit_and_order_financial_route.sql` y

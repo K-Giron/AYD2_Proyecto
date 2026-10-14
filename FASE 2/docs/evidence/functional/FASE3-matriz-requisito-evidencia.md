@@ -1,7 +1,8 @@
 # Matriz requisito → implementación → evidencia — Fase 3
 
-**Corte:** 13 de octubre de 2026  
-**Estado:** evidencia local; todavía no sustituye CI, nube, SHA ni release
+**Corte:** 14 de octubre de 2026
+
+**Estado:** implementación integrada y validada en CI/nube; promoción final a `v4` pendiente
 
 | Requisito / riesgo | Implementación | Prueba o documento | Estado local |
 |---|---|---|---|
@@ -38,7 +39,16 @@ recorridos E2E. Antes del cierre se detectó que
 `OnlineStoreIntegrationTest` usaba un cliente aleatorio con el token canónico;
 el dato se corrigió y la segunda corrida completa quedó verde.
 
-Los cinco escenarios de carga y cinco de estrés exigidos son otra categoría y
-siguen pendientes del frente de Andy. Los runs de CI, URL de nube, smoke y
-releases dependen de Kevin. Los resultados exactos de la suite completa deben
-repetirse en CI para obtener evidencia enlazable.
+El SHA `274ee024781a3c54c9816d798a8b3603b784e207` pasó el
+[run de CI 38616631224](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38616631224),
+que ejecutó los cinco proyectos Java, validó el frontend y publicó seis
+imágenes. El
+[run 38618417187](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38618417187)
+desplegó ese SHA en `http://136.65.180.39` y completó health checks y smoke
+externo. El smoke independiente posterior verificó 17 controles sin fallos.
+
+Los cinco escenarios de carga y cinco de estrés exigidos permanecen pendientes
+de ejecución. El arnés y el Manual Técnico están desarrollados en
+`origin/feature/201904024-fase3-rendimiento`, pero todavía no forman parte de
+`develop` ni contienen métricas ejecutadas. También quedan pendientes la
+promoción a `main` y los releases `v2`, `v3` y `v4`.

@@ -521,25 +521,25 @@ cronograma aprobado por el equipo.
 ## 13. Checklist final de entrega
 
 - [ ] Feedback real de Fases 1 y 2 registrado y atendido.
-- [ ] Crédito elegible visible solo para clientes aprobados.
-- [ ] PayKlik continúa funcionando de forma independiente.
-- [ ] Facturación usa una referencia financiera válida para PayKlik o crédito, sin intentos ficticios.
-- [ ] Decisión explicable, auditable e idempotente.
-- [ ] Vencimiento a 30 días persistido.
-- [ ] Notificación no bloqueante y recuperable.
-- [ ] DDA y diagramas actualizados.
-- [ ] Cinco pruebas unitarias verdes.
-- [ ] Cinco pruebas de integración verdes.
-- [ ] Cinco pruebas E2E verdes.
+- [x] Crédito elegible visible solo para clientes aprobados.
+- [x] PayKlik continúa funcionando de forma independiente.
+- [x] Facturación usa una referencia financiera válida para PayKlik o crédito, sin intentos ficticios.
+- [x] Decisión explicable, auditable e idempotente.
+- [x] Vencimiento a 30 días persistido.
+- [x] Notificación no bloqueante y recuperable.
+- [x] DDA y diagramas actualizados.
+- [x] Cinco pruebas unitarias verdes.
+- [x] Cinco pruebas de integración verdes.
+- [x] Cinco pruebas E2E verdes.
 - [ ] Cinco pruebas de carga ejecutadas y documentadas.
 - [ ] Cinco pruebas de estrés ejecutadas y documentadas.
-- [ ] Frontend y backend empaquetados con Docker.
-- [ ] Pipeline `build` → `test` → `deploy` con gate efectivo.
-- [ ] Arquitectura desplegada en nube y accesible.
-- [ ] Health check, smoke test y rollback demostrados.
+- [x] Frontend y backend empaquetados con Docker.
+- [x] Pipeline `build` → `test` → `deploy` con gate efectivo.
+- [x] Arquitectura desplegada en nube y accesible.
+- [x] Health check, smoke test y rollback demostrados.
 - [ ] Releases `v1`, `v2`, `v3` y `v4` publicados mediante git-flow.
 - [ ] Manual Técnico en Markdown.
-- [ ] Manual de Usuario en Markdown.
+- [x] Manual de Usuario en Markdown.
 - [ ] Cada integrante tiene commits sustanciales y puede defender su trabajo.
 - [ ] URL/repositorio entregados por UEDI.
 - [ ] Auxiliar correspondiente agregado al repositorio.
