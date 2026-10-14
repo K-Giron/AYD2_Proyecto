@@ -1,19 +1,20 @@
 import http from 'k6/http';
+import { sleep } from 'k6';
 import {
     BASE_URL,
-    deterministicUuid,
+    checkoutCart,
+    createCartWithItem,
     expectBody,
     expectStatus,
-    idempotencyKey,
     jsonOrNull,
-    login,
+    loginSession,
+    numberEnv,
     pathFromTemplate,
     requestJson,
+    requireFlag,
+    runSaga,
 } from './lib/common.js';
 
-const CREDIT_PATH = __ENV.CREDIT_OPTIONS_PATH_TEMPLATE
-    || '/api/v1/credit/eligibility?customerId={customerId}&amount={amount}';
-const CHECKOUT_PATH = __ENV.CHECKOUT_PATH || '/api/v1/checkout';
 const ORDER_PATH = __ENV.ORDER_PATH_TEMPLATE || '/api/v1/orders/{orderId}';
 const READINESS_PATH = __ENV.READINESS_PATH || '/actuator/health/readiness';
 
@@ -27,7 +28,12 @@ export const options = {
 };
 
 export function setup() {
-    return { token: login('client') };
+    requireFlag('ALLOW_MUTATIONS', 'El smoke crea una orden real en el ambiente objetivo.');
+    const session = loginSession('client');
+    if (!session.customerId) {
+        throw new Error('La cuenta CLIENT no devolvió customerId firmado.');
+    }
+    return session;
 }
 
 export default function (data) {
@@ -40,31 +46,46 @@ export default function (data) {
         return body !== null && body.status === 'UP';
     }, 'SMOKE readiness', { scenario_id: 'SMOKE-CLOUD' });
 
-    const customerId = __ENV.SMOKE_CUSTOMER_ID || deterministicUuid(1, 100000);
-    const eligibility = requestJson('GET', pathFromTemplate(CREDIT_PATH, {
-        customerId,
-        amount: 1000,
-    }), data.token, null, { scenario_id: 'SMOKE-CLOUD', operation: 'eligibility' });
-    expectStatus(eligibility, [200], 'SMOKE elegibilidad', { scenario_id: 'SMOKE-CLOUD' });
+    const sequence = 900001;
+    const cart = createCartWithItem(data.token, data.customerId, sequence,
+        { scenario_id: 'SMOKE-CLOUD', operation: 'cart' });
+    if (!cart) throw new Error('SMOKE no pudo preparar el carrito.');
 
-    const checkoutKey = idempotencyKey('smoke-cloud', 1);
-    const checkout = requestJson('POST', CHECKOUT_PATH, data.token, {
-        requestId: deterministicUuid(1, 900000),
-        customerId,
-        amount: 1000,
-        currency: 'GTQ',
-        paymentMethod: __ENV.SMOKE_PAYMENT_METHOD || 'PAYKLIK',
-    }, { scenario_id: 'SMOKE-CLOUD', operation: 'checkout' }, {
-        'Idempotency-Key': checkoutKey,
-        'X-Actor': 'CUSTOMER',
-    });
-    expectStatus(checkout, [200, 201, 202], 'SMOKE checkout', { scenario_id: 'SMOKE-CLOUD' });
+    const options = requestJson('GET', `/api/v1/carts/${cart.cartId}/payment-options`,
+        data.token, null, { scenario_id: 'SMOKE-CLOUD', operation: 'payment-options' });
+    if (expectStatus(options, [200], 'SMOKE opciones', { scenario_id: 'SMOKE-CLOUD' })) {
+        expectBody(options, (candidate) => {
+            const body = jsonOrNull(candidate);
+            return Array.isArray(body?.options)
+                && body.options.some((option) => option.route === 'PAYKLIK' && option.enabled === true);
+        }, 'SMOKE opciones', { scenario_id: 'SMOKE-CLOUD' });
+    }
+
+    const checkout = checkoutCart(data.token, cart.cartId, sequence,
+        { scenario_id: 'SMOKE-CLOUD', operation: 'checkout' });
+    expectStatus(checkout, [201], 'SMOKE checkout', { scenario_id: 'SMOKE-CLOUD' });
 
     const checkoutBody = jsonOrNull(checkout) || {};
-    const orderId = __ENV.SMOKE_ORDER_ID || checkoutBody.orderId || checkoutBody.id;
+    const orderId = checkoutBody.id;
     if (!orderId) {
-        throw new Error('SMOKE checkout no devolvió orderId/id y SMOKE_ORDER_ID no fue definido');
+        throw new Error('SMOKE checkout no devolvió id de orden.');
     }
+
+    const paymentRoute = __ENV.SMOKE_PAYMENT_ROUTE || 'PAYKLIK';
+    let sagaResponse;
+    let sagaBody;
+    for (let attempt = 0; attempt < numberEnv('SAGA_MAX_POLLS', 12); attempt += 1) {
+        sagaResponse = runSaga(data.token, orderId, paymentRoute, sequence,
+            { scenario_id: 'SMOKE-CLOUD', operation: 'saga', payment_route: paymentRoute });
+        if (!expectStatus(sagaResponse, [200], 'SMOKE Saga', { scenario_id: 'SMOKE-CLOUD' })) break;
+        sagaBody = jsonOrNull(sagaResponse);
+        if (!['WAITING_FISCAL', 'WAITING_PAYMENT'].includes(sagaBody?.sagaStatus)) break;
+        sleep(0.5);
+    }
+    expectBody(sagaResponse, () =>
+        ['COMPLETED', 'CREDIT_REJECTED'].includes(sagaBody?.sagaStatus),
+    'SMOKE Saga terminal', { scenario_id: 'SMOKE-CLOUD' });
+
     const order = requestJson('GET', pathFromTemplate(ORDER_PATH, { orderId }), data.token, null,
         { scenario_id: 'SMOKE-CLOUD', operation: 'order-query' });
     expectStatus(order, [200], 'SMOKE consulta de orden', { scenario_id: 'SMOKE-CLOUD' });

@@ -9,6 +9,7 @@ import {
     numberEnv,
     pauseSeconds,
     requestJson,
+    requireFlag,
 } from './lib/common.js';
 
 const SCENARIO = 'LOAD-04';
@@ -29,6 +30,7 @@ export const options = {
 };
 
 export function setup() {
+    requireFlag('ALLOW_MUTATIONS', 'LOAD-04 crea solicitudes de notificación sintéticas.');
     return { token: login('support') };
 }
 
@@ -40,7 +42,7 @@ export default function (data) {
     );
     const tags = { scenario_id: SCENARIO, operation: 'notification-create' };
     const response = requestJson('POST', NOTIFICATIONS_PATH, data.token, {
-        eventType: __ENV.CREDIT_NOTIFICATION_EVENT || 'ORDER_CONFIRMED',
+        eventType: __ENV.CREDIT_NOTIFICATION_EVENT || 'CREDIT_GRANTED',
         channel: 'EMAIL',
         recipient: `carga-${sourceAggregateId}@example.invalid`,
         sourceAggregateId,

@@ -1,19 +1,21 @@
 import { sleep } from 'k6';
 import {
-    deterministicUuid,
+    createCartWithItem,
+    customerIdFor,
+    customerSequence,
+    expectBody,
     expectStatus,
-    iterationNumber,
+    jsonOrNull,
     login,
     numberEnv,
-    pathFromTemplate,
     pauseSeconds,
     requestJson,
+    requireFlag,
 } from './lib/common.js';
 
 const SCENARIO = 'STRESS-01';
-const PATH_TEMPLATE = __ENV.CREDIT_OPTIONS_PATH_TEMPLATE
-    || '/api/v1/credit/eligibility?customerId={customerId}&amount={amount}';
 const MAX_VUS = numberEnv('STRESS_MAX_VUS', 160);
+let cartId = null;
 
 export const options = {
     scenarios: {
@@ -38,18 +40,25 @@ export const options = {
 };
 
 export function setup() {
-    return { token: login('client') };
+    requireFlag('ALLOW_MUTATIONS', 'STRESS-01 crea carritos sintéticos.');
+    requireFlag('ALLOW_STRESS', 'STRESS-01 genera una rampa de sobrecarga.');
+    return { token: login('support') };
 }
 
 export default function (data) {
-    const sequence = iterationNumber();
-    const path = pathFromTemplate(PATH_TEMPLATE, {
-        customerId: deterministicUuid((sequence % numberEnv('CUSTOMERS', 500)) + 1, 100000),
-        amount: 500 + (sequence % 50) * 25,
-    });
+    const sequence = customerSequence(__VU);
+    if (!cartId) {
+        const cart = createCartWithItem(data.token, customerIdFor(sequence), sequence,
+            { scenario_id: `${SCENARIO}-SETUP` });
+        if (!cart) return;
+        cartId = cart.cartId;
+    }
     const tags = { scenario_id: SCENARIO, operation: 'progressive-credit-pressure' };
-    const response = requestJson('GET', path, data.token, null, tags);
-    expectStatus(response, [200], SCENARIO, tags);
+    const response = requestJson('GET', `/api/v1/carts/${cartId}/payment-options`,
+        data.token, null, tags);
+    if (expectStatus(response, [200], SCENARIO, tags)) {
+        expectBody(response, (candidate) => Array.isArray(jsonOrNull(candidate)?.options), SCENARIO, tags);
+    }
     sleep(pauseSeconds());
 }
 

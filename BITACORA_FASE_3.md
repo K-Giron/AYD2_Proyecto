@@ -59,3 +59,40 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   - Los releases `v2` a `v4` dependen de las entregas de Jorge, Jairo, Edson y Andy.
 - Horas reales y estimadas restantes: pendiente de registrar por Kevin.
 - Persona que quedaría bloqueada y acción temporal: ninguna; Andy ya puede usar la nube (`http://136.65.180.39`) para carga y estrés.
+
+### Fecha: 2026-10-14 — Integrante: Andy Sánchez
+
+- Trabajo realizado (AND3-01, AND3-05, AND3-06 y AND3-07):
+  - Integró el `develop` actualizado en `feature/201904024-fase3-rendimiento`
+    sin conflictos y contrastó el arnés contra los contratos reales.
+  - Alineó cinco scripts de carga y cinco de estrés con
+    `credit-history-v1`, carritos, opciones de pago y Saga
+    `PAYKLIK|OWN_CREDIT`; eliminó las rutas provisionales.
+  - El dataset ahora genera cinco cohortes crediticias reproducibles e
+    idempotentes por `sourceReference`.
+  - Agregó barreras `ALLOW_MUTATIONS` y `ALLOW_STRESS`, `RUN_ID` por corrida y
+    configuración opcional de inventario para evitar ejecutar carga destructiva
+    por accidente.
+  - Actualizó el smoke externo para usar el `customerId` firmado del login y
+    recorrer carrito, opciones, checkout, Saga y consulta de orden.
+  - Actualizó el Manual Técnico con crédito, variables, GCP, CI/CD, respaldo y
+    rollback integrados, conservando como pendientes únicamente la evidencia no
+    ejecutada.
+  - Realizó la revisión estática cruzada del CI/CD en
+    `docs/evidence/devops/REV-ANDY-2026-10-14-CICD.md`.
+- Validación local:
+  - Los 12 archivos JavaScript del arnés y su librería pasan comprobación de
+    sintaxis con Node.
+  - El ejecutor PowerShell pasa el analizador sintáctico.
+  - Se conservan exactamente cinco escenarios de carga y cinco de estrés.
+  - Los scripts Linux y `mvnw` están en LF conforme a `.gitattributes`.
+- Pendiente:
+  - Configurar `.env.performance` fuera de Git con las cuentas entregadas.
+  - Recibir la ventana autorizada, preparar el dataset y ejecutar las diez
+    pruebas contra el tag indicado por Kevin.
+  - Completar métricas, análisis de cuello de botella y repetición controlada.
+  - Ejecutar el smoke independiente y adjuntar runs/artefactos del pipeline,
+    rollback y releases `v2` a `v4`.
+- Impedimento actual: k6/Docker no están disponibles en el equipo local; las
+  mediciones no se simulan ni se marcan como ejecutadas.
+- Horas reales: pendiente de registrar por Andy.

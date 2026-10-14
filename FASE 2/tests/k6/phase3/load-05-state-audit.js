@@ -1,5 +1,7 @@
 import { sleep } from 'k6';
 import {
+    customerIdFor,
+    eligibleCustomerSequence,
     expectBody,
     expectStatus,
     iterationNumber,
@@ -31,22 +33,26 @@ export const options = {
 };
 
 export function setup() {
-    return { clientToken: login('client'), financeToken: login('finance') };
-}
-
-function seededOrderId(sequence) {
-    return `00000000-0000-0000-0000-${String(sequence).padStart(12, '0')}`;
+    return { supportToken: login('support'), financeToken: login('finance') };
 }
 
 export default function (data) {
-    const sequence = (iterationNumber() % numberEnv('ORDERS', 500)) + 1;
-    const orderId = seededOrderId(sequence);
+    const sequence = eligibleCustomerSequence(iterationNumber());
+    const lookupTags = { scenario_id: `${SCENARIO}-SETUP`, operation: 'order-list' };
+    const ordersResponse = requestJson('GET',
+        `/api/v1/orders?customerId=${customerIdFor(sequence)}`,
+        data.supportToken, null, lookupTags);
+    if (!expectStatus(ordersResponse, [200], `${SCENARIO} lista`, lookupTags)) return;
+    const orders = jsonOrNull(ordersResponse);
+    if (!expectBody(ordersResponse, () => Array.isArray(orders) && orders.length > 0,
+        `${SCENARIO} requiere órdenes de LOAD-02`, lookupTags)) return;
+    const orderId = orders[0].id;
 
     const summaryTags = { scenario_id: SCENARIO, operation: 'order-summary' };
     const summary = requestJson(
         'GET',
         pathFromTemplate(SUMMARY_TEMPLATE, { orderId }),
-        data.clientToken,
+        data.supportToken,
         null,
         summaryTags,
     );

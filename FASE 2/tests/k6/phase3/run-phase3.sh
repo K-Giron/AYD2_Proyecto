@@ -5,6 +5,7 @@ suite="${1:-all}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 env_file="${PERF_ENV_FILE:-$script_dir/.env.performance}"
 results_dir="$script_dir/results"
+run_id="${RUN_ID:-$(date +%Y%m%d-%H%M%S)}"
 
 if [[ ! -f "$env_file" ]]; then
   echo "No existe $env_file. Copie .env.performance.example y ajuste el ambiente." >&2
@@ -31,10 +32,12 @@ stress_scripts=(
 )
 
 case "$suite" in
+  dataset) scripts=(prepare-dataset.js) ;;
   load) scripts=("${load_scripts[@]}") ;;
   stress) scripts=("${stress_scripts[@]}") ;;
   all) scripts=("${load_scripts[@]}" "${stress_scripts[@]}") ;;
-  *) echo "Suite inválida: use load, stress o all." >&2; exit 2 ;;
+  smoke) scripts=(smoke-phase3-cloud.js) ;;
+  *) echo "Suite inválida: use dataset, load, stress, all o smoke." >&2; exit 2 ;;
 esac
 
 mkdir -p "$results_dir"
@@ -48,6 +51,7 @@ for script in "${scripts[@]}"; do
   docker run --rm \
     --add-host host.docker.internal:host-gateway \
     --env-file "$env_file" \
+    -e "RUN_ID=$run_id" \
     -v "$script_dir:/scripts:ro" \
     -v "$results_dir:/results" \
     grafana/k6 run \

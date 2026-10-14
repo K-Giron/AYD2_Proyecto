@@ -1,21 +1,21 @@
 import { sleep } from 'k6';
 import {
-    deterministicUuid,
+    createCartWithItem,
+    customerIdFor,
+    customerSequence,
     expectBody,
     expectStatus,
-    iterationNumber,
     jsonOrNull,
     login,
     numberEnv,
-    pathFromTemplate,
     requestJson,
+    requireFlag,
 } from './lib/common.js';
 
 const SCENARIO = 'STRESS-05';
-const CREDIT_PATH = __ENV.CREDIT_OPTIONS_PATH_TEMPLATE
-    || '/api/v1/credit/eligibility?customerId={customerId}&amount={amount}';
 const READINESS_PATH = __ENV.READINESS_PATH || '/actuator/health/readiness';
 const MAX_VUS = numberEnv('STRESS_MAX_VUS', 160);
+let cartId = null;
 
 export const options = {
     scenarios: {
@@ -45,23 +45,32 @@ export const options = {
 };
 
 export function setup() {
-    return { token: login('client') };
+    requireFlag('ALLOW_MUTATIONS', 'STRESS-05 crea carritos sintéticos.');
+    requireFlag('ALLOW_STRESS', 'STRESS-05 sobrecarga el evaluador y mide recuperación.');
+    return { token: login('support') };
 }
 
-function eligibilityPath(sequence) {
-    return pathFromTemplate(CREDIT_PATH, {
-        customerId: deterministicUuid((sequence % numberEnv('CUSTOMERS', 500)) + 1, 100000),
-        amount: 1000 + (sequence % 20) * 50,
-    });
+function ensureCart(token) {
+    if (cartId) return cartId;
+    const sequence = customerSequence(__VU);
+    const cart = createCartWithItem(token, customerIdFor(sequence), sequence + 700000,
+        { scenario_id: `${SCENARIO}-SETUP` });
+    cartId = cart?.cartId || null;
+    return cartId;
 }
 
 export function overload(data) {
+    const selectedCart = ensureCart(data.token);
+    if (!selectedCart) return;
     const tags = { scenario_id: SCENARIO, operation: 'recovery-overload', phase: 'overload' };
-    const response = requestJson('GET', eligibilityPath(iterationNumber()), data.token, null, tags);
+    const response = requestJson('GET', `/api/v1/carts/${selectedCart}/payment-options`,
+        data.token, null, tags);
     expectStatus(response, [200], `${SCENARIO} sobrecarga`, tags);
 }
 
 export function recoveryWindow(data) {
+    const selectedCart = ensureCart(data.token);
+    if (!selectedCart) return;
     const healthTags = { scenario_id: SCENARIO, operation: 'readiness-after-load', phase: 'recovery' };
     const health = requestJson('GET', READINESS_PATH, data.token, null, healthTags);
     if (expectStatus(health, [200], `${SCENARIO} health`, healthTags)) {
@@ -72,8 +81,12 @@ export function recoveryWindow(data) {
     }
 
     const creditTags = { scenario_id: SCENARIO, operation: 'eligibility-after-load', phase: 'recovery' };
-    const credit = requestJson('GET', eligibilityPath(iterationNumber(700000)), data.token, null, creditTags);
-    expectStatus(credit, [200], `${SCENARIO} elegibilidad`, creditTags);
+    const credit = requestJson('GET', `/api/v1/carts/${selectedCart}/payment-options`,
+        data.token, null, creditTags);
+    if (expectStatus(credit, [200], `${SCENARIO} elegibilidad`, creditTags)) {
+        expectBody(credit, (candidate) => Array.isArray(jsonOrNull(candidate)?.options),
+            `${SCENARIO} elegibilidad`, creditTags);
+    }
     sleep(1);
 }
 

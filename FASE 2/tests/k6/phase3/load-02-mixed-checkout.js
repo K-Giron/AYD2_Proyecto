@@ -1,19 +1,22 @@
 import { sleep } from 'k6';
 import {
-    deterministicUuid,
+    checkoutCart,
+    createCartWithItem,
+    customerIdFor,
+    customerSequence,
+    eligibleCustomerSequence,
     expectBody,
     expectStatus,
-    idempotencyKey,
     iterationNumber,
     jsonOrNull,
     login,
     numberEnv,
     pauseSeconds,
-    requestJson,
+    requireFlag,
+    runSaga,
 } from './lib/common.js';
 
 const SCENARIO = 'LOAD-02';
-const CHECKOUT_PATH = __ENV.CHECKOUT_PATH || '/api/v1/checkout';
 
 export const options = {
     scenarios: {
@@ -30,26 +33,39 @@ export const options = {
 };
 
 export function setup() {
-    return { token: login('client') };
+    requireFlag('ALLOW_MUTATIONS', 'LOAD-02 crea órdenes y ejecuta la Saga dual.');
+    return { token: login('support') };
 }
 
 export default function (data) {
     const sequence = iterationNumber();
-    const paymentMethod = sequence % 2 === 0 ? 'CREDIT_30_DAYS' : 'PAYKLIK';
-    const requestKey = idempotencyKey('checkout', sequence);
-    const tags = { scenario_id: SCENARIO, operation: 'mixed-checkout', payment_method: paymentMethod };
-    const response = requestJson('POST', CHECKOUT_PATH, data.token, {
-        requestId: deterministicUuid(sequence, 200000),
-        customerId: deterministicUuid((sequence % numberEnv('CUSTOMERS', 500)) + 1, 100000),
-        amount: 500 + (sequence % 30) * 25,
-        currency: 'GTQ',
-        paymentMethod,
-    }, tags, { 'Idempotency-Key': requestKey, 'X-Actor': 'CUSTOMER' },
-    [200, 201, 202, 409, 422]);
+    const paymentRoute = sequence % 2 === 0 ? 'OWN_CREDIT' : 'PAYKLIK';
+    const selectedCustomer = paymentRoute === 'OWN_CREDIT'
+        ? eligibleCustomerSequence(sequence)
+        : customerSequence(sequence);
+    const supportingTags = { scenario_id: `${SCENARIO}-SETUP`, payment_route: paymentRoute };
+    const cart = createCartWithItem(data.token, customerIdFor(selectedCustomer), sequence, supportingTags);
+    if (!cart) return;
 
-    if (expectStatus(response, [200, 201, 202, 409, 422], SCENARIO, tags)) {
-        expectBody(response, (candidate) => jsonOrNull(candidate) !== null, SCENARIO, tags);
+    const checkout = checkoutCart(data.token, cart.cartId, sequence,
+        { ...supportingTags, operation: 'checkout' });
+    if (!expectStatus(checkout, [201], `${SCENARIO} checkout`, supportingTags)) return;
+    const orderId = jsonOrNull(checkout)?.id;
+    if (!orderId) return;
+
+    const tags = { scenario_id: SCENARIO, operation: 'mixed-saga', payment_route: paymentRoute };
+    let response;
+    let body;
+    const maxPolls = numberEnv('SAGA_MAX_POLLS', 12);
+    for (let attempt = 0; attempt < maxPolls; attempt += 1) {
+        response = runSaga(data.token, orderId, paymentRoute, sequence, tags);
+        if (!expectStatus(response, [200], `${SCENARIO} Saga`, tags)) return;
+        body = jsonOrNull(response);
+        if (!['WAITING_FISCAL', 'WAITING_PAYMENT'].includes(body?.sagaStatus)) break;
+        sleep(0.5);
     }
+    expectBody(response, () => body !== null
+        && ['COMPLETED', 'CREDIT_REJECTED'].includes(body.sagaStatus), SCENARIO, tags);
     sleep(pauseSeconds());
 }
 

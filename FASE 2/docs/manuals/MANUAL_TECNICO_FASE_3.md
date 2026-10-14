@@ -2,8 +2,8 @@
 
 **Responsable:** Andy Sánchez  
 **Revisor asignado:** Kevin Girón  
-**Estado:** Borrador técnico verificable  
-**Última actualización:** 2026-10-13  
+**Estado:** Actualizado contra `develop` (`e551994`); pendiente de resultados k6 y revisión  
+**Última actualización:** 2026-10-14  
 **Alcance:** construcción, configuración, ejecución, pruebas, operación y
 recuperación de SGO-Logic.
 
@@ -13,10 +13,9 @@ Este manual permite preparar y operar SGO-Logic sin depender del conocimiento
 oral de sus autores. Distingue el comportamiento comprobado del trabajo aún no
 integrado. Un elemento marcado `PENDIENTE` no debe presentarse como disponible.
 
-Al momento de crear esta versión, `develop` contiene la plataforma funcional de
-Fase 2 y la planificación de Fase 3, pero todavía no contiene el módulo de
-crédito propio ni sus endpoints definitivos. Las secciones correspondientes se
-cerrarán contra el SHA o release que integre esa rebanada.
+La versión descrita integra crédito propio, Saga dual, historial ERP, CI/CD y
+despliegue en Google Cloud. Los resultados de carga/estrés permanecen abiertos:
+solo se cerrarán con resúmenes k6 asociados a un SHA o tag identificable.
 
 ## 2. Alcance funcional
 
@@ -40,7 +39,8 @@ cerrarán contra el SHA o release que integre esa rebanada.
 - Despliegue en nube mediante pipeline con gates.
 - Cinco pruebas de cada tipo: unitarias, integración, E2E, carga y estrés.
 
-**Estado de esta ampliación:** PENDIENTE de integración por sus responsables.
+**Estado de esta ampliación:** integrada. Permanecen pendientes las diez
+ejecuciones no funcionales, el análisis antes/después y el cierre documental.
 
 ## 3. Arquitectura
 
@@ -68,7 +68,7 @@ nginx / frontend ----> API Spring Boot
                                          LogiExpress / SAT
 ```
 
-### 3.2 Evolución objetivo de Fase 3
+### 3.2 Flujo financiero de Fase 3
 
 ```text
 Checkout
@@ -125,9 +125,13 @@ expuestos públicamente.
 
 ### 5.2 Recursos y nube
 
-Los recursos finales, proveedor, URL, DNS, backup y costo son responsabilidad
-del frente de Kevin y permanecen `PENDIENTES` en este manual hasta recibir
-evidencia. No se inventan tamaños ni garantías de disponibilidad.
+La bitácora del ambiente entregado confirma Google Cloud, proyecto
+`sgo-logic-g5-202010844`, zona `us-central1-a`, VM `e2-standard-2` (2 vCPU,
+8 GB), 4 GB de swap e IP pública `136.65.180.39`. La guía de provisión define
+Ubuntu 24.04 y disco de 30 GB; esos dos valores deben contrastarse con la VM en
+la evidencia final. El puerto 80 sirve la tienda, consola y API. Los
+procedimientos de respaldo, restauración y rollback están en
+`docs/operacion/RUNBOOK.md`.
 
 ## 6. Configuración
 
@@ -150,9 +154,21 @@ Grupos principales de variables:
 | `LOGIEXPRESS_*`, `PAYKLIK_*` | Servicios externos desplegados localmente |
 | `SGO_MAIL_*` | Proveedor de correo; vacío usa simulación local |
 
-Variables nuevas de crédito: `PENDIENTES` del contrato definitivo. Deben
-documentarse aquí antes de `v4`, incluyendo reglas, versión, timeouts y límites,
-sin registrar secretos.
+Variables principales de crédito:
+
+| Variable | Predeterminado | Uso |
+|---|---:|---|
+| `SGO_CREDIT_MINIMUM_PURCHASES` | `3` | Compras mínimas |
+| `SGO_CREDIT_MINIMUM_ON_TIME_RATE` | `0.80` | Puntualidad mínima |
+| `SGO_CREDIT_MAXIMUM_RETURN_RATE` | `0.30` | Devoluciones máximas |
+| `SGO_CREDIT_MAXIMUM_CRITICAL_INCIDENTS` | `1` | Incidentes críticos máximos |
+| `SGO_CREDIT_MAXIMUM_LIMIT` | `5000.00` | Tope de la línea |
+| `SGO_CREDIT_LIMIT_RATIO` | `0.40` | Fracción de compras de 12 meses |
+| `SGO_CREDIT_TERM_DAYS` | `30` | Plazo de la obligación |
+| `SGO_CREDIT_RULE_VERSION` | `credit-rules-v1` | Versión auditable |
+| `SGO_CREDIT_HISTORY_WINDOW_MONTHS` | `12` | Ventana histórica |
+| `SGO_CREDIT_OPTIONS_TIMEOUT_MS` | `2000` | Timeout de opciones |
+| `SGO_CREDIT_OPTIONS_CALL_POOL_SIZE` | `4` | Hilos de evaluación |
 
 ## 7. Construcción y ejecución local
 
@@ -219,11 +235,12 @@ comprueba Actuator y correlación HTTP.
 
 Los scripts están en `tests/k6/phase3`. Antes de ejecutarlos:
 
-1. Confirmar el SHA/tag y que los endpoints de crédito estén integrados.
+1. Confirmar el SHA/tag medido.
 2. Recibir de Kevin una URL estable y autorización para generar carga.
 3. Sembrar un dataset determinista y aislado.
 4. Copiar `.env.performance.example` como `.env.performance`.
-5. Ajustar las rutas al contrato real y nunca guardar secretos.
+5. Habilitar `ALLOW_MUTATIONS` y `ALLOW_STRESS` únicamente en la ventana
+   autorizada; nunca guardar secretos.
 
 Ejecución en PowerShell:
 
@@ -245,17 +262,14 @@ throughput, p50, p95, p99, errores, recursos, límite y recuperación.
 
 ## 10. CI/CD
 
-### 10.1 Estado comprobado
+### 10.1 Pipeline integrado
 
-El workflow actual `.github/workflows/qa-integracion-base.yml` ejecuta:
+El workflow `.github/workflows/ci-cd.yml` ejecuta matrices de build y pruebas
+para los cinco proyectos Java, valida el frontend y ambos Compose, publica
+reportes, construye seis imágenes con tags inmutables y permite desplegar solo
+después de que los gates anteriores concluyen correctamente.
 
-1. Checkout del repositorio.
-2. Java 25.
-3. `clean verify` del backend.
-4. Publicación de reportes Surefire.
-5. Construcción y smoke de Compose después de las pruebas.
-
-### 10.2 Gate requerido para Fase 3
+### 10.2 Gate de Fase 3
 
 ```text
 build -> unitarias/integración -> imágenes -> deploy -> health -> smoke
@@ -265,8 +279,9 @@ build -> unitarias/integración -> imágenes -> deploy -> health -> smoke
 falla, no debe ejecutarse. Las imágenes deben etiquetarse por release y SHA,
 no únicamente como `latest`.
 
-**Estado:** publicación de imágenes, deploy, smoke en nube y rollback están
-`PENDIENTES` de Kevin y de revisión cruzada por Andy.
+**Estado:** pipeline, imágenes, deploy, health y smoke están implementados; el
+tag `v1` existe en `main`. Andy aún debe adjuntar la revisión del run y Kevin
+debe conservar evidencia del ensayo de rollback y de los tags `v2` a `v4`.
 
 ## 11. Despliegue en nube
 
@@ -281,7 +296,9 @@ Antes de aceptar el despliegue se requiere evidencia de:
 - Smoke externo de cinco rutas críticas.
 - Rollback al tag anterior.
 
-URL, región, recursos, acceso y procedimiento final: `PENDIENTES` de Kevin.
+URL pública: `http://136.65.180.39`. La consola está en `/staff.html`; almacén,
+POS-01, LogiExpress y PayKlik usan los puertos `8082`, `8084`, `8085` y `8086`.
+No se documentan contraseñas ni llaves en este manual.
 
 ## 12. Operación
 
@@ -316,9 +333,11 @@ Outbox, Inbox y operaciones pendientes.
 
 ### 12.4 Backup, restauración y rollback
 
-El procedimiento específico de nube y la compatibilidad de migraciones están
-`PENDIENTES` del runbook de Kevin. No debe declararse rollback completo hasta
-probar restauración de datos y compatibilidad con el tag anterior.
+`deploy/scripts/backup.sh` conserva respaldos comprimidos; `deploy.sh` registra
+el tag previo y ejecuta rollback automático si health o smoke fallan. El
+procedimiento manual está en `docs/operacion/RUNBOOK.md`. No debe declararse el
+rollback como ensayado hasta guardar la evidencia de volver a un tag anterior y
+restaurar el actual.
 
 ## 13. Smoke independiente en nube
 
@@ -331,8 +350,10 @@ Las cinco rutas mínimas serán:
 4. Checkout mediante crédito o PayKlik.
 5. Consulta de orden/auditoría o notificación.
 
-Las rutas 3 y 4 están `PENDIENTES` del contrato final. El reporte debe indicar
-fecha, SHA/tag, URL sin credenciales, códigos HTTP y conclusión.
+El script `tests/k6/phase3/smoke-phase3-cloud.js` usa las rutas definitivas:
+crea carrito, agrega producto, consulta opciones, hace checkout, ejecuta la Saga
+y consulta la orden. El reporte debe indicar fecha, SHA/tag, URL sin
+credenciales, códigos HTTP y conclusión.
 
 ## 14. Revisión cruzada de CI/CD
 
@@ -346,6 +367,9 @@ Andy aprueba la evidencia de Kevin únicamente si:
 - Las imágenes usan SHA/tag inmutable.
 - Se demuestra rollback al release anterior.
 - Existen cuatro releases trazables en `main`.
+
+La revisión estática y sus pendientes están registrados en
+`docs/evidence/devops/REV-ANDY-2026-10-14-CICD.md`.
 
 ## 15. Seguridad
 
@@ -361,14 +385,15 @@ Andy aprueba la evidencia de Kevin únicamente si:
 
 | Elemento | Estado | Dueño |
 |---|---|---|
-| Crédito propio y elegibilidad | PENDIENTE de integración local | Jorge/Jairo |
-| Ruta dual completa y eventos | PENDIENTE | Jairo/Edson |
-| Endpoints definitivos para k6 | PENDIENTE | Jairo/Jorge/Edson |
-| Cinco ejecuciones de carga | PENDIENTE de ambiente estable | Andy |
-| Cinco ejecuciones de estrés | PENDIENTE de autorización/ambiente | Andy/Kevin |
+| Crédito propio y elegibilidad | INTEGRADO | Jorge/Jairo |
+| Ruta dual completa y eventos | INTEGRADO | Jairo/Edson |
+| Endpoints definitivos para k6 | ALINEADOS EN EL ARNÉS | Andy |
+| Cinco ejecuciones de carga | PENDIENTE DE EJECUCIÓN | Andy |
+| Cinco ejecuciones de estrés | PENDIENTE DE VENTANA AUTORIZADA | Andy/Kevin |
 | Análisis antes/después | PENDIENTE de primeras mediciones | Andy |
-| Nube y URL | PENDIENTE | Kevin |
-| Deploy, rollback y cuatro releases | PENDIENTE de evidencia | Kevin |
+| Nube y URL | DISPONIBLE; smoke independiente pendiente | Kevin/Andy |
+| Deploy y release `v1` | IMPLEMENTADOS | Kevin |
+| Rollback ensayado y releases `v2`–`v4` | PENDIENTE de evidencia | Kevin |
 | Manual revisado por no autor | PENDIENTE | Kevin |
 
 ## 17. Criterio de cierre del manual

@@ -1,9 +1,10 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('load', 'stress', 'all')]
+    [ValidateSet('dataset', 'load', 'stress', 'all', 'smoke')]
     [string]$Suite = 'all',
     [string]$EnvFile = '',
-    [string]$BaseUrl = ''
+    [string]$BaseUrl = '',
+    [string]$RunId = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,6 +17,9 @@ if (-not (Test-Path -LiteralPath $EnvFile)) {
 }
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw 'Docker no está disponible en PATH.'
+}
+if ([string]::IsNullOrWhiteSpace($RunId)) {
+    $RunId = Get-Date -Format 'yyyyMMdd-HHmmss'
 }
 
 $loadScripts = @(
@@ -33,8 +37,10 @@ $stressScripts = @(
     'stress-05-recovery.js'
 )
 $scripts = switch ($Suite) {
+    'dataset' { @('prepare-dataset.js') }
     'load' { $loadScripts }
     'stress' { $stressScripts }
+    'smoke' { @('smoke-phase3-cloud.js') }
     default { $loadScripts + $stressScripts }
 }
 
@@ -52,6 +58,7 @@ foreach ($script in $scripts) {
         'run', '--rm',
         '--add-host=host.docker.internal:host-gateway',
         '--env-file', $resolvedEnv,
+        '-e', "RUN_ID=$RunId",
         '-v', "${scriptRoot}:/scripts:ro",
         '-v', "${resultsDir}:/results",
         'grafana/k6', 'run',

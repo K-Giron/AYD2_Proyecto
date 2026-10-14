@@ -1,20 +1,20 @@
 import { sleep } from 'k6';
 import {
-    deterministicUuid,
+    createCartWithItem,
+    customerIdFor,
+    customerSequence,
     expectBody,
     expectStatus,
-    iterationNumber,
     jsonOrNull,
     login,
     numberEnv,
-    pathFromTemplate,
     pauseSeconds,
     requestJson,
+    requireFlag,
 } from './lib/common.js';
 
 const SCENARIO = 'LOAD-01';
-const PATH_TEMPLATE = __ENV.CREDIT_OPTIONS_PATH_TEMPLATE
-    || '/api/v1/credit/eligibility?customerId={customerId}&amount={amount}';
+let cartId = null;
 
 export const options = {
     scenarios: {
@@ -31,25 +31,28 @@ export const options = {
 };
 
 export function setup() {
-    return { token: login('client') };
+    requireFlag('ALLOW_MUTATIONS', 'LOAD-01 crea carritos sintéticos para evaluar opciones reales.');
+    return { token: login('support') };
 }
 
 export default function (data) {
-    const sequence = iterationNumber();
-    const customerId = deterministicUuid((sequence % numberEnv('CUSTOMERS', 500)) + 1, 100000);
-    const amount = 250 + (sequence % 20) * 50;
-    const path = pathFromTemplate(PATH_TEMPLATE, { customerId, amount });
+    const sequence = customerSequence(__VU);
+    if (!cartId) {
+        const cart = createCartWithItem(data.token, customerIdFor(sequence), sequence,
+            { scenario_id: `${SCENARIO}-SETUP` });
+        if (!cart) return;
+        cartId = cart.cartId;
+    }
     const tags = { scenario_id: SCENARIO, operation: 'credit-options' };
-    const response = requestJson('GET', path, data.token, null, tags);
+    const response = requestJson('GET', `/api/v1/carts/${cartId}/payment-options`,
+        data.token, null, tags);
 
     if (expectStatus(response, [200], SCENARIO, tags)) {
         expectBody(response, (candidate) => {
             const body = jsonOrNull(candidate);
-            return body !== null && (
-                typeof body.eligible === 'boolean'
-                || ['APPROVED', 'REJECTED'].includes(body.decision)
-                || Array.isArray(body.paymentOptions)
-            );
+            return body !== null && body.cartId === cartId
+                && Array.isArray(body.options)
+                && body.options.some((option) => option.route === 'PAYKLIK' && option.enabled === true);
         }, SCENARIO, tags);
     }
     sleep(pauseSeconds());

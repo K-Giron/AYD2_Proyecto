@@ -5,12 +5,20 @@ Este directorio corresponde al frente de Andy Sánchez (`AND3-01` a
 no afirman resultados: la evidencia solo se cierra después de ejecutarlos
 contra un commit o release identificable.
 
-## Estado del contrato
+## Contratos medidos
 
-Al crear este arnés, el módulo de crédito todavía no estaba integrado en la
-copia local de `develop`. Por eso las rutas nuevas están centralizadas en
-variables de ambiente. Antes de la ejecución final, deben igualarse con el
-contrato publicado por los responsables de crédito, checkout e integración.
+El arnés está alineado con la rebanada integrada en `develop` el 14 de octubre:
+
+- opciones: `GET /api/v1/carts/{cartId}/payment-options`;
+- checkout: `POST /api/v1/carts/{cartId}/checkout`;
+- Saga dual: `POST /api/v1/orders/{orderId}/saga`, rutas `PAYKLIK|OWN_CREDIT`;
+- historial ERP: `POST /api/v1/credit/history`, contrato `credit-history-v1`;
+- consulta: `GET /api/v1/orders/{orderId}/summary` y
+  `GET /api/v1/audit/events?orderId=...`.
+
+Las pruebas usan una cuenta interna para operar clientes sintéticos. La cuenta
+`CLIENT` se reserva para el smoke, que toma el `customerId` firmado del login y
+no acepta un UUID inventado desde variables de ambiente.
 
 ## Catálogo
 
@@ -35,31 +43,32 @@ contrato publicado por los responsables de crédito, checkout e integración.
 - Cuentas de prueba sin datos personales ni credenciales productivas.
 - Autorización del responsable del ambiente antes de ejecutar estrés.
 
+Los scripts que escriben datos se detienen salvo que `ALLOW_MUTATIONS=true`.
+Los cinco escenarios de estrés exigen además `ALLOW_STRESS=true`.
+
 ## Configuración
 
 1. Copiar `.env.performance.example` como `.env.performance`.
-2. Ajustar `BASE_URL`, rutas y credenciales del ambiente.
-3. Confirmar que los UUID consultados existen en el dataset.
+2. Ajustar `BASE_URL`, `RUN_ID` y las credenciales del ambiente.
+3. Dejar `ALLOW_MUTATIONS=false` y `ALLOW_STRESS=false` hasta obtener la
+   autorización de Kevin para la ventana de pruebas.
 4. No versionar `.env.performance` ni secretos.
 
-El dataset determinista se prepara, una vez publicado el endpoint de historial,
-con:
+El dataset determinista se prepara con `ALLOW_MUTATIONS=true`:
 
-```bash
-docker run --rm --add-host host.docker.internal:host-gateway \
-  --env-file .env.performance -v "$PWD:/scripts:ro" \
-  grafana/k6 run /scripts/prepare-dataset.js
+```powershell
+./run-phase3.ps1 -Suite dataset
 ```
 
-Genera cuatro cohortes repetibles (cliente puntual, comportamiento medio,
-moroso/con incidencias y datos insuficientes) con UUID e idempotencia estables.
-La limpieza debe ejecutarse restaurando el snapshot/base efímera acordada con
-Kevin; no se proporciona un borrado genérico que pueda apuntar por error a un
-ambiente compartido.
+Genera 500 clientes por defecto en cinco cohortes: elegible, historia
+insuficiente, devoluciones altas, incidentes críticos y pagos tardíos. La
+idempotencia real usa `sourceReference`; repetir la preparación no duplica los
+hechos. Si Kevin autoriza surtir inventario para compras completas, se define
+`INVENTORY_TOPUP` con las unidades a ingresar en `CD-01`; su valor por defecto
+es `0`.
 
-Las rutas de crédito y checkout incluidas son provisionales. Si el contrato
-final cambia, solo se actualiza el archivo de ambiente; los scripts conservan
-el propósito y las métricas.
+La limpieza debe ejecutarse restaurando el snapshot/base efímera acordada con
+Kevin. El arnés no borra de forma genérica un ambiente compartido.
 
 ## Ejecución
 
@@ -69,15 +78,22 @@ Windows PowerShell:
 ./run-phase3.ps1 -Suite load
 ./run-phase3.ps1 -Suite stress
 ./run-phase3.ps1 -Suite all
+./run-phase3.ps1 -Suite smoke
 ```
+
+El orden recomendado es `prepare-dataset.js`, suite `load` y luego suite
+`stress`. `LOAD-05` consulta las órdenes que produjo `LOAD-02`, por lo que no
+debe ejecutarse primero en un ambiente vacío.
 
 Linux/macOS:
 
 ```bash
 chmod +x run-phase3.sh
+./run-phase3.sh dataset
 ./run-phase3.sh load
 ./run-phase3.sh stress
 ./run-phase3.sh all
+./run-phase3.sh smoke
 ```
 
 Para una sola prueba:
@@ -106,13 +122,9 @@ Cada corrida debe registrar:
 Los ejecutores guardan resúmenes en `results/`. Las conclusiones verificadas se
 transcriben a `docs/evidence/performance/FASE3-REPORTE-CARGA-ESTRES.md`.
 
-El smoke externo independiente se ejecuta con:
-
-```bash
-docker run --rm --add-host host.docker.internal:host-gateway \
-  --env-file .env.performance -v "$PWD:/scripts:ro" \
-  grafana/k6 run /scripts/smoke-phase3-cloud.js
-```
+El smoke crea un carrito, consulta opciones, hace checkout, ejecuta la Saga y
+consulta la orden. Requiere `ALLOW_MUTATIONS=true`; por defecto usa `PAYKLIK`
+para no depender del saldo de crédito del cliente canónico.
 
 ## Reglas de seguridad
 

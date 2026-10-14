@@ -1,21 +1,22 @@
 import { sleep } from 'k6';
 import {
-    deterministicUuid,
+    createCartWithItem,
+    customerIdFor,
+    customerSequence,
+    expectBody,
     expectStatus,
-    idempotencyKey,
-    iterationNumber,
+    jsonOrNull,
     login,
     numberEnv,
-    pathFromTemplate,
     pauseSeconds,
     requestJson,
+    requireFlag,
 } from './lib/common.js';
 
 const SCENARIO = 'STRESS-03';
-const CREDIT_PATH = __ENV.CREDIT_OPTIONS_PATH_TEMPLATE
-    || '/api/v1/credit/eligibility?customerId={customerId}&amount={amount}';
-const CHECKOUT_PATH = __ENV.CHECKOUT_PATH || '/api/v1/checkout';
 const MAX_VUS = numberEnv('STRESS_MAX_VUS', 160);
+let creditCartId = null;
+let controlCartId = null;
 
 export const options = {
     scenarios: {
@@ -45,35 +46,47 @@ export const options = {
 };
 
 export function setup() {
-    return { token: login('client') };
+    requireFlag('ALLOW_MUTATIONS', 'STRESS-03 crea carritos sintéticos.');
+    requireFlag('ALLOW_STRESS', 'STRESS-03 satura el evaluador de crédito.');
+    return { token: login('support') };
 }
 
 export function creditPressure(data) {
-    const sequence = iterationNumber();
-    const path = pathFromTemplate(CREDIT_PATH, {
-        customerId: deterministicUuid((sequence % numberEnv('CUSTOMERS', 500)) + 1, 100000),
-        amount: 1000 + (sequence % 30) * 50,
-    });
+    const sequence = customerSequence(__VU);
+    if (!creditCartId) {
+        const cart = createCartWithItem(data.token, customerIdFor(sequence), sequence,
+            { scenario_id: `${SCENARIO}-SETUP`, workload: 'credit-pressure' });
+        if (!cart) return;
+        creditCartId = cart.cartId;
+    }
     const tags = { scenario_id: SCENARIO, operation: 'credit-pressure' };
-    const response = requestJson('GET', path, data.token, null, tags);
-    expectStatus(response, [200], `${SCENARIO} crédito`, tags);
+    const response = requestJson('GET', `/api/v1/carts/${creditCartId}/payment-options`,
+        data.token, null, tags);
+    if (expectStatus(response, [200], `${SCENARIO} crédito`, tags)) {
+        expectBody(response, (candidate) => Array.isArray(jsonOrNull(candidate)?.options),
+            `${SCENARIO} crédito`, tags);
+    }
     sleep(pauseSeconds());
 }
 
 export function payKlikControl(data) {
-    const sequence = iterationNumber(600000);
-    const tags = { scenario_id: SCENARIO, operation: 'payklik-control', payment_method: 'PAYKLIK' };
-    const response = requestJson('POST', CHECKOUT_PATH, data.token, {
-        requestId: deterministicUuid(sequence, 600000),
-        customerId: deterministicUuid((sequence % numberEnv('CUSTOMERS', 500)) + 1, 100000),
-        amount: 900 + (sequence % 10) * 50,
-        currency: 'GTQ',
-        paymentMethod: 'PAYKLIK',
-    }, tags, {
-        'Idempotency-Key': idempotencyKey('payklik-control', sequence),
-        'X-Actor': 'CUSTOMER',
-    });
-    expectStatus(response, [200, 201, 202], `${SCENARIO} PayKlik`, tags);
+    const sequence = customerSequence(__VU + Math.floor(numberEnv('CUSTOMERS', 500) / 2));
+    if (!controlCartId) {
+        const cart = createCartWithItem(data.token, customerIdFor(sequence), sequence + 600000,
+            { scenario_id: `${SCENARIO}-SETUP`, workload: 'payklik-control' });
+        if (!cart) return;
+        controlCartId = cart.cartId;
+    }
+    const tags = { scenario_id: SCENARIO, operation: 'payklik-control', payment_route: 'PAYKLIK' };
+    const response = requestJson('GET', `/api/v1/carts/${controlCartId}/payment-options`,
+        data.token, null, tags);
+    if (expectStatus(response, [200], `${SCENARIO} PayKlik`, tags)) {
+        expectBody(response, (candidate) => {
+            const body = jsonOrNull(candidate);
+            return Array.isArray(body?.options)
+                && body.options.some((option) => option.route === 'PAYKLIK' && option.enabled === true);
+        }, `${SCENARIO} PayKlik`, tags);
+    }
     sleep(pauseSeconds());
 }
 

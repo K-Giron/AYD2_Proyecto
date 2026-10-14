@@ -384,9 +384,10 @@ reporte controlado está en
 `docs/evidence/performance/FASE3-REPORTE-CARGA-ESTRES.md` y el Manual Técnico en
 `docs/manuals/MANUAL_TECNICO_FASE_3.md`.
 
-Los resultados permanecen marcados como pendientes hasta medir un SHA o release
-que contenga el módulo de crédito, el checkout dual y el ambiente autorizado.
-Los scripts no convierten rutas provisionales ni valores estimados en evidencia.
+El arnés ya usa los contratos integrados de carritos, opciones de pago, Saga
+dual e historial `credit-history-v1`. Los resultados permanecen pendientes
+hasta medir un SHA o release autorizado; ningún valor estimado se presenta como
+evidencia.
 
 ## Integración continua — QA-01
 

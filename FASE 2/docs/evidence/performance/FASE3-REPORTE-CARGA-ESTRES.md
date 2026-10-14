@@ -1,7 +1,7 @@
 # Reporte de rendimiento - Fase 3
 
 **Responsable:** Andy Sánchez  
-**Estado:** Preparado, pendiente de ejecución contra la rebanada de crédito integrada  
+**Estado:** Arnés alineado con contratos reales; pendiente de ejecución y métricas  
 **Zona horaria de la evidencia:** America/Guatemala
 
 ## 1. Propósito
@@ -26,6 +26,12 @@ basada en métricas. No se aceptan valores estimados como resultados.
 | Configuración k6 | `tests/k6/phase3/.env.performance`, no versionada |
 | Directorio de resultados | `tests/k6/phase3/results/` |
 
+El ambiente entregado para la medición es una VM GCP `e2-standard-2` en
+`us-central1-a` (2 vCPU, 8 GB). La guía prescribe disco de 30 GB, dato que debe
+confirmarse al capturar recursos. La URL se registrará sin incluir cuentas,
+contraseñas ni tokens. La ejecución debe medir el tag que Kevin autorice; no se
+asume que `v1` será el candidato final.
+
 ## 3. Criterios comunes
 
 - Reportar throughput, p50, p95, p99 y tasa de error.
@@ -36,6 +42,8 @@ basada en métricas. No se aceptan valores estimados como resultados.
   la sobrecarga.
 - Correlacionar los resultados con CPU, memoria, conexiones de base, profundidad
   de cola y logs cuando el ambiente los exponga.
+- Conservar `ALLOW_MUTATIONS=false` y `ALLOW_STRESS=false` fuera de la ventana
+  aprobada; cada corrida usa un `RUN_ID` único.
 
 ## 4. Pruebas de carga
 
@@ -151,7 +159,7 @@ caso se registra como hipótesis y se diseña una segunda medición controlada.
 
 ## 8. Veredicto
 
-**PENDIENTE DE EJECUCIÓN.** Todavía no existe evidencia para aprobar o rechazar
-los umbrales de Fase 3. Este estado debe mantenerse hasta medir un commit o tag
-con el crédito, checkout dual y ambiente objetivo disponibles.
+**PENDIENTE DE EJECUCIÓN.** El crédito, checkout dual, contratos y ambiente ya
+están disponibles, pero todavía no existe evidencia para aprobar o rechazar los
+umbrales. Este estado debe mantenerse hasta medir un commit o tag autorizado.
 
