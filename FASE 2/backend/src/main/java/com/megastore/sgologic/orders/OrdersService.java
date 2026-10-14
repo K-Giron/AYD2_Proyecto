@@ -2,6 +2,11 @@ package com.megastore.sgologic.orders;
 
 import com.megastore.sgologic.audit.api.AuditEntryRequest;
 import com.megastore.sgologic.audit.api.AuditRecorder;
+import com.megastore.sgologic.credit.api.CreditOperationResult;
+import com.megastore.sgologic.credit.api.CreditOperationStatus;
+import com.megastore.sgologic.credit.api.CreditPort;
+import com.megastore.sgologic.credit.api.CreditRequest;
+import com.megastore.sgologic.fiscal.FinancialOperationType;
 import com.megastore.sgologic.fiscal.FiscalProcessingPort;
 import com.megastore.sgologic.fiscal.FiscalProcessingRequest;
 import com.megastore.sgologic.fiscal.FiscalProcessingResult;
@@ -36,6 +41,7 @@ public class OrdersService {
     private final OrderStatusHistoryRepository historyRepository;
     private final InventoryReservationPort inventoryReservationPort;
     private final PaymentPort paymentPort;
+    private final CreditPort creditPort;
     private final FiscalProcessingPort fiscalProcessingPort;
     private final PublishEvent eventPublisher;
     private final AuditRecorder auditRecorder;
@@ -46,6 +52,7 @@ public class OrdersService {
                          OrderStatusHistoryRepository historyRepository,
                          InventoryReservationPort inventoryReservationPort,
                          PaymentPort paymentPort,
+                         CreditPort creditPort,
                          FiscalProcessingPort fiscalProcessingPort,
                          PublishEvent eventPublisher,
                          AuditRecorder auditRecorder,
@@ -55,6 +62,7 @@ public class OrdersService {
         this.historyRepository = historyRepository;
         this.inventoryReservationPort = inventoryReservationPort;
         this.paymentPort = paymentPort;
+        this.creditPort = creditPort;
         this.fiscalProcessingPort = fiscalProcessingPort;
         this.eventPublisher = eventPublisher;
         this.auditRecorder = auditRecorder;
@@ -168,7 +176,8 @@ public class OrdersService {
         OrderStatus previous = order.getStatus();
         if (previous != OrderStatus.CREATED
                 && previous != OrderStatus.INVENTORY_RESERVED
-                && previous != OrderStatus.PAYMENT_REJECTED) {
+                && previous != OrderStatus.PAYMENT_REJECTED
+                && previous != OrderStatus.CREDIT_REJECTED) {
             throw new InvalidOrderTransitionException(orderId, previous, OrderStatus.CANCELLED);
         }
         inventoryReservationPort.releaseOrderReservations(orderId);
@@ -242,17 +251,24 @@ public class OrdersService {
                                                String paymentReference, String idempotencyKey,
                                                String actor, UUID correlationId) {
         CustomerOrder order = getOrder(orderId);
-        if (order.getStatus() != OrderStatus.INVENTORY_RESERVED) {
+        if (order.getStatus() != OrderStatus.INVENTORY_RESERVED
+                && order.getStatus() != OrderStatus.CREDIT_REJECTED) {
+            if (order.getPaymentRoute() != PaymentRoute.PAYKLIK) {
+                throw new InvalidOrderTransitionException(
+                        orderId, order.getStatus(), OrderStatus.PAYMENT_PENDING);
+            }
             PaymentResult repeated = paymentPort.requestPayment(new PaymentRequest(
                     orderId, order.getTotal(), currency, order.getChannel().name(), method.name(),
                     paymentReference, correlationId, idempotencyKey));
             return new OrderPaymentOutcome(order, repeated);
         }
 
+        OrderStatus previous = order.getStatus();
+        order.selectPaymentRoute(PaymentRoute.PAYKLIK);
         Instant now = clock.instant();
         order.transitionTo(OrderStatus.PAYMENT_PENDING, now);
         orderRepository.save(order);
-        recordTransition(orderId, OrderStatus.INVENTORY_RESERVED, OrderStatus.PAYMENT_PENDING,
+        recordTransition(orderId, previous, OrderStatus.PAYMENT_PENDING,
                 actor, "Intento de pago persistido", correlationId, now, "SUCCESS");
 
         PaymentResult result = paymentPort.requestPayment(new PaymentRequest(
@@ -265,10 +281,44 @@ public class OrdersService {
             default -> throw new IllegalStateException("Estado de pago no soportado: " + result.status());
         };
         order.transitionTo(next, clock.instant());
+        order.recordFinancialOperation(result.paymentAttemptId());
         orderRepository.save(order);
         recordTransition(orderId, OrderStatus.PAYMENT_PENDING, next, actor,
                 paymentReason(result.status()), correlationId, clock.instant(), "SUCCESS");
         return new OrderPaymentOutcome(order, result);
+    }
+
+    @Transactional
+    public OrderCreditOutcome processCredit(UUID orderId, String currency, String idempotencyKey,
+                                            String actor, UUID correlationId) {
+        CustomerOrder order = getOrder(orderId);
+        if (order.getStatus() != OrderStatus.INVENTORY_RESERVED) {
+            CreditOperationResult repeated = creditPort.latestForOrder(orderId)
+                    .orElseThrow(() -> new InvalidOrderTransitionException(
+                            orderId, order.getStatus(), OrderStatus.CREDIT_PENDING));
+            return new OrderCreditOutcome(order, repeated);
+        }
+
+        order.selectPaymentRoute(PaymentRoute.OWN_CREDIT);
+        order.transitionTo(OrderStatus.CREDIT_PENDING, clock.instant());
+        orderRepository.save(order);
+        recordTransition(orderId, OrderStatus.INVENTORY_RESERVED, OrderStatus.CREDIT_PENDING,
+                actor, "Solicitud de crédito propio persistida", correlationId, clock.instant(), "SUCCESS");
+
+        CreditOperationResult result = creditPort.requestCredit(new CreditRequest(
+                orderId, order.getCustomerId(), order.getTotal(), currency,
+                correlationId, idempotencyKey));
+        OrderStatus next = result.status() == CreditOperationStatus.GRANTED
+                ? OrderStatus.CREDIT_APPROVED : OrderStatus.CREDIT_REJECTED;
+        order.transitionTo(next, clock.instant());
+        order.recordFinancialOperation(result.creditOperationId());
+        orderRepository.save(order);
+        recordTransition(orderId, OrderStatus.CREDIT_PENDING, next, actor,
+                result.status() == CreditOperationStatus.GRANTED
+                        ? "Crédito propio aprobado con vencimiento " + result.dueDate()
+                        : "Crédito propio rechazado: " + result.publicReasonCode(),
+                correlationId, clock.instant(), "SUCCESS");
+        return new OrderCreditOutcome(order, result);
     }
 
     private String paymentReason(String status) {
@@ -281,22 +331,36 @@ public class OrdersService {
     }
 
     @Transactional
-    public OrderFiscalOutcome requestFiscalDocument(UUID orderId, UUID paymentAttemptId,
+    public OrderFiscalOutcome requestFiscalDocument(UUID orderId, UUID financialOperationId,
+                                                     FinancialOperationType financialOperationType,
                                                      String taxIdentifier, String customerName,
                                                      String currency, String idempotencyKey,
                                                      String actor, UUID correlationId) {
         CustomerOrder order = getOrder(orderId);
-        if (order.getStatus() != OrderStatus.PAYMENT_APPROVED) {
+        if (order.getStatus() != OrderStatus.PAYMENT_APPROVED
+                && order.getStatus() != OrderStatus.CREDIT_APPROVED) {
             throw new InvalidOrderTransitionException(orderId, order.getStatus(), OrderStatus.FISCAL_PENDING);
         }
         order.transitionTo(OrderStatus.FISCAL_PENDING, clock.instant());
         orderRepository.save(order);
-        recordTransition(orderId, OrderStatus.PAYMENT_APPROVED, OrderStatus.FISCAL_PENDING,
+        OrderStatus previous = financialOperationType == FinancialOperationType.OWN_CREDIT
+                ? OrderStatus.CREDIT_APPROVED : OrderStatus.PAYMENT_APPROVED;
+        recordTransition(orderId, previous, OrderStatus.FISCAL_PENDING,
                 actor, "Documento fiscal enviado a SAT", correlationId, clock.instant(), "SUCCESS");
         FiscalProcessingResult result = fiscalProcessingPort.requestInvoice(new FiscalProcessingRequest(
-                orderId, paymentAttemptId, taxIdentifier, customerName, order.getTotal(), currency,
+                orderId, financialOperationId, financialOperationType,
+                taxIdentifier, customerName, order.getTotal(), currency,
                 correlationId, idempotencyKey));
         return new OrderFiscalOutcome(order, result);
+    }
+
+    /** Compatibilidad del endpoint F2 dedicado a PayKlik. */
+    public OrderFiscalOutcome requestFiscalDocument(UUID orderId, UUID paymentAttemptId,
+                                                     String taxIdentifier, String customerName,
+                                                     String currency, String idempotencyKey,
+                                                     String actor, UUID correlationId) {
+        return requestFiscalDocument(orderId, paymentAttemptId, FinancialOperationType.PAYKLIK,
+                taxIdentifier, customerName, currency, idempotencyKey, actor, correlationId);
     }
 
     @Transactional
@@ -341,9 +405,15 @@ public class OrdersService {
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("orderId", orderId);
-        orderRepository.findById(orderId)
-                .map(CustomerOrder::getCustomerId)
-                .ifPresent(customerId -> payload.put("customerId", customerId));
+        orderRepository.findById(orderId).ifPresent(order -> {
+            payload.put("customerId", order.getCustomerId());
+            if (order.getPaymentRoute() != null) {
+                payload.put("paymentRoute", order.getPaymentRoute().name());
+            }
+            if (order.getFinancialOperationId() != null) {
+                payload.put("financialOperationId", order.getFinancialOperationId());
+            }
+        });
         payload.put("previousStatus", previous == null ? null : previous.name());
         payload.put("newStatus", next.name());
         payload.put("actor", actor);

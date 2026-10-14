@@ -25,6 +25,11 @@ class OrdersExceptionHandler {
         return build(HttpStatus.CONFLICT, "ORDER_STATE_CONFLICT", exception.getMessage(), request);
     }
 
+    @ExceptionHandler(CartOwnershipException.class)
+    ResponseEntity<ApiError> handleForbidden(RuntimeException exception, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "CART_ACCESS_DENIED", exception.getMessage(), request);
+    }
+
     private ResponseEntity<ApiError> build(HttpStatus status, String code, String message,
                                             HttpServletRequest request) {
         Object correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME);
