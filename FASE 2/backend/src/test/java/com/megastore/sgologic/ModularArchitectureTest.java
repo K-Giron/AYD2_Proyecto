@@ -80,7 +80,7 @@ class ModularArchitectureTest {
             Set<String> allowed = switch (module.getIdentifier().toString()) {
                 case "orders" -> Set.of(SHARED_MODULE, "inventory", "payments", "credit", "fiscal",
                         "integration", "audit", "logistics");
-                case "credit" -> Set.of(SHARED_MODULE, "integration", "audit");
+                case "credit" -> Set.of(SHARED_MODULE, "integration", "audit", "messaging");
                 case "query" -> Set.of(SHARED_MODULE, "messaging");
                 case "notifications" -> Set.of(SHARED_MODULE, "messaging", "customers");
                 case "payments", "logistics" -> Set.of(SHARED_MODULE, "integration", "audit");

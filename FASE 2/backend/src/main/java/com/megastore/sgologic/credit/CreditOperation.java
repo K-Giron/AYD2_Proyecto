@@ -36,8 +36,17 @@ class CreditOperation {
     private String currency;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, updatable = false, length = 16)
+    @Column(name = "status", nullable = false, length = 16)
     private CreditOperationStatus status;
+
+    @Column(name = "overdue_at")
+    private Instant overdueAt;
+
+    @Column(name = "settled_at")
+    private Instant settledAt;
+
+    @Column(name = "cancelled_at")
+    private Instant cancelledAt;
 
     @Column(name = "approved_limit", nullable = false, updatable = false, precision = 14, scale = 2)
     private BigDecimal approvedLimit;
@@ -83,6 +92,35 @@ class CreditOperation {
         operation.correlationId = correlationId;
         operation.createdAt = createdAt;
         return operation;
+    }
+
+    /** Pasa a vencida; solo una operación vigente puede vencer. */
+    void markOverdue(Instant at) {
+        requireStatus(CreditOperationStatus.GRANTED, CreditOperationStatus.OVERDUE);
+        status = CreditOperationStatus.OVERDUE;
+        overdueAt = at;
+    }
+
+    /** Pagada por el cliente, vigente o ya vencida. */
+    void settle(Instant at) {
+        requireStatus(CreditOperationStatus.GRANTED, CreditOperationStatus.OVERDUE);
+        status = CreditOperationStatus.SETTLED;
+        settledAt = at;
+    }
+
+    /** Anulada por cancelación de la orden; solo antes de que venza o se pague. */
+    void cancel(Instant at) {
+        requireStatus(CreditOperationStatus.GRANTED);
+        status = CreditOperationStatus.CANCELLED;
+        cancelledAt = at;
+    }
+
+    private void requireStatus(CreditOperationStatus... allowed) {
+        for (CreditOperationStatus candidate : allowed) {
+            if (status == candidate) return;
+        }
+        throw new IllegalStateException("La operación de crédito está " + status
+                + " y no admite esta transición.");
     }
 
     UUID getId() { return id; }

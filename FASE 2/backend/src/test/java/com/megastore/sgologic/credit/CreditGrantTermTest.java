@@ -49,7 +49,7 @@ class CreditGrantTermTest {
         when(operations.save(any(CreditOperation.class))).thenAnswer(call -> call.getArgument(0));
         service = new CreditService(profiles, decisions, operations,
                 new CreditEligibilityPolicy(new CreditProperties()), mock(CreditConcurrencyGuard.class),
-                mock(PublishEvent.class), mock(AuditRecorder.class), Clock.fixed(NOW, ZoneOffset.UTC));
+                mock(PublishEvent.class), mock(CreditOperationEvents.class), mock(AuditRecorder.class), Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @Test

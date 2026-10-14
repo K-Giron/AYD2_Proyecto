@@ -128,7 +128,7 @@ class CreditHistoryService implements CreditHistoryPort {
     private BigDecimal outstandingCredit(UUID customerId) {
         return jdbc.queryForObject("""
                 SELECT coalesce(sum(amount), 0) FROM credit_operations
-                WHERE customer_id = ? AND status = 'GRANTED'
+                WHERE customer_id = ? AND status IN ('GRANTED', 'OVERDUE')
                 """, BigDecimal.class, customerId);
     }
 

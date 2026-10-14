@@ -30,6 +30,7 @@ class CreditService implements CreditPort {
     private final CreditEligibilityPolicy policy;
     private final CreditConcurrencyGuard concurrency;
     private final PublishEvent events;
+    private final CreditOperationEvents operationEvents;
     private final AuditRecorder audit;
     private final Clock clock;
 
@@ -39,6 +40,7 @@ class CreditService implements CreditPort {
                   CreditEligibilityPolicy policy,
                   CreditConcurrencyGuard concurrency,
                   PublishEvent events,
+                  CreditOperationEvents operationEvents,
                   AuditRecorder audit,
                   Clock clock) {
         this.profiles = profiles;
@@ -47,6 +49,7 @@ class CreditService implements CreditPort {
         this.policy = policy;
         this.concurrency = concurrency;
         this.events = events;
+        this.operationEvents = operationEvents;
         this.audit = audit;
         this.clock = clock;
     }
@@ -104,7 +107,7 @@ class CreditService implements CreditPort {
                 request.orderId(), request.customerId(), decision, request.amount(),
                 normalizeCurrency(request.currency()), dueDate, request.idempotencyKey(),
                 request.correlationId(), clock.instant()));
-        publishOperation(operation, profile == null ? BigDecimal.ZERO : profile.getAvailableCredit(),
+        operationEvents.publish(operation, profile == null ? BigDecimal.ZERO : profile.getAvailableCredit(),
                 request.correlationId());
         return toOperation(operation);
     }
@@ -155,30 +158,6 @@ class CreditService implements CreditPort {
                 "CREDIT_DECISION_RECORDED", decision.isEligible() ? "APPROVED" : "REJECTED",
                 null, "{\"reasonCode\":\"" + decision.getReasonCode() + "\",\"inputs\":"
                 + decision.getInputsSnapshot() + "}",
-                correlationId, correlationId, null));
-    }
-
-    private void publishOperation(CreditOperation operation, BigDecimal remainingAvailableCredit,
-                                  UUID correlationId) {
-        String eventType = "CREDIT_" + operation.getStatus().name();
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("orderId", operation.getOrderId());
-        payload.put("customerId", operation.getCustomerId());
-        payload.put("creditOperationId", operation.getId());
-        payload.put("decisionId", operation.getDecisionId());
-        payload.put("status", operation.getStatus().name());
-        payload.put("amount", operation.getAmount());
-        payload.put("currency", operation.getCurrency());
-        payload.put("approvedLimit", operation.getApprovedLimit());
-        payload.put("remainingAvailableCredit", remainingAvailableCredit);
-        payload.put("dueDate", operation.getDueDate());
-        payload.put("ruleVersion", operation.getRuleVersion());
-        payload.put("reasonCode", operation.getReasonCode());
-        events.publish(new OutboxEventRequest("CREDIT_OPERATION", operation.getId(),
-                eventType, 1, correlationId, correlationId, payload));
-        audit.record(new AuditEntryRequest("CREDIT_OPERATION", operation.getId(), operation.getOrderId(),
-                eventType, operation.getStatus().name(), null,
-                "{\"reasonCode\":\"" + operation.getReasonCode() + "\"}",
                 correlationId, correlationId, null));
     }
 
