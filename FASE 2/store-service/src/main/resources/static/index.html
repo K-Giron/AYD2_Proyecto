@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tienda física</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="store.css" />
+</head>
+<body>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <!-- Vendedor: solo se identifica con su usuario (equipo de la tienda, de confianza). -->
+    <div id="seller-gate" class="gate hidden">
+        <form id="seller-form" class="card gate-card">
+            <div class="brand"><div class="brand-mark" id="gate-mark">T</div><div class="brand-text"><h1 id="gate-store">Tienda</h1><span>Sistema de la tienda</span></div></div>
+            <label>Tu usuario de vendedor<input type="text" name="seller" required maxlength="80" autocomplete="username" placeholder="ej. maria" /></label>
+            <button type="submit" class="btn btn-primary">Abrir caja</button>
+            <p class="hint">Queda como responsable de cada venta y traslado de este turno.</p>
+        </form>
+    </div>
+
+    <div class="shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark" id="brand-mark">T</div>
+                <div class="brand-text">
+                    <h1 id="brand-name">Tienda</h1>
+                    <span id="brand-code">—</span>
+                </div>
+            </div>
+
+            <nav class="nav">
+                <button class="nav-btn active" data-tab="sale" data-title="Venta" data-lede="Escanea o escribe el código del artículo. NIT o CF, cobro y cambio.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v14"/><path d="M7 5v14"/><path d="M11 5v14"/><path d="M16 5v14"/><path d="M21 5v14"/></svg>
+                    Venta
+                </button>
+                <button class="nav-btn" data-tab="receiving" data-title="Recepción" data-lede="Escribe el folio con el que el central (o otra tienda) envió mercadería, revisa qué trae y confirma que llegó.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="10" rx="1.5"/><path d="M14 10h4l4 3.5V17h-8"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg>
+                    Recepción <span class="nav-count hidden" id="in-transit-count">0</span>
+                </button>
+                <button class="nav-btn" data-tab="inventory" data-title="Inventario" data-lede="Existencia del almacén de esta tienda. Solo sube cuando se confirma la recepción de un folio.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+                    Inventario
+                </button>
+                <button class="nav-btn" data-tab="transfers" data-title="Traslados" data-lede="Saca mercadería de la tienda por folio: de regreso al almacén central o hacia otra tienda.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m17 7 4 4-4 4"/><path d="M3 11h18"/><path d="m7 21-4-4 4-4"/><path d="M21 13H3"/></svg>
+                    Traslados
+                </button>
+                <button class="nav-btn" data-tab="sales" data-title="Ventas y facturas" data-lede="Facturas emitidas por fecha: consulta, reimprime y revisa si ya llegaron al central.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><path d="M9 8h6"/><path d="M9 12h6"/></svg>
+                    Ventas
+                </button>
+                <button class="nav-btn" data-tab="weborders" data-title="Pedidos web" data-lede="Eventos que envía SGO-Logic a esta tienda: el estado de las compras de la web y cuáles se recogen aquí.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/></svg>
+                    Pedidos web <span class="nav-count hidden" id="pickup-count">0</span>
+                </button>
+                <button class="nav-btn" data-tab="log" data-title="Bitácora de sincronización" data-lede="Todo lo que la tienda sube al central y lo que baja de él, con su resultado.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 21h16"/></svg>
+                    Bitácora
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sync-card">
+                    <div class="sync-line"><span class="dot" id="central-dot"></span><span id="central-status">Central: —</span></div>
+                    <div class="sync-line muted small" id="pending-status">—</div>
+                    <button id="sync-btn" class="btn btn-ghost btn-sm" style="width:100%">Sincronizar ahora</button>
+                </div>
+                <div class="session-card">
+                    <div class="session-avatar" id="seller-avatar">··</div>
+                    <div class="session-meta">
+                        <div class="name" id="seller-name">—</div>
+                        <div class="role">Vendedor</div>
+                    </div>
+                </div>
+                <button id="change-seller-btn" class="btn btn-ghost btn-sm" style="width:100%">Cambiar vendedor</button>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div>
+                    <h2 id="topbar-title">Venta</h2>
+                    <p class="lede" id="topbar-lede">Escanea o escribe el código del artículo. NIT o CF, cobro y cambio.</p>
+                </div>
+                <nav class="system-links" aria-label="Sistemas conectados">
+                    <a href="http://localhost:8082" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Almacén central</a>
+                    <a href="http://localhost:8081/staff.html" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Operaciones</a>
+                    <a href="http://localhost:8085" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">LogiExpress</a>
+                </nav>
+            </header>
+
+            <main class="content">
+                <!-- Venta -->
+                <section id="view-sale" class="view active">
+                    <div class="sale-grid">
+                        <div class="card">
+                            <form id="scan-form" class="scan-row">
+                                <div class="search-box">
+                                    <input type="text" id="scan-input" placeholder="Escanea el código, o busca por código, nombre o descripción" autocomplete="off" autofocus
+                                           role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list" />
+                                    <div id="search-results" class="search-results hidden" role="listbox"></div>
+                                </div>
+                                <input type="number" id="scan-qty" min="1" value="1" title="Cantidad" aria-label="Cantidad" />
+                                <button type="submit" class="btn btn-primary">Agregar</button>
+                            </form>
+                            <p class="hint">Escáner o código exacto + Enter agrega directo. Al escribir parte del nombre o descripción aparecen coincidencias: ↑ ↓ para elegir, Enter para agregar.</p>
+                            <div id="ticket-lines" class="table-wrap"><p class="empty-state">El ticket está vacío. Escanea un artículo.</p></div>
+                            <details class="web-cart">
+                                <summary>Cliente con cuenta web (opcional)</summary>
+                                <p class="hint">Solo si el cliente quiere cobrar aquí lo que dejó en su carrito de la web. Para una venta normal no hace falta.</p>
+                                <form id="web-cart-form" class="scan-row">
+                                    <input type="text" id="web-username" placeholder="Usuario del cliente en la web" autocomplete="off" />
+                                    <button type="submit" class="btn btn-ghost">Traer carrito web</button>
+                                </form>
+                                <div id="web-cart-result"></div>
+                            </details>
+                        </div>
+
+                        <div class="card checkout">
+                            <div class="total-box"><span>Total</span><strong id="ticket-total">Q0.00</strong></div>
+                            <form id="checkout-form" class="form-grid">
+                                <label>NIT<input type="text" name="taxId" id="tax-id" value="CF" maxlength="20" autocomplete="off" /></label>
+                                <label class="full">Nombre<input type="text" name="customerName" id="customer-name" placeholder="Consumidor Final" maxlength="160" autocomplete="off" /></label>
+                                <div class="full segmented" id="payment-methods">
+                                    <button type="button" class="seg active" data-method="EFECTIVO">Efectivo</button>
+                                    <button type="button" class="seg" data-method="TARJETA">Tarjeta</button>
+                                    <button type="button" class="seg" data-method="TRANSFERENCIA">Transferencia</button>
+                                </div>
+                                <label class="full" id="cash-field">Efectivo recibido<input type="number" id="cash-received" min="0" step="0.01" placeholder="0.00" /></label>
+                                <div class="full change-box" id="change-box">Cambio: <strong id="change-amount">Q0.00</strong></div>
+                                <button type="submit" class="btn btn-primary full" id="checkout-btn" disabled>Cobrar</button>
+                                <button type="button" class="btn btn-ghost full" id="clear-ticket-btn">Anular ticket</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recepción -->
+                <section id="view-receiving" class="view">
+                    <div class="panel-grid">
+                        <div class="card">
+                            <div class="card-header"><div><h3>Recibir por folio</h3><p>El folio de salida del central (SAL-…) o de traslado de otra tienda (TRA-…)</p></div></div>
+                            <form id="receiving-form" class="scan-row">
+                                <input type="text" id="receiving-folio" placeholder="Ej. SAL-000001 y Tab" autocomplete="off" />
+                                <button type="submit" class="btn btn-ghost">Buscar</button>
+                            </form>
+                            <div id="receiving-detail"><p class="hint">Al salir del campo (Tab) o con Enter se carga lo que trae el folio. La existencia solo sube cuando confirmas que llegó.</p></div>
+                        </div>
+                        <div class="card">
+                            <div class="section-toolbar"><div><h3 style="margin:0">En tránsito</h3></div></div>
+                            <p class="hint">Enviado a esta tienda y todavía sin confirmar. No se puede vender hasta recibirlo.</p>
+                            <div id="in-transit-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="section-toolbar"><div><h3 style="margin:0">Historial de recepciones</h3></div></div>
+                        <div id="receipts-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <!-- Inventario -->
+                <section id="view-inventory" class="view">
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Existencia de la tienda</h3></div>
+                            <div class="row-actions"><input type="search" id="stock-filter" placeholder="Buscar por código o nombre" /></div>
+                        </div>
+                        <div id="stock-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <!-- Traslados -->
+                <section id="view-transfers" class="view">
+                    <div class="panel-grid">
+                        <div class="card">
+                            <div class="card-header"><div><h3>Nuevo traslado</h3><p>La mercadería sale de la tienda al emitir el folio</p></div></div>
+                            <form id="transfer-form" class="form-grid">
+                                <label class="full">Artículo<select name="articleId" id="transfer-article" required></select></label>
+                                <label>Cantidad<input type="number" name="quantity" min="1" value="1" required /></label>
+                                <label>Destino<select name="destination" id="transfer-destination" required><option value="CENTRAL">Almacén central</option></select></label>
+                                <label class="full">Motivo<input type="text" name="reason" maxlength="255" placeholder="ej. Sobrante de temporada" /></label>
+                                <button type="submit" class="btn btn-primary full">Emitir folio de traslado</button>
+                            </form>
+                            <p class="hint">Si el central no lo acepta (por ejemplo, porque su registro de esta tienda no tiene esa existencia), el traslado queda Rechazado y la mercadería vuelve a la tienda.</p>
+                        </div>
+                        <div class="card">
+                            <div class="section-toolbar"><div><h3 style="margin:0">Traslados emitidos</h3></div></div>
+                            <div id="transfers-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Ventas -->
+                <section id="view-sales" class="view">
+                    <div class="card">
+                        <form id="sales-filter" class="filter-row">
+                            <label>Desde<input type="date" id="sales-from" /></label>
+                            <label>Hasta<input type="date" id="sales-to" /></label>
+                            <label class="grow">Buscar<input type="search" id="sales-q" placeholder="Folio, NIT, cliente o vendedor" /></label>
+                            <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                            <button type="button" class="btn btn-ghost btn-sm" id="sales-today">Hoy</button>
+                        </form>
+                        <div id="sales-summary" class="sales-summary"></div>
+                        <p class="hint">Estado de envío: Pendiente = cobrada y facturada en la tienda, pero la factura aún no llegó al central (se reintenta sola cada 30 segundos).</p>
+                        <div id="sales-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <!-- Pedidos web (eventos POS de SGO-Logic) -->
+                <section id="view-weborders" class="view">
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Compras de la web</h3></div>
+                            <label class="toggle"><input type="checkbox" id="weborders-pickup-only" /> Solo las que se recogen aquí</label>
+                        </div>
+                        <p class="hint">SGO-Logic avisa a cada tienda de los cambios de las compras web (confirmada, en preparación, en tránsito, entregada). Las marcadas "Recoger aquí" las trae LogiExpress a esta tienda; cuando llegan aparece "Entregar al cliente".</p>
+                        <div id="weborders-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <!-- Bitácora -->
+                <section id="view-log" class="view">
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Envío y recepción con el central</h3></div>
+                            <div class="row-actions">
+                                <select id="log-filter">
+                                    <option value="">Todo</option>
+                                    <option value="SUBIDA">Subidas (tienda → central)</option>
+                                    <option value="BAJADA">Bajadas (central → tienda)</option>
+                                    <option value="ERROR">Solo errores</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="log-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Factura (al cobrar y al reimprimir) -->
+    <div id="receipt-modal" class="gate hidden" role="dialog" aria-modal="true" aria-labelledby="invoice-title">
+        <div class="card receipt">
+            <div id="receipt-body"></div>
+            <div class="row-actions">
+                <button class="btn btn-primary btn-sm" id="print-receipt-btn">Imprimir factura</button>
+                <button class="btn btn-ghost btn-sm" id="close-receipt-btn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

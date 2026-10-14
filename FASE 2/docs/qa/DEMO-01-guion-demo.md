@@ -4,8 +4,8 @@
 |---|---|
 | Responsable | Kevin Girón / equipo de integración |
 | Fuentes | `Docs/DDA.md`, `QA-03-matriz-eac.md`, `QA-05-pruebas-fallas-externas.md`, `QA-06-gate-trazabilidad-penalizaciones.md` |
-| Corte | 2026-09-23 |
-| Alcance honesto | Camino feliz completo con simuladores controlados; Outbox, Inbox, proyección de estados de orden y auditoría están integrados, mientras los demás consumidores y la seguridad backend continúan pendientes |
+| Corte | 2026-09-24 |
+| Alcance honesto | Camino feliz completo con simuladores controlados; Outbox, Inbox, proyección de estados de orden/despacho/entrega/incidencia, auditoría y autenticación JWT real están integrados. Sigue pendiente: nota de crédito/reposición de CUN-10 completo, historial por intento de notificación, y la prueba E2E que fuerce las cuatro fallas externas a la vez sobre la Saga (ver QA-05 §3.1) |
 
 ## 1. Preparación
 

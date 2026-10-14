@@ -11,6 +11,7 @@
                 "shared",
                 "inventory",
                 "payments :: payments-api",
+                "credit :: credit-api",
                 "fiscal",
                 "messaging",
                 "audit :: audit-api",

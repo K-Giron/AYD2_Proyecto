@@ -748,3 +748,50 @@ footer {
     .operations-row { grid-template-columns: 1fr; }
     .legacy-actions { grid-template-columns: 1fr; }
 }
+
+/* ---------- Kárdex de la tienda online y atención al cliente (consola) ---------- */
+.kardex-summary, .kardex-table { overflow-x: auto; }
+.kardex-summary > .empty-state, .kardex-table > .empty-state { padding: 1rem 1.1rem; }
+.kardex-filters { padding: .8rem 1.1rem 0; }
+.kardex-grid { width: 100%; border-collapse: collapse; font-size: .84rem; }
+.kardex-grid th { text-align: left; color: var(--muted); font-weight: 600; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; padding: .55rem 1.1rem; border-bottom: 1px solid var(--panel-border-soft); }
+.kardex-grid td { padding: .5rem 1.1rem; border-bottom: 1px solid var(--panel-border-soft); }
+.kardex-grid .num { text-align: right; font-variant-numeric: tabular-nums; }
+.kardex-grid .cell-sub, .customer-card .cell-sub { display: block; color: var(--muted-soft); font-size: .74rem; }
+.kardex-hint { padding: .6rem 1.1rem 1rem; }
+.customer-result { padding: 0 1.1rem 1.1rem; }
+.customer-card { border: 1px solid var(--panel-border); border-radius: var(--radius); padding: .8rem 1rem; margin-bottom: 1rem; background: var(--bg-elevated); }
+.customer-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+.customer-columns h3 { font-size: .92rem; margin: .4rem 0 .5rem; display: flex; gap: .5rem; align-items: center; }
+.cart-line-actions { display: inline-flex; gap: .3rem; }
+@media (max-width: 900px) { .customer-columns { grid-template-columns: 1fr; } }
+.customer-result .track-event { display: flex; justify-content: space-between; align-items: center; gap: .8rem; padding: .45rem 0; border-bottom: 1px solid var(--panel-border-soft); font-size: .84rem; }
+.customer-result .track-event a { color: var(--accent); }
+
+/* ERP AS/400, POS de tiendas e informe de ventas conciliado */
+.legacy-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; padding: 0 0 1rem; }
+.legacy-columns h3 { margin: .9rem 1.1rem .4rem; font-size: .8rem; color: var(--muted-soft); text-transform: uppercase; letter-spacing: .06em; }
+.operations-row.legacy-row { grid-template-columns: 1fr 1fr .5fr 1.3fr 1fr; }
+.operations-row.legacy-row span { display: flex; flex-direction: column; gap: .2rem; align-items: flex-start; }
+.operations-row.report-row { grid-template-columns: 1fr .8fr .7fr 1fr 1fr .9fr 1.6fr; }
+.operations-row.report-row span { display: flex; flex-direction: column; gap: .2rem; align-items: flex-start; }
+.report-row-bad { background: rgba(248,113,113,.06); }
+.report-issue { color: var(--error) !important; }
+.report-summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: .75rem; padding: 1rem 1.1rem .5rem; }
+.report-summary > div { display: flex; flex-direction: column; gap: .2rem; padding: .7rem .8rem; border: 1px solid var(--panel-border-soft); border-radius: .6rem; }
+.report-summary span { font-size: .66rem; color: var(--muted-soft); text-transform: uppercase; letter-spacing: .05em; }
+.report-summary small { color: var(--muted-soft); }
+.report-ok { border-color: rgba(52,211,153,.45) !important; }
+.report-ok strong { color: var(--ok); }
+.report-bad { border-color: rgba(248,113,113,.45) !important; }
+.report-bad strong { color: var(--error); }
+.sales-report .integration-help { padding: 0 1.1rem; }
+.inline-label { display: flex; flex-direction: column; font-size: .68rem; color: var(--muted-soft); gap: .2rem; }
+@media (max-width: 60rem) {
+    .legacy-columns { grid-template-columns: 1fr; }
+    .report-summary { grid-template-columns: repeat(2, 1fr); }
+    .operations-row.legacy-row, .operations-row.report-row { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 40rem) {
+    .report-summary, .operations-row.legacy-row, .operations-row.report-row { grid-template-columns: 1fr; }
+}

@@ -31,6 +31,10 @@ public class Shipment {
     @Column(name = "origin", nullable = false, length = 32)
     private DispatchOrigin origin;
 
+    /** Almacén concreto del que sale (ALM-CENTRAL, ALM-POS-01, CD-WEB…); nulo si no se indicó. */
+    @Column(name = "origin_code", length = 32)
+    private String originCode;
+
     @Column(name = "destination", nullable = false, length = 500)
     private String destination;
 
@@ -85,6 +89,13 @@ public class Shipment {
         return new Shipment(UUID.randomUUID(), orderId, origin, destination, correlationId, idempotencyKey, now);
     }
 
+    public static Shipment assign(UUID orderId, DispatchOrigin origin, String originCode, String destination,
+                                  UUID correlationId, String idempotencyKey, Instant now) {
+        Shipment shipment = assign(orderId, origin, destination, correlationId, idempotencyKey, now);
+        shipment.originCode = originCode == null || originCode.isBlank() ? null : originCode.trim();
+        return shipment;
+    }
+
     public boolean requiresExternalLabel() {
         return origin != DispatchOrigin.CUSTOMER_PICKUP;
     }
@@ -98,6 +109,13 @@ public class Shipment {
     public void markLabelIssued(String trackingNumber, Instant now) {
         this.trackingNumber = trackingNumber;
         this.status = ShipmentStatus.LABEL_ISSUED;
+        this.updatedAt = now;
+    }
+
+    /** Reintento manual tras agotar los automáticos: el conteo empieza de nuevo. */
+    public void reopenLabelRequest(Instant now) {
+        this.labelAttempts = 0;
+        this.status = ShipmentStatus.LABEL_REQUESTED;
         this.updatedAt = now;
     }
 
@@ -121,6 +139,10 @@ public class Shipment {
 
     public DispatchOrigin getOrigin() {
         return origin;
+    }
+
+    public String getOriginCode() {
+        return originCode;
     }
 
     public String getDestination() {

@@ -141,7 +141,7 @@ class AuditIntegrationTest {
     @Test
     void incidentOperationsLeaveAuditEvidence() {
         UUID orderId = UUID.randomUUID();
-        Incident incident = incidentService.register(orderId, IncidentType.RETURN, "Producto dañado", false,
+        Incident incident = incidentService.register(orderId, UUID.randomUUID(), IncidentType.RETURN, "Producto dañado", false,
                 List.of(new IncidentLineItem("SKU-9", 1)), UUID.randomUUID());
 
         assertThat(repository.findByAggregateTypeAndAggregateIdOrderByOccurredAtAsc("Incident", incident.getId()))

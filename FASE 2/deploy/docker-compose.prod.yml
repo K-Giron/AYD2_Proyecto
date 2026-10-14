@@ -1,0 +1,59 @@
+# Producción en Google Cloud (ADR-017). Se combina con ../docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
+# - Las aplicaciones usan las imágenes que publicó el pipeline en GHCR
+#   (IMAGE_REGISTRY/IMAGE_TAG), nunca se compilan en el servidor.
+# - Las bases, RabbitMQ y la API no se publican a internet: solo la web (80) y
+#   los portales de los sistemas propios.
+# - Cada JVM tiene un tope de memoria para que los 12 contenedores quepan en
+#   una VM de 8 GB.
+services:
+  postgres:
+    restart: always
+    ports: !reset []
+  rabbitmq:
+    restart: always
+    ports: !reset []
+  inventory-db:
+    restart: always
+    ports: !reset []
+  store-db:
+    restart: always
+    ports: !reset []
+  logiexpress-db:
+    restart: always
+    ports: !reset []
+  payklik-db:
+    restart: always
+    ports: !reset []
+
+  backend:
+    image: ${IMAGE_REGISTRY}/sgo-logic-backend:${IMAGE_TAG}
+    restart: always
+    ports: !reset []
+    environment:
+      JAVA_TOOL_OPTIONS: ${BACKEND_JAVA_OPTS:--Xms256m -Xmx768m}
+  frontend:
+    image: ${IMAGE_REGISTRY}/sgo-logic-frontend:${IMAGE_TAG}
+    restart: always
+    ports: !override
+      - "${PUBLIC_HTTP_PORT:-80}:8080"
+  inventory-service:
+    image: ${IMAGE_REGISTRY}/sgo-logic-inventory-service:${IMAGE_TAG}
+    restart: always
+    environment:
+      JAVA_TOOL_OPTIONS: ${SERVICE_JAVA_OPTS:--Xms128m -Xmx384m}
+  store-service:
+    image: ${IMAGE_REGISTRY}/sgo-logic-store-service:${IMAGE_TAG}
+    restart: always
+    environment:
+      JAVA_TOOL_OPTIONS: ${SERVICE_JAVA_OPTS:--Xms128m -Xmx384m}
+  logiexpress-service:
+    image: ${IMAGE_REGISTRY}/sgo-logic-logiexpress-service:${IMAGE_TAG}
+    restart: always
+    environment:
+      JAVA_TOOL_OPTIONS: ${SERVICE_JAVA_OPTS:--Xms128m -Xmx320m}
+  payklik-service:
+    image: ${IMAGE_REGISTRY}/sgo-logic-payklik-service:${IMAGE_TAG}
+    restart: always
+    environment:
+      JAVA_TOOL_OPTIONS: ${SERVICE_JAVA_OPTS:--Xms128m -Xmx320m}

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Almacén central</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <div class="shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">AC</div>
+                <div class="brand-text">
+                    <h1>Almacén central</h1>
+                    <span>Sistema de inventario</span>
+                </div>
+            </div>
+
+            <nav class="nav">
+                <button class="nav-btn active" data-tab="dashboard" data-title="Resumen" data-lede="Vista general de artículos, existencias, cuentas y envíos.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+                    Resumen
+                </button>
+                <button class="nav-btn" data-tab="overview" data-title="Vista general" data-lede="Existencias de toda la red: almacén central y almacén propio de cada punto de venta, incluida la tienda online.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                    Vista general
+                </button>
+                <button class="nav-btn" data-tab="articles" data-title="Artículos" data-lede="Catálogo propio del almacén: crea y consulta artículos.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+                    Artículos
+                </button>
+                <button class="nav-btn" data-tab="stock" data-title="Existencias" data-lede="Saldo actual de cada artículo en el almacén central.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M11 20V4"/><path d="M18 20v-7"/></svg>
+                    Existencias
+                </button>
+                <button class="nav-btn" data-tab="movements" data-title="Movimientos" data-lede="Salidas del almacén central hacia una tienda, con folio. Para cargar existencia usa Existencias.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m17 7 4 4-4 4"/><path d="M3 11h18"/><path d="m7 21-4-4 4-4"/><path d="M21 13H3"/></svg>
+                    Movimientos
+                </button>
+                <button class="nav-btn" data-tab="finance" data-title="Finanzas" data-lede="Cuentas por pagar a proveedores y por cobrar a tiendas.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.3c0 3 6 1.4 6 4.4 0 1.4-1.3 2.3-3 2.3s-3-1-3-2.3"/></svg>
+                    Finanzas
+                </button>
+                <button class="nav-btn" data-tab="logistics" data-title="Logística" data-lede="Cada folio de salida se convierte en un envío con seguimiento.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="10" rx="1.5"/><path d="M14 10h4l4 3.5V17h-8"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg>
+                    Logística
+                </button>
+                <button class="nav-btn" data-tab="pos-stock" data-title="Stock por tienda" data-lede="Existencia propia de cada punto de venta, alimentada automáticamente desde los folios de salida del almacén.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v9h14v-9"/><path d="M10 19v-5h4v5"/></svg>
+                    Stock por tienda
+                </button>
+                <button class="nav-btn" data-tab="audit" data-title="Bitácora" data-lede="Trazo de folios de entrada/salida, envíos y cuentas entre el almacén y los puntos de venta.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h14v18l-7-4-7 4Z"/><path d="M9 8h6"/><path d="M9 12h6"/></svg>
+                    Bitácora
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="session-card">
+                    <div class="session-avatar" id="session-avatar">··</div>
+                    <div class="session-meta">
+                        <div class="name" id="session-user">Cargando…</div>
+                        <div class="role" id="session-role"></div>
+                    </div>
+                </div>
+                <button id="logout-btn" class="btn btn-ghost btn-sm" style="width:100%">Cerrar sesión</button>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div>
+                    <h2 id="topbar-title">Resumen</h2>
+                    <p class="lede" id="topbar-lede">Vista general de artículos, existencias, cuentas y envíos.</p>
+                </div>
+                <nav class="system-links" aria-label="Sistemas conectados">
+                    <a href="http://localhost:8081/staff.html" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Operaciones</a>
+                    <a href="http://localhost:8081/tienda-online.html" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Tienda online</a>
+                    <a href="http://localhost:8084" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">POS-01</a>
+                </nav>
+            </header>
+
+            <main class="content">
+                <!-- Resumen -->
+                <section id="view-dashboard" class="view active">
+                    <div class="kpi-grid">
+                        <div class="kpi-card" style="--kpi-tint:rgba(91,140,255,.35)">
+                            <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/></svg></div>
+                            <div class="kpi-value" id="kpi-articles">—</div>
+                            <div class="kpi-label">Artículos en catálogo</div>
+                        </div>
+                        <div class="kpi-card" style="--kpi-tint:rgba(52,211,153,.35)">
+                            <div class="kpi-icon" style="--kpi-soft:var(--ok-soft); --kpi-color:var(--ok)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M11 20V4"/><path d="M18 20v-7"/></svg></div>
+                            <div class="kpi-value" id="kpi-stock-value">—</div>
+                            <div class="kpi-label">Valor total de existencias</div>
+                        </div>
+                        <div class="kpi-card" style="--kpi-tint:rgba(251,191,36,.35)">
+                            <div class="kpi-icon" style="--kpi-soft:var(--warn-soft); --kpi-color:var(--warn)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 1-3 2.3c0 3 6 1.4 6 4.4 0 1.4-1.3 2.3-3 2.3s-3-1-3-2.3"/></svg></div>
+                            <div class="kpi-value" id="kpi-invoices-pending">—</div>
+                            <div class="kpi-label">Cuentas pendientes</div>
+                        </div>
+                        <div class="kpi-card" style="--kpi-tint:rgba(139,107,255,.35)">
+                            <div class="kpi-icon" style="--kpi-soft:rgba(139,107,255,.14); --kpi-color:#b7a6ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="10" rx="1.5"/><path d="M14 10h4l4 3.5V17h-8"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg></div>
+                            <div class="kpi-value" id="kpi-shipments-active">—</div>
+                            <div class="kpi-label">Envíos en curso</div>
+                        </div>
+                    </div>
+
+                    <div class="panel-grid">
+                        <div class="card">
+                            <div class="card-header"><div><h3>Últimos movimientos</h3><p>Entradas y salidas más recientes</p></div></div>
+                            <div id="dashboard-movements" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div><h3>Envíos en seguimiento</h3><p>Generados automáticamente desde cada folio de salida</p></div></div>
+                            <div id="dashboard-shipments" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Vista general -->
+                <section id="view-overview" class="view">
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Existencias por almacén</h3></div>
+                            <div class="row-actions">
+                                <input type="search" id="overview-search" placeholder="SKU o artículo" aria-label="Buscar artículo" />
+                                <label class="toggle"><input type="checkbox" id="overview-only-stock" checked /> Solo con existencia</label>
+                                <button id="refresh-overview-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                            </div>
+                        </div>
+                        <p class="hint">Cada punto de venta tiene su propio almacén; la mercadería solo se mueve por folio (salida del central, traslado de una tienda, venta). La tienda online descuenta aquí cuando su venta se confirma.</p>
+                        <div id="overview-summary" class="overview-summary"></div>
+                        <div id="overview-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <!-- Artículos -->
+                <section id="view-articles" class="view">
+                    <div class="panel-grid">
+                        <div class="card">
+                            <div class="card-header"><div><h3>Nuevo artículo</h3><p>Dado de alta en el catálogo del almacén</p></div></div>
+                            <p id="articles-role-hint" class="role-hint hidden">Solo el rol Almacén puede crear artículos.</p>
+                            <form id="article-form" class="form-grid">
+                                <label>SKU<input type="text" name="sku" required maxlength="64" placeholder="MS-001" /></label>
+                                <label>Precio (Q)<input type="number" name="price" min="0" step="0.01" required placeholder="0.00" /></label>
+                                <label class="full">Nombre<input type="text" name="name" required maxlength="160" placeholder="Nombre del artículo" /></label>
+                                <label class="full">Descripción<input type="text" name="description" maxlength="500" placeholder="Opcional" /></label>
+                                <button type="submit" class="btn btn-primary">Crear artículo</button>
+                            </form>
+                            <p class="hint">El artículo se crea con existencia 0. La existencia se carga en la pestaña Existencias ("+ Existencia"), cada ingreso con su folio de entrada.</p>
+                        </div>
+                        <div class="card">
+                            <div class="section-toolbar"><div><h3 style="margin:0">Catálogo</h3></div></div>
+                            <div id="articles-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Existencias -->
+                <section id="view-stock" class="view">
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Existencias actuales</h3></div>
+                            <button id="refresh-stock-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                        </div>
+                        <p class="hint">Único lugar para cargar existencia al almacén central: "+ Existencia" registra una entrada con su folio (ENT-…). "− Ajuste" da de baja por merma, daño o corrección de conteo, con su folio (AJU-…) y motivo obligatorio — los folios nunca se borran, se corrigen con otro folio. Lo que devuelven las tiendas entra solo, por su folio de traslado.</p>
+                        <div id="stock-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <!-- Movimientos -->
+                <section id="view-movements" class="view">
+                    <div class="panel-grid">
+                        <div class="card">
+                            <div class="card-header"><div><h3>Salida hacia tienda</h3><p>Folio SAL-… que la tienda escribe al recibir</p></div></div>
+                            <p id="movements-role-hint" class="role-hint hidden">Solo los roles Almacén o Logística pueden registrar salidas.</p>
+                            <form id="movement-form" class="form-grid">
+                                <label class="full">Artículo<select name="articleId" id="movement-article-select" required></select></label>
+                                <label class="full">Tienda destino<select name="pointOfSaleId" id="movement-pos-select" required></select></label>
+                                <label>Cantidad<input type="number" name="quantity" min="1" value="1" required /></label>
+                                <p class="full hint" id="movement-available" style="margin:0"></p>
+                                <label class="full">Motivo<input type="text" name="reason" maxlength="255" placeholder="Ej. surtido semanal" /></label>
+                                <button type="submit" class="btn btn-primary">Registrar salida</button>
+                            </form>
+                            <p class="hint">La existencia no se carga aquí: se hace en Existencias.</p>
+                            <div id="movement-result"></div>
+                        </div>
+                        <div class="card">
+                            <div class="section-toolbar"><div><h3 style="margin:0">Historial</h3></div></div>
+                            <div id="movements-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Finanzas -->
+                <section id="view-finance" class="view">
+                    <div class="panel-grid">
+                        <div class="card">
+                            <div class="card-header"><div><h3>Nueva cuenta</h3><p>Por pagar o por cobrar</p></div></div>
+                            <p id="finance-role-hint" class="role-hint hidden">Solo el rol Finanzas puede crear o liquidar cuentas.</p>
+                            <form id="invoice-form" class="form-grid">
+                                <label class="full">Tipo
+                                    <select name="type" required>
+                                        <option value="PAYABLE">Por pagar (proveedor)</option>
+                                        <option value="RECEIVABLE">Por cobrar (tienda/cliente)</option>
+                                    </select>
+                                </label>
+                                <label class="full">Contraparte<input type="text" name="counterparty" required maxlength="160" placeholder="Proveedor o tienda" /></label>
+                                <label>Monto (Q)<input type="number" name="amount" min="0.01" step="0.01" required /></label>
+                                <label>Fecha límite<input type="date" name="dueDate" required /></label>
+                                <label class="full">Folio relacionado (opcional)<input type="text" name="relatedFolio" maxlength="16" placeholder="Ej. SAL-000001" /></label>
+                                <label class="full">Descripción<input type="text" name="description" maxlength="255" placeholder="Opcional" /></label>
+                                <button type="submit" class="btn btn-primary">Registrar cuenta</button>
+                            </form>
+                        </div>
+                        <div class="card">
+                            <div class="section-toolbar">
+                                <div><h3 style="margin:0">Cuentas</h3></div>
+                                <button id="refresh-invoices-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                            </div>
+                            <div id="invoices-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Facturas de tiendas</h3></div>
+                            <button id="refresh-store-invoices-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                        </div>
+                        <p class="hint">Ventas cobradas en cada tienda física (su propio sistema) y subidas al central: folio central FT-NNNNNN, ticket de la tienda, NIT o CF y medio de pago.</p>
+                        <div id="store-invoices-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <!-- Logística -->
+                <section id="view-logistics" class="view">
+                    <div class="panel-grid">
+                        <div class="card">
+                            <div class="card-header"><div><h3>Nuevo punto de venta</h3><p>Al crearlo, recibe automáticamente su propio almacén</p></div></div>
+                            <p id="pos-role-hint" class="role-hint hidden">Solo el rol Almacén puede crear puntos de venta.</p>
+                            <form id="pos-form" class="form-grid">
+                                <label>Código<input type="text" name="code" required maxlength="32" placeholder="POS-04" /></label>
+                                <label class="full">Nombre<input type="text" name="name" required maxlength="160" placeholder="Nombre de la tienda" /></label>
+                                <button type="submit" class="btn btn-primary">Crear punto de venta</button>
+                            </form>
+                            <p class="hint">No se elige un almacén compartido: se crea uno nuevo, propio de este punto de venta (ej. "Almacén Tienda Centro").</p>
+                        </div>
+                        <div class="card">
+                            <div class="section-toolbar"><div><h3 style="margin:0">Puntos de venta</h3></div></div>
+                            <div id="pos-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Envíos</h3></div>
+                            <button id="refresh-shipments-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                        </div>
+                        <p class="hint">Cada folio de salida genera automáticamente un envío en estado Pendiente, hacia el punto de venta elegido.</p>
+                        <div id="shipments-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <!-- Stock por tienda -->
+                <section id="view-pos-stock" class="view">
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Existencias por punto de venta</h3></div>
+                            <div class="row-actions">
+                                <select id="pos-stock-filter"><option value="">Todos los puntos de venta</option></select>
+                                <button id="refresh-pos-stock-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                            </div>
+                        </div>
+                        <p class="hint">Cada punto de venta tiene su propio stock, separado del almacén: sube con cada salida del almacén central hacia esa tienda (folio POS-ENT-NNNNNN) baja con cada venta en la tienda física (folio POS-VTA-NNNNNN) y con cada traslado que la tienda saca por folio (OUT-TRA-NNNNNN).</p>
+                        <div id="pos-stock-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                    <div class="card">
+                        <div class="section-toolbar"><div><h3 style="margin:0">Movimientos del punto de venta (entradas, ventas y traslados)</h3></div></div>
+                        <div id="pos-stock-movements-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Eventos de stock enviados a los puntos de venta</h3></div>
+                            <select id="pos-events-status"><option value="">Todos</option><option value="ENTREGADO">Entregados</option><option value="PENDIENTES">Pendientes y reintentos</option><option value="FALLIDO">Fallidos</option><option value="SIN_TERMINAL">Sin sistema conectado</option></select>
+                        </div>
+                        <p class="hint">Cada entrada, venta o traslado que cambia la existencia de un punto de venta se avisa al sistema de ESE punto de venta, con su existencia resultante. Si no responde se reintenta a los 2, 8 y 32 s; al agotarse queda Fallido y se puede reenviar.</p>
+                        <div id="pos-events-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                    <div class="card">
+                        <div class="section-toolbar"><div><h3 style="margin:0">Traslados desde tiendas</h3></div></div>
+                        <p class="hint">Una tienda solo devuelve mercadería por folio: hacia el almacén central (entra como ENT-NNNNNN) o hacia otra tienda (entra como POS-ENT-NNNNNN). Folio central TRA-NNNNNN.</p>
+                        <div id="store-transfers-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <!-- Bitácora -->
+                <section id="view-audit" class="view">
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div><h3 style="margin:0">Trazo de eventos</h3><p>Folios de entrada/salida, envíos y cuentas — con fecha, actor y punto de venta involucrado.</p></div>
+                            <div class="row-actions">
+                                <input type="text" id="audit-folio-filter" placeholder="Filtrar por folio (ej. SAL-000002)" />
+                                <button id="refresh-audit-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                            </div>
+                        </div>
+                        <div id="audit-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

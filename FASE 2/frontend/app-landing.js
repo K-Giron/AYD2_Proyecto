@@ -13,13 +13,6 @@ function landingEscape(value) { return String(value ?? "").replace(/&/g, "&amp;"
 function getFavorites() { try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []); } catch { return new Set(); } }
 function saveFavorites(favorites) { localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites])); }
 
-async function publicStock(productId) {
-    const response = await fetch(`/api/v1/inventory/stock?productId=${productId}`, { headers: { "X-Correlation-Id": PUBLIC_CORRELATION_ID } });
-    if (!response.ok) throw new Error("Inventario no disponible");
-    const rows = await response.json();
-    return rows.reduce((total, row) => total + Number(row.quantityAvailable ?? row.availableQuantity ?? 0), 0);
-}
-
 async function publicCartCount() {
     if (publicSession?.role !== "CLIENTE") return 0;
     try {
@@ -36,7 +29,7 @@ async function renderAccountNavigation() {
         nav.innerHTML = `<a href="cliente.html#favorites"><span aria-hidden="true">♡</span><small>Ver</small>Favoritos</a><a href="cliente.html#tracking"><span aria-hidden="true">▤</span><small>Mis</small>Pedidos</a><button type="button" data-public-logout><span aria-hidden="true">○</span><small>${landingEscape(publicSession.name)}</small>Cerrar sesión</button><a href="cliente.html#checkout" class="header-cart"><span aria-hidden="true">Cart</span><small>Mi carrito</small>${count} producto${count === 1 ? "" : "s"}</a>`;
         nav.querySelector("[data-public-logout]").addEventListener("click", sgoLogout);
     } else {
-        nav.innerHTML = `<a href="login.html"><span aria-hidden="true">○</span><small>Mi cuenta</small>Iniciar sesión</a><a href="login.html" class="header-cart"><span aria-hidden="true">Cart</span><small>Mi carrito</small>0 productos</a>`;
+        nav.innerHTML = `<a href="login.html"><span aria-hidden="true">○</span><small>Mi cuenta</small>Iniciar sesión</a><a href="registro.html"><span aria-hidden="true">+</span><small>¿Eres nuevo?</small>Crear cuenta</a><a href="login.html" class="header-cart"><span aria-hidden="true">Cart</span><small>Mi carrito</small>0 productos</a>`;
     }
 }
 
@@ -57,12 +50,11 @@ function renderPublicCatalog() {
 async function loadPublicCatalog() {
     const status = document.getElementById("public-catalog-status");
     try {
-        const response = await fetch("catalog.json", { cache: "no-store" });
-        if (!response.ok) throw new Error("Catálogo no disponible");
-        publicCatalog = await response.json();
-        const stocks = await Promise.allSettled(publicCatalog.map(product => publicStock(product.id)));
-        stocks.forEach((result, index) => { if (result.status === "fulfilled") publicStocks.set(publicCatalog[index].id, result.value); });
-        status.textContent = stocks.every(result => result.status === "fulfilled") ? `${publicCatalog.length} productos con inventario en línea` : "Inventario parcialmente disponible";
+        publicCatalog = await sgoLoadCatalog();
+        publicCatalog.forEach(product => publicStocks.set(product.id, product.available));
+        status.textContent = publicCatalog.length
+            ? `${publicCatalog.length} productos con existencia de la tienda online`
+            : "La tienda online aún no tiene productos publicados";
         renderPublicCatalog();
     } catch {
         status.textContent = "Catálogo no disponible";

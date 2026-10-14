@@ -52,6 +52,21 @@ public class InventoryItem {
         // Requerido por JPA.
     }
 
+    /**
+     * Fila en cero para un producto que llega por primera vez a una
+     * ubicación (ver {@link InventoryMovementService#receiveAtLocation}).
+     */
+    static InventoryItem empty(UUID productId, UUID locationId, Instant now) {
+        InventoryItem item = new InventoryItem();
+        item.id = UUID.randomUUID();
+        item.productId = productId;
+        item.locationId = locationId;
+        item.quantityOnHand = 0;
+        item.quantityReserved = 0;
+        item.updatedAt = now;
+        return item;
+    }
+
     public UUID getId() {
         return id;
     }

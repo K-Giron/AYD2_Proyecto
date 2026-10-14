@@ -44,6 +44,7 @@
                     <button type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
                     <p id="login-error" class="login-error hidden"></p>
                 </form>
+                <p class="auth-alternative" id="register-alternative">¿No tienes cuenta? <a href="registro.html">Crea tu cuenta</a></p>
 
                 <button id="reveal-demo-btn" type="button" class="demo-reveal-link">¿Necesitas datos de acceso de prueba?</button>
                 <div id="demo-credentials" class="demo-credentials hidden">
@@ -54,10 +55,19 @@
                         Estas cuentas son locales y ficticias; se configuran por variables
                         <code>SGO_SECURITY_*</code>.
                     </p>
-                    <div class="demo-credentials-row"><strong>Cliente</strong><span><code>cliente@megastore.com</code> · <code>Cliente123</code></span></div>
-                    <div class="demo-credentials-row"><strong>Soporte</strong><span><code>staff@megastore.com</code> · <code>Staff123</code></span></div>
-                    <div class="demo-credentials-row"><strong>Logística</strong><span><code>logistica@megastore.com</code> · <code>Logistica123</code></span></div>
-                    <div class="demo-credentials-row"><strong>Finanzas</strong><span><code>finanzas@megastore.com</code> · <code>Finanzas123</code></span></div>
+                    <p class="demo-section-label">MegaStore — selecciona una cuenta para completar el formulario</p>
+                    <button type="button" class="demo-credentials-row" data-demo-role="CLIENTE" data-demo-user="cliente@megastore.com" data-demo-password="Cliente123"><strong>Cliente</strong><span><code>cliente@megastore.com</code><small>Tienda, carrito y pedidos</small></span></button>
+                    <button type="button" class="demo-credentials-row" data-demo-role="STAFF" data-demo-user="staff@megastore.com" data-demo-password="Staff123"><strong>Soporte</strong><span><code>staff@megastore.com</code><small>Centro de operaciones</small></span></button>
+                    <button type="button" class="demo-credentials-row" data-demo-role="STAFF" data-demo-user="logistica@megastore.com" data-demo-password="Logistica123"><strong>Logística</strong><span><code>logistica@megastore.com</code><small>Órdenes, despacho y POS</small></span></button>
+                    <button type="button" class="demo-credentials-row" data-demo-role="STAFF" data-demo-user="finanzas@megastore.com" data-demo-password="Finanzas123"><strong>Finanzas</strong><span><code>finanzas@megastore.com</code><small>Reportes, ERP y auditoría</small></span></button>
+                    <button type="button" class="demo-credentials-row" data-demo-role="STAFF" data-demo-user="tienda-online@megastore.com" data-demo-password="TiendaOnline123"><strong>Tienda online</strong><span><code>tienda-online@megastore.com</code><small>Recepción y catálogo web</small></span></button>
+                    <p class="demo-section-label">Otros sistemas conectados</p>
+                    <div class="connected-access-grid">
+                        <a href="http://localhost:8082/login.html" target="_blank" rel="noopener"><strong>Almacén central</strong><small>Inventario, folios y stock · :8082</small></a>
+                        <a href="http://localhost:8084" target="_blank" rel="noopener"><strong>POS-01</strong><small>Caja y recepción física · :8084</small></a>
+                        <a href="http://localhost:8085" target="_blank" rel="noopener"><strong>LogiExpress</strong><small>Guías y entregas · :8085</small></a>
+                        <a href="http://localhost:8086" target="_blank" rel="noopener"><strong>PayKlik</strong><small>Pagos y contingencias · :8086</small></a>
+                    </div>
                 </div>
             </div>
         </main>

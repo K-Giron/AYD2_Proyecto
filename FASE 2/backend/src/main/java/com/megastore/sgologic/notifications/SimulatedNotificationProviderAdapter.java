@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** Simulador BB-06 configurable del proveedor de SMS, correo y push. */
-@Component
+@Component("simulatedNotificationProvider")
 class SimulatedNotificationProviderAdapter implements NotificationProviderPort {
 
     private final SimulatorMode mode;
@@ -24,8 +24,8 @@ class SimulatedNotificationProviderAdapter implements NotificationProviderPort {
     }
 
     @Override
-    public void send(NotificationChannel channel, String recipient, NotificationEventType eventType)
-            throws NotificationProviderUnavailableException {
+    public void send(NotificationChannel channel, String recipient, NotificationEventType eventType,
+                     java.util.UUID referenceId) throws NotificationProviderUnavailableException {
         SimulatorMode effectiveMode = mode == SimulatorMode.RANDOM
                 && ThreadLocalRandom.current().nextDouble() < unavailableRate
                 ? SimulatorMode.OUTAGE : mode == SimulatorMode.RANDOM ? SimulatorMode.SUCCESS : mode;

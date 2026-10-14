@@ -2,6 +2,8 @@ package com.megastore.sgologic.incidents;
 
 import com.megastore.sgologic.audit.api.AuditEntryRequest;
 import com.megastore.sgologic.audit.api.AuditRecorder;
+import com.megastore.sgologic.integration.outbox.OutboxEventRequest;
+import com.megastore.sgologic.integration.outbox.PublishEvent;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -25,18 +27,21 @@ class IncidentServiceTest {
 
     private final IncidentRepository repository = mock(IncidentRepository.class);
     private final AuditRecorder auditRecorder = mock(AuditRecorder.class);
+    private final PublishEvent eventPublisher = mock(PublishEvent.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-09-18T15:00:00Z"), ZoneOffset.UTC);
-    private final IncidentService service = new IncidentService(repository, auditRecorder, clock);
+    private final IncidentService service = new IncidentService(repository, auditRecorder, eventPublisher, clock);
 
     @Test
     void registerKeepsRelationToOriginalOrderForAPartialReturn() {
         UUID orderId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Incident incident = service.register(orderId, IncidentType.RETURN, "Talla incorrecta", true,
+        Incident incident = service.register(orderId, customerId, IncidentType.RETURN, "Talla incorrecta", true,
                 List.of(new IncidentLineItem("SKU-1", 1)), UUID.randomUUID());
 
         assertThat(incident.getOrderId()).isEqualTo(orderId);
+        assertThat(incident.getCustomerId()).isEqualTo(customerId);
         assertThat(incident.isPartial()).isTrue();
         assertThat(incident.getStatus()).isEqualTo(IncidentStatus.REGISTERED);
 
@@ -46,12 +51,17 @@ class IncidentServiceTest {
         assertThat(audit.getValue().aggregateId()).isEqualTo(incident.getId());
         assertThat(audit.getValue().orderId()).isEqualTo(orderId);
         assertThat(audit.getValue().result()).isEqualTo("REGISTERED");
+
+        ArgumentCaptor<OutboxEventRequest> event = ArgumentCaptor.forClass(OutboxEventRequest.class);
+        verify(eventPublisher).publish(event.capture());
+        assertThat(event.getValue().eventType()).isEqualTo(IncidentService.INCIDENT_REGISTERED);
+        assertThat(event.getValue().aggregateId()).isEqualTo(incident.getId());
     }
 
     @Test
     void resolveCalculatesRefundAndCannotBeResolvedTwice() {
-        Incident incident = Incident.register(UUID.randomUUID(), IncidentType.RETURN, "Producto dañado", false,
-                List.of(new IncidentLineItem("SKU-2", 2)), UUID.randomUUID(), clock.instant());
+        Incident incident = Incident.register(UUID.randomUUID(), UUID.randomUUID(), IncidentType.RETURN,
+                "Producto dañado", false, List.of(new IncidentLineItem("SKU-2", 2)), UUID.randomUUID(), clock.instant());
         when(repository.findById(incident.getId())).thenReturn(Optional.of(incident));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -61,5 +71,17 @@ class IncidentServiceTest {
         assertThat(resolved.getRefundAmount()).isEqualByComparingTo("199.99");
         assertThatThrownBy(() -> service.resolve(incident.getId(), IncidentStatus.REJECTED, null))
                 .isInstanceOf(IncidentAlreadyResolvedException.class);
+    }
+
+    @Test
+    void getIncidentsForCustomerDelegatesToRepository() {
+        UUID customerId = UUID.randomUUID();
+        Incident incident = Incident.register(UUID.randomUUID(), customerId, IncidentType.INCIDENT,
+                "Paquete dañado", false, List.of(new IncidentLineItem("SKU-3", 1)), UUID.randomUUID(), clock.instant());
+        when(repository.findByCustomerIdOrderByCreatedAtDesc(customerId)).thenReturn(List.of(incident));
+
+        List<Incident> result = service.getIncidentsForCustomer(customerId);
+
+        assertThat(result).containsExactly(incident);
     }
 }

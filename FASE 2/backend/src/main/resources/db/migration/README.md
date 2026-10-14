@@ -54,5 +54,23 @@ rango de su módulo:
 | V3001-V3999 | integration (Outbox/Inbox), payments, audit | Edson Sosa |
 | V4001-V4099 | orders, Inbox de consumidores y contactos | Jairo Gómez / integración MVP |
 
-Estado de uso: `V1`, `V2`; `V1001`-`V1004`; `V2001`-`V2003`;
+Estado de uso: `V1`-`V3`; `V1001`-`V1006`; `V2001`-`V2003`;
 `V3001`-`V3004`; y `V4001`-`V4003`.
+
+`V1005__notifications_create_dead_letters_and_order_links.sql` (Kevin Girón)
+agrega la DLQ del trabajador de notificaciones (`notification_dead_letters`,
+simétrica a `shipment_dead_letters` de LOG-03) y `order_customer_links`, la
+resolución local `orderId -> customerId` que permite a Notifications avisar
+sobre eventos de despacho (Logistics) e incidencia (Incidents) sin que esos
+módulos conozcan al cliente ni lean tablas de Orders.
+
+`V1006__incidents_add_customer_id.sql` (Kevin Girón) agrega `customer_id`
+opcional a `incidents`, para poder consultar el historial de un cliente a
+través de todas sus órdenes, no solo de una orden puntual.
+
+`V3__inventory_create_stock_movements.sql` (Kevin Girón, a solicitud directa
+sobre el módulo de Jorge Pumay) crea `inventory_stock_movements`: entradas y
+salidas de inventario fuera del flujo de reserva de venta en línea
+(recepción de mercadería, merma, ajuste de tienda/POS), con el mismo patrón
+de escritura atómica de `InventoryItemRepository#tryReserve` y publicación
+al Outbox en la misma transacción.

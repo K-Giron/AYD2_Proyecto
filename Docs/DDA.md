@@ -18,7 +18,7 @@
 <br>
 
 <p>
-  <strong>Proyecto - Fase 1</strong><br>
+  <strong>Proyecto - Fase 2</strong><br>
   Grupo 5<br>
   AYD2_A_2S2025_PROYECTO_G5
 </p>
@@ -38,7 +38,7 @@
 
 <p>
   <br>
-  Guatemala, 26 de agosto de 2026
+  Guatemala, 10 de octubre de 2026
 </p>
 
 </div>
@@ -250,22 +250,22 @@ Flujo principal:
   2. El sistema identifica al cliente o solicita su identificación para
      asociar el carrito a su cuenta
   3. El cliente agrega, modifica o elimina productos del carrito
-  4. Para cada producto agregado, el sistema invoca la verificación de
-     disponibilidad (CDU-02: Verificar y reservar inventario) antes de
-     confirmarlo en el carrito
+  4. Para cada producto agregado, el sistema consulta la disponibilidad,
+     pero todavía no crea una reserva
   5. El sistema conserva el carrito asociado al cliente, independiente del
      canal de origen
   6. El cliente decide continuar la compra desde el mismo canal o desde
-     otro distinto
-  7. El cliente confirma el carrito para iniciar el pago (CDU-03: Procesar
-     pago de una orden)
+     otro distinto e inicia el checkout
+  7. El sistema crea la orden e invoca CDU-02 para reservar inventario
+  8. Con la reserva confirmada, inicia CDU-03: Procesar pago de una orden
 Flujos alternativos:
   A1. El cliente cambia de canal a mitad de la compra: el sistema recupera
       el carrito vigente en el nuevo canal sin pedir que reingrese los
       artículos
-  A2. El cliente elimina productos o abandona el carrito: el inventario
-      reservado para esos productos se libera según el mecanismo definido
-      en CDU-02
+  A2. El cliente elimina un artículo antes del checkout: solamente se
+      actualiza el carrito porque todavía no existe una reserva asociada
+  A3. El checkout no concluye: el temporizador libera la reserva creada al
+      iniciar el checkout, según CDU-02
 Flujo de excepción:
   E1. Un producto deja de estar disponible mientras el cliente decide: el
       sistema informa la indisponibilidad y ofrece alternativas, o mantiene
@@ -294,12 +294,13 @@ Descripción breve: Verifica existencia de un producto en una ubicación y
   comprometa con más de un cliente, liberando la reserva cuando la compra
   no concluye.
 Precondiciones:
-  - Existe un carrito o una orden con productos solicitados
+  - Existe una orden creada al iniciar checkout; un carrito abierto por sí
+    solo no crea ni mantiene reservas
 Flujo principal:
-  1. El módulo de Carrito/Órdenes solicita verificar disponibilidad de un
-     producto en una ubicación (tienda o centro de distribución)
-  2. El sistema consulta la fuente autoritativa de inventario (fuente
-     exacta abierta; ver 2.3)
+  1. Al iniciar checkout, el módulo de Carrito/Órdenes solicita reservar un
+     producto para la orden en CD-WEB
+  2. El sistema consulta el inventario operativo de CD-WEB, abastecido por
+     folios del almacén central
   3. Si hay existencia suficiente, el sistema reserva la cantidad
      solicitada y la marca como comprometida para esa orden
   4. El sistema responde con la confirmación de reserva y la ubicación
@@ -325,45 +326,46 @@ Relacionado con EaC: EaC-01 (consulta ≤ 5 s), EaC-03 (escalabilidad 8x)
 
 ### 3.7 CDU-03: Procesar pago
 
-![CUN-03 - Procesar pago](<./diagramas/img/CUN-03-Procesar pago.jpg>)
+![CDU-03 expandido - Procesar pago](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-03-Procesar pago.jpg>)
 
-*Figura 7. CUN-03 - Procesar pago.*
+*Figura 7. CDU-03 expandido — autorización idempotente, conciliación y
+continuación de la Saga.*
 
 ```
 ID: CDU-03
-Nombre: Procesar pago de una orden
+Nombre: Procesar pago
 Derivado de (CUN): CUN-03 - Procesar pago
-Actor(es): Cliente; PayKlik cuando el método seleccionado sea tarjeta
-Descripción breve: Permite registrar y procesar el método de pago elegido,
-  manteniendo la orden y la trazabilidad del intento cuando el proveedor no
-  responda. Los actores de otros métodos de pago deben confirmarse.
+Actor(es): Cliente; PayKlik
+Descripción breve: Autoriza el pago mediante PayKlik con una llave
+  idempotente, conserva el intento y concilia una respuesta tardía sin generar
+  un segundo cobro. La Saga continúa, compensa o espera según el resultado.
 Precondiciones:
   - El carrito fue confirmado y el inventario está reservado
 Flujo principal:
-  1. El cliente selecciona método de pago (tarjeta, transferencia, billetera digital)
-  2. El sistema valida que el método esté disponible para el canal y crea un
-     intento asociado con la orden, canal y fecha
-  3. Para tarjeta, el sistema envía a PayKlik una solicitud con un identificador
-     idempotente, sin almacenar el PAN completo ni el CVV
-  4. PayKlik responde con el resultado aprobado o rechazado
-  5. El sistema registra el resultado y, si fue aprobado, cambia la orden a
-     "Pago aprobado" e inicia la emisión fiscal
-  6. La orden no se marca como finalizada hasta cumplir la condición fiscal
+  1. El cliente confirma el pago de la orden
+  2. El sistema crea el intento y solicita autorización a PayKlik por REST con
+     X-Api-Key y una llave idempotente, sin enviar ni almacenar PAN o CVV
+  3. PayKlik registra la autorización y responde APPROVED o REJECTED
+  4. El sistema conserva el intento, el resultado y su correlación con la orden
+  5. Si el pago fue aprobado, la Saga retoma facturación SAT, confirmación y
+     despacho
 Flujos alternativos:
-  A1. El cliente cambia de método de pago antes de confirmar
-  A2. El método seleccionado no utiliza PayKlik:
-      el sistema invoca el adaptador habilitado por MegaStore para ese método
+  A1. PayKlik devuelve REJECTED: la Saga compensa la operación y libera la
+      reserva de inventario
 Flujo de excepción:
-  E1. PayKlik no responde o supera el umbral de latencia:
-      el sistema conserva la orden como "Pago pendiente de confirmación" y
-      registra el resultado como indeterminado. Antes de reintentar debe consultar
-      o conciliar el resultado anterior para evitar un cobro duplicado. El mecanismo
-      definitivo de idempotencia, consulta y reintento se decidirá en ADR-003
+  E1. PayKlik supera el límite de 5 s: el intento queda
+      PAYMENT_INDETERMINATE porque el proveedor pudo haber cobrado
+  E2. La conciliación consulta a PayKlik con la misma llave idempotente. Si
+      recupera APPROVED, la Saga retoma; si recupera REJECTED, compensa; si
+      sigue indeterminado, la orden permanece WAITING_PAYMENT
 Postcondiciones:
-  - La orden queda en estado "Pago aprobado", "Pago rechazado" o
-    "Pago pendiente de confirmación"
-  - Existe un registro auditable del intento de cobro
+  - Existe un solo efecto de cobro por llave idempotente
+  - La orden queda aprobada, rechazada/compensada o pendiente de conciliación
+  - El intento y su resultado permanecen auditables
 Relacionado con EaC: EaC-04 (resiliencia de pago), EaC-07 (trazabilidad)
+Implementación: payments, OrderSagaService, payklik-service
+Evidencia: OrderSagaReconciledPaymentTest, HttpPayKlikAdapterTest,
+  PayKlikIntegrationTest
 ```
 
 ### 3.8 CDU-04: Emitir documentación fiscal
@@ -402,151 +404,185 @@ Relacionado con EaC: EaC-02 (evidencia < 1 s), EaC-07 (auditabilidad)
 
 ### 3.9 CDU-05: Sincronizar venta con ERP
 
-![CUN-05 - Sincronizar venta con ERP](<./diagramas/img/CUN-05-Sincronizar venta con ERP.jpg>)
+![CDU-05 expandido - Sincronizar venta con ERP](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-05-Sincronizar venta con ERP.jpg>)
 
-*Figura 9. CUN-05 - Sincronizar venta con ERP.*
+*Figura 9. CDU-05 expandido — consolidación de ventas, archivo con control y
+recuperación de lotes fallidos.*
 
 ```
 ID: CDU-05
 Nombre: Sincronizar venta con ERP
 Derivado de (CUN): CUN-05 - Sincronizar venta con ERP
 Actor(es): Finanzas; ERP-Core como sistema externo receptor
-Descripción breve: Consolida las ventas confirmadas y entrega a ERP-Core un
-  resumen CSV o XML dentro de su ventana de procesamiento de 30 minutos.
+Descripción breve: Consolida ventas web y de tienda física y entrega a ERP-Core
+  un archivo CSV o XML verificable dentro de una ventana configurable de 30
+  minutos, sin modificar el sistema legado.
 Precondiciones:
   - Existen ventas confirmadas aún no sincronizadas
 Flujo principal:
-  1. El planificador selecciona las ventas confirmadas de la ventana vigente
-  2. El sistema consolida los datos contables y genera CSV o XML
-  3. El adaptador ERP entrega el archivo sin modificar ERP-Core
-  4. Registra identificador, contenido, fecha y resultado de procesamiento
-  5. Marca las ventas como sincronizadas sin perder su trazabilidad individual
+  1. Las ventas web ingresan al confirmarse la orden; las facturas de tienda
+     física se recogen desde el almacén central cada 60 s como canal STORE
+  2. El planificador reúne las ventas pendientes de la ventana vigente
+  3. Genera CSV o XML con canal, punto de venta, referencia, neto, IVA, total y
+     un registro de control TRAILER/<Control> con cantidad y sumas
+  4. FileDropErpGatewayAdapter escribe el archivo en /var/sgo/erp-outbox
+  5. El sistema conserva lote, ventas, archivo, fecha y resultado de entrega
 Flujos alternativos:
-  A1. No hay ventas nuevas: se registra la ejecución sin generar archivo vacío,
-      salvo que el contrato de ERP exija lo contrario
+  A1. Finanzas usa "Generar lote ERP ahora" antes de la siguiente ventana
+  A2. El backend se reinicia con un lote pendiente: la siguiente ejecución lo
+      retoma sin duplicar ventas
 Flujo de excepción:
-  E1. La transferencia o el procesamiento falla: se conserva el archivo, se
-      reintenta según ADR-004 y se alerta si se agota la política
+  E1. ERP no responde: el sistema reintenta a los 2, 8 y 32 s
+  E2. Si se agotan los reintentos, el lote queda DEAD_LETTER. Finanzas utiliza
+      "Reintentar" cuando ERP vuelve a estar disponible
 Postcondiciones:
-  - Cada venta queda asociada con el archivo y resultado de sincronización
+  - Cada venta queda asociada con su archivo y estado de entrega al ERP
+  - CDU-13 puede distinguir ventas entregadas, pendientes o con diferencias
 Relacionado con EaC: EaC-07 (auditabilidad); condicionado por R1 (ERP no modificable)
+Implementación: legacyfeed, integration, FileDropErpGatewayAdapter
 ```
 
 ### 3.10 CDU-06: Notificar eventos a POS
 
-![CUN-06 - Notificar eventos a POS](<./diagramas/img/CUN-06-Notificar eventos a POS.jpg>)
+![CDU-06 expandido - Notificar eventos a POS](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-06-Notificar eventos a POS.jpg>)
 
-*Figura 10. CUN-06 - Notificar eventos a POS.*
+*Figura 10. CDU-06 expandido — eventos de orden, existencias y retiro dirigidos
+al punto de venta correspondiente.*
 
 ```
 ID: CDU-06
 Nombre: Notificar eventos a POS
 Derivado de (CUN): CUN-06 - Notificar eventos a POS
-Actor(es): POS como sistema externo receptor
-Descripción breve: Publica los cambios relevantes de una orden hacia la
-  instancia POS correspondiente con entrega reintentable e idempotencia en el
-  adaptador, sin modificar el POS.
+Actor(es): Almacén central; POS-01 / POS-02..32
+Descripción breve: Publica eventos de orden y de stock a cada tienda y dirige
+  los avisos de retiro únicamente al punto seleccionado, preservando orden,
+  reintentos y evidencia de entrega.
 Precondiciones:
   - Existe un evento de negocio confirmado y registrado por Outbox
 Flujo principal:
-  1. El publicador de Outbox envía el evento al broker
-  2. El trabajador identifica la tienda y el POS destinatario
-  3. El adaptador registra la clave idempotente en su libro de entregas
-  4. Entrega el evento usando el contrato disponible del POS
-  5. Registra acuse o resultado y evita reenviar eventos ya confirmados
+  1. El sistema publica ORDER_CONFIRMED, PREPARING, IN_TRANSIT, DELIVERED o
+     CANCELLED para las 32 tiendas, incluyendo la tienda de retiro cuando aplica
+  2. POS-01 recibe el evento mediante store-service; POS-02..32 usan el
+     adaptador simulado
+  3. ORDER_READY_FOR_PICKUP se entrega solo a la tienda seleccionada
+  4. Cada entrada, venta o traslado que cambia existencias genera un evento de
+     stock para ese punto de venta, con la cantidad resultante
+  5. La tienda compara el resultado con su inventario local y registra "Cuadra"
+     o "No cuadra"
 Flujos alternativos:
-  A1. Un evento duplicado llega al trabajador: se descarta mediante el libro de
-      idempotencia sin exigir cambios al POS
+  A1. Un punto de venta todavía no tiene sistema conectado: el evento queda
+      "Sin sistema conectado" y se intenta nuevamente cada minuto
 Flujo de excepción:
-  E1. El POS no está disponible: el evento permanece en reintento; al agotar el
-      límite pasa a mensajes fallidos y genera alerta según ADR-004
+  E1. La tienda no responde: se reintenta a los 2, 8 y 32 s y los eventos
+      siguientes de esa tienda esperan para conservar orden
+  E2. Al agotar la política, el evento queda Fallido y el almacén puede usar
+      "Reenviar" desde "Stock por tienda"
 Postcondiciones:
-  - El evento queda entregado o preservado con evidencia para recuperación
+  - Cada evento queda entregado, pendiente, fallido o sin sistema conectado,
+    siempre con evidencia recuperable
 Relacionado con EaC: EaC-06 (entrega eventual), EaC-07 (auditabilidad)
+Implementación: integration, RoutingPosGatewayAdapter, inventory-service,
+  store-service
 ```
 
 ### 3.11 CDU-07: Gestionar despacho
 
-![CUN-07 - Gestionar despacho](<./diagramas/img/CUN-07-Gestionar despacho.jpg>)
+![CDU-07 expandido - Gestionar despacho](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-07-Gestionar despacho.jpg>)
 
-*Figura 11. CUN-07 - Gestionar despacho.*
+*Figura 11. CDU-07 expandido — origen CD-WEB, guía idempotente, rastreo y
+retiro en tienda.*
 
 ```
 ID: CDU-07
 Nombre: Gestionar despacho
 Derivado de (CUN): CUN-07 - Gestionar despacho
-Actor(es): Personal de logística; Cliente (elige o cambia el método de
-  entrega)
-Descripción breve: Determina el origen y el método de despacho de una
-  orden (centro de distribución, tienda o recogida por el cliente),
-  coordina su preparación y mantiene su estado visible hasta la entrega.
+Actor(es): Personal de logística; Cliente; LogiExpress
+Descripción breve: Coordina desde CD-WEB la preparación, guía, rastreo y
+  entrega a domicilio o en tienda, manteniendo sincronizados el despacho y la
+  orden.
 Precondiciones:
   - La orden tiene el inventario reservado (CDU-02), el pago aprobado y la
     confirmación fiscal requerida para considerar confirmada la venta
 Flujo principal:
-  1. El sistema determina las opciones de despacho disponibles para la
-     orden: centro de distribución, tienda o recogida por el cliente
-  2. El cliente o el sistema selecciona el método de entrega según
-     disponibilidad e inventario reservado
-  3. El sistema asigna la orden a la ubicación de despacho correspondiente
-     y notifica a Logística qué preparar
-  4. Personal de logística prepara el pedido y actualiza el estado de
-     despacho
-  5. El sistema genera la guía de envío mediante integración con
-     LogiExpress (CDU-08) cuando el método de entrega lo requiere
-  6. El sistema actualiza el estado de la orden conforme avanza el
-     despacho (preparación, tránsito, entrega)
+  1. El sistema asigna CD-WEB como origen de la venta web y registra el método
+     de entrega elegido por el cliente. Regla de selección (ADR-014): entre las
+     ubicaciones con stock se prueba primero el centro de distribución y luego
+     la tienda, por código, con un UPDATE atómico por intento; como la web solo
+     tiene existencia vendible en CD-WEB (ADR-015), ese es su origen
+  2. SGO-Logic solicita a LogiExpress una guía REST idempotente por id de
+     despacho e indica la tienda de retiro cuando corresponde
+  3. Personal de logística prepara el pedido y el mensajero lo recolecta
+  4. SGO-Logic consulta el rastreo cada 10 s; despacho y orden pasan a
+     IN_TRANSIT y se avisa al cliente
+  5. En entrega a domicilio, el mensajero confirma la entrega y fulfillment
+     actualiza despacho y orden a DELIVERED
 Flujos alternativos:
-  A1. El cliente cambia el método de entrega después de confirmada la
-      compra: el sistema reevalúa la ubicación de despacho y ajusta la
-      reserva de inventario si es necesario
+  A1. Retiro en tienda: LogiExpress deja el paquete en la tienda seleccionada;
+      el despacho pasa a READY_FOR_PICKUP, se avisa al cliente y a ese POS, y
+      el vendedor completa CDU-16
 Flujo de excepción:
-  E1. LogiExpress no confirma la generación de la guía o responde con
-      timeout: el sistema aplica la política de ADR-004 sin bloquear la
-      preparación física del pedido
+  E1. LogiExpress creó la guía pero respondió tarde: el rastreo la concilia y
+      un reintento no sustituye la guía existente
+  E2. Tras agotar reintentos el despacho queda LABEL_FAILED; Logística utiliza
+      "Reintentar guía" cuando el servicio se recupera
 Postcondiciones:
-  - La orden queda asociada a un método y una ubicación de despacho, con
-    estado visible y trazable hasta la entrega
+  - La orden y el despacho comparten origen, destino, guía y estado trazables
 Relacionado con EaC: EaC-05 (confiabilidad LogiExpress), EaC-06
   (confiabilidad hacia POS/tienda), EaC-07 (trazabilidad)
+Implementación: logistics, fulfillment, HttpLogiExpressAdapter,
+  LogiExpressTrackingSync, InventoryReservationService (ORIGIN_PRIORITY,
+  ADR-014)
+Evidencia: ShipmentServiceTest, HttpLogiExpressAdapterTest,
+  LogiExpressTrackingSyncTest, LogiExpressIntegrationTest
 ```
 
 ### 3.12 CDU-08: Integrar con LogiExpress
 
-![CUN-08 - Integrar con LogiExpress](<./diagramas/img/CUN-08-Integrar con LogiExpress.jpg>)
+![CDU-08 expandido - Integrar con LogiExpress](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-08-Integrar con LogiExpress.jpg>)
 
-*Figura 12. CUN-08 - Integrar con LogiExpress.*
+*Figura 12. CDU-08 expandido — creación de guía, consulta de rastreo,
+conciliación y reintento controlado.*
 
 ```
 ID: CDU-08
 Nombre: Integrar con LogiExpress
 Derivado de (CUN): CUN-08 - Integrar con LogiExpress
-Actor(es): Personal de logística; LogiExpress como proveedor externo
-Descripción breve: Solicita guías y recibe estados de entrega mediante REST,
-  tolerando los timeouts conocidos sin bloquear la preparación física.
+Actor(es): Personal de logística; LogiExpress
+Descripción breve: Crea una guía mediante REST, consulta el rastreo y actualiza
+  la orden y el despacho, tolerando respuestas tardías o indisponibilidad sin
+  duplicar guías.
 Precondiciones:
   - La orden tiene método y ubicación de despacho asignados
 Flujo principal:
-  1. El sistema crea una solicitud de guía correlacionada con la orden
-  2. El adaptador invoca la interfaz REST de LogiExpress con timeout definido
-  3. LogiExpress devuelve la guía y el sistema la vincula con el despacho
-  4. El proveedor comunica estados posteriores de entrega
-  5. El sistema registra cada intercambio y actualiza la vista de la orden
+  1. El sistema crea una solicitud de guía correlacionada con el despacho
+  2. HttpLogiExpressAdapter invoca por REST con X-Api-Key y la identidad
+     idempotente del despacho
+  3. LogiExpress devuelve la guía y el sistema la vincula sin sustituir una
+     guía ya conciliada
+  4. LogiExpressTrackingSync consulta el rastreo cada 10 s
+  5. Los estados recibidos actualizan despacho, orden y vista consolidada
 Flujos alternativos:
-  A1. El despacho es recogida por el cliente: no se solicita guía externa
+  A1. La respuesta de creación llega tarde: la consulta de rastreo encuentra y
+      concilia la guía previamente creada
 Flujo de excepción:
-  E1. Ocurre timeout: se conserva la solicitud, se reintenta con backoff y se
-      registra en mensajes fallidos si se agota la política de ADR-004
+  E1. LogiExpress no está disponible: se aplica reintento con backoff
+  E2. Al agotar la política, el despacho queda LABEL_FAILED; Personal de
+      logística utiliza "Reintentar guía" cuando el servicio se recupera
 Postcondiciones:
-  - La guía y los estados conocidos quedan correlacionados con la orden
+  - Existe como máximo una guía vigente por despacho y sus estados quedan
+    correlacionados con la orden
 Relacionado con EaC: EaC-05 (timeout LogiExpress), EaC-07 (trazabilidad)
+Implementación: logistics, logiexpress-service
+Evidencia: HttpLogiExpressAdapterTest, LogiExpressTrackingSyncTest,
+  LogiExpressIntegrationTest
 ```
 
 ### 3.13 CDU-09: Consultar estado de orden
 
-![CUN-09 - Consultar estado de orden](<./diagramas/img/CUN-09-Consultar estado de orden.jpg>)
+![CDU-09 expandido - Consultar estado de orden](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-09-Consultar estado de orden.jpg>)
 
-*Figura 13. CUN-09 - Consultar estado de orden.*
+*Figura 13. CDU-09 expandido — consulta consolidada con pago conciliado,
+despacho, entrega e incidencia.*
 
 ```
 ID: CDU-09
@@ -563,13 +599,15 @@ Precondiciones:
 Flujo principal:
   1. El cliente o el personal de atención solicita el estado de una orden
      desde cualquier canal
-  2. El sistema recupera el estado consolidado de la orden: compra, pago,
-     despacho, entrega y, si aplica, devolución o incidencia
-  3. El sistema muestra el resultado dentro del tiempo máximo aceptable
+  2. El sistema recupera la proyección consolidada alimentada por eventos de
+     orden, pago, despacho e incidencia
+  3. Incluye el pago conciliado, el despacho, la entrega y cualquier incidencia
+     sin consultar en línea las bases privadas de esos módulos
+  4. El sistema muestra el resultado dentro del tiempo máximo aceptable
      para el negocio
 Flujos alternativos:
-  A1. La orden tiene una incidencia registrada: el sistema incluye la
-      incidencia en la respuesta junto con el estado general
+  A1. Hechos concurrentes llegan a la proyección: se conservan todos y un
+      hecho anterior no sustituye uno más reciente
 Flujo de excepción:
   E1. Alguno de los subsistemas de origen del dato (pago, despacho) no
       responde a tiempo: el sistema muestra la última información conocida
@@ -578,7 +616,12 @@ Flujo de excepción:
 Postcondiciones:
   - El solicitante obtiene una vista consolidada del estado de la orden sin
     necesidad de consultar cada canal o área por separado
+  - Pago conciliado, despacho, entrega e incidencia quedan representados con la
+    última versión conocida
 Relacionado con EaC: EaC-01 (consulta ≤ 5 s), EaC-07 (trazabilidad)
+Implementación: query y consumidores de eventos
+Evidencia: OrderSummaryConcurrencyIntegrationTest,
+  PaymentStatusChangedConsumerTest
 ```
 
 ### 3.14 CDU-10: Gestionar devoluciones y reembolsos
@@ -690,6 +733,161 @@ Flujo de excepción:
 Postcondiciones:
   - La consulta queda registrada y la evidencia permanece inalterada
 Relacionado con EaC: EaC-02 (recuperación < 1 s), EaC-07 (auditabilidad)
+```
+
+### 3.17 CDU-13: Generar informe de ventas conciliado
+
+![CDU-13 expandido - Generar informe de ventas conciliado](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-13-Generar informe de ventas conciliado.jpg>)
+
+*Figura 16A. CDU-13 expandido — cruce de ventas, pago, SAT y ERP con consulta
+y exportación auditadas.*
+
+```
+ID: CDU-13
+Nombre: Generar informe de ventas conciliado
+Derivado de (CUN): CUN-05 / CUN-12 - Sincronizar y auditar
+Actor(es): Finanzas
+Descripción breve: Cruza las ventas web y de tienda física de un rango con su
+  pago, factura SAT y entrega al ERP, y señala las diferencias encontradas.
+Precondiciones:
+  - El usuario está autenticado con rol FINANCE
+Flujo principal:
+  1. Finanzas elige un rango de fechas; por defecto se usa el día actual de
+     Guatemala
+  2. El sistema reúne las órdenes web y las ventas de tienda registradas para
+     el ERP
+  3. Para cada venta compara pago, factura SAT, entrega al ERP y monto
+  4. Presenta neto, IVA, total, totales por canal y el resultado "Cuadra" o
+     "N diferencias"
+  5. Registra SALES_REPORT_VIEWED con usuario, rango y resultado
+Flujos alternativos:
+  A1. Finanzas exporta CSV: el sistema descarga el mismo informe y registra
+      SALES_REPORT_EXPORTED
+Flujo de excepción:
+  E1. La fecha final es anterior a la inicial: responde
+      400 INVALID_REPORT_RANGE y no genera el informe
+Diferencias detectadas:
+  - Venta confirmada sin pago aprobado
+  - Venta confirmada sin factura SAT
+  - Pago aprobado sin venta
+  - Venta no registrada en ERP
+  - Monto distinto al registrado en ERP
+  - Lote ERP en DEAD_LETTER o REJECTED
+Postcondiciones:
+  - Queda evidencia de quién consultó o exportó, qué rango usó y qué resultado
+    obtuvo
+Relacionado con EaC: EaC-02 (evidencia < 1 s), EaC-07 (auditabilidad)
+Implementación: salesreport; GET /api/v1/reports/sales y /export
+Evidencia: SalesReportServiceTest
+```
+
+### 3.18 CDU-14: Abastecer un punto de venta por folio
+
+![CDU-14 expandido - Abastecer punto de venta por folio](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-14-Abastecer punto de venta por folio.jpg>)
+
+*Figura 16B. CDU-14 expandido — salida central, actualización de stock y
+recepción idempotente por folio.*
+
+```
+ID: CDU-14
+Nombre: Abastecer un punto de venta por folio
+Derivado de (CUN): CUN-02 / CUN-06 - Inventario y eventos a POS
+Actor(es): Almacén central; vendedor de tienda; administrador de tienda online
+Descripción breve: Traslada existencias desde el almacén central a un punto de
+  venta y correlaciona salida, evento de stock y recepción mediante folios.
+Precondiciones:
+  - El artículo existe en el almacén central con existencia suficiente
+Flujo principal:
+  1. El almacén registra una salida hacia el punto de venta con folio SAL-...
+  2. El central disminuye su existencia y actualiza el stock propio del punto de
+     venta mediante POS-ENT-...
+  3. El central emite el evento de stock para ese punto de venta según CDU-06
+  4. El punto de venta muestra el folio "En tránsito" y confirma su recepción
+  5. La existencia local aumenta y el movimiento queda en su bitácora
+Flujos alternativos:
+  A1. La tienda traslada existencias al central o a otra tienda mediante TRA-...
+  A2. El almacén central registra una merma mediante AJU-...
+Flujo de excepción:
+  E1. El folio ya fue recibido: responde 409 FOLIO_ALREADY_RECEIVED y no vuelve
+      a incrementar la existencia
+Postcondiciones:
+  - Las existencias central y local reflejan un único traslado trazable
+Relacionado con EaC: EaC-06 (entrega eventual), EaC-07 (trazabilidad)
+Implementación: inventory-service (stock, posstock, storesync, posevents),
+  store-service y onlinestore
+```
+
+### 3.19 CDU-15: Vender en la tienda física
+
+![CDU-15 expandido - Vender en tienda física](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-15-Vender en tienda física.jpg>)
+
+*Figura 16C. CDU-15 expandido — cobro local, factura, disminución de existencia
+y sincronización posterior con el central.*
+
+```
+ID: CDU-15
+Nombre: Vender en la tienda física
+Derivado de (CUN): CUN-01 / CUN-05 - Venta omnicanal y sincronización ERP
+Actor(es): Vendedor; cliente
+Descripción breve: Registra una venta con consumidor final, NIT o cuenta web,
+  actualiza el inventario local y sincroniza la factura con el central sin
+  detener la operación por una desconexión temporal.
+Precondiciones:
+  - La tienda tiene existencia local suficiente del artículo
+Flujo principal:
+  1. El vendedor escanea o busca el artículo
+  2. Cobra en efectivo, tarjeta o transferencia y emite la factura TKT-...
+  3. Disminuye la existencia local dentro de la misma transacción
+  4. Envía la factura FT-... al almacén central; el central actualiza su vista
+     del stock y publica el evento correspondiente
+  5. SGO-Logic incorpora la venta al lote ERP mediante CDU-05
+Flujos alternativos:
+  A1. El cliente tiene cuenta web: el vendedor recupera su carrito y lo cierra
+      al cobrar
+  A2. El vendedor reimprime una factura buscándola por fecha
+Flujo de excepción:
+  E1. El central está caído: la venta finaliza localmente, la factura queda
+      Pendiente y se sincroniza automáticamente al recuperarse la conexión
+Postcondiciones:
+  - La venta, factura y disminución de stock local quedan confirmadas
+  - La sincronización central queda completada o pendiente con evidencia
+Relacionado con EaC: EaC-06 (entrega eventual), EaC-07 (trazabilidad)
+Implementación: store-service; inventory-service (storesync); legacyfeed
+```
+
+### 3.20 CDU-16: Entregar un pedido web en la tienda de retiro
+
+![CDU-16 expandido - Entregar pedido web en tienda](<../FASE 2/docs/diagrams/nuevos-fase2/CDU-EXPANDIDOS-CDU-16-Entregar pedido web en tienda.jpg>)
+
+*Figura 16D. CDU-16 expandido — validación de tienda y estado, identificación
+de quien recoge y entrega única.*
+
+```
+ID: CDU-16
+Nombre: Entregar un pedido web en la tienda de retiro
+Derivado de (CUN): CUN-07 - Gestionar despacho
+Actor(es): Vendedor de la tienda de retiro; cliente
+Precondiciones:
+  - LogiExpress dejó el paquete en la tienda y el despacho está
+    READY_FOR_PICKUP
+Flujo principal:
+  1. La tienda recibe ORDER_READY_FOR_PICKUP y muestra el pedido "Llegó, listo
+     para entregar"
+  2. El cliente se presenta y el vendedor registra nombre y documento de quien
+     recoge
+  3. La tienda confirma la entrega a SGO-Logic con rol STORE
+  4. El sistema valida tienda, estado e identidad registrada
+  5. Despacho y orden pasan a DELIVERED; el cliente recibe el aviso y las 32
+     tiendas reciben ORDER_DELIVERED
+Flujo de excepción:
+  E1. El paquete no ha llegado, pertenece a otra tienda o ya fue entregado: el
+      sistema responde 409 con el motivo y registra el intento en la bitácora
+Postcondiciones:
+  - El pedido queda entregado una sola vez, por la tienda correcta y con la
+    identidad de quien lo recogió
+Relacionado con EaC: EaC-06 (confiabilidad POS), EaC-07 (trazabilidad)
+Implementación: logistics (StorePickupController), store-service (Pedidos web)
+Evidencia: ShipmentServiceTest, StoreServiceIntegrationTest
 ```
 
 ---
@@ -997,6 +1195,23 @@ Una vez protegidos los ocho grupos críticos, el siguiente orden de trabajo es: 
 
 ### 5.1 Visión general de la solución
 
+#### 5.1.1 Bloques implementados en Fase 2
+
+![Bloques implementados en Fase 2](<../FASE 2/docs/diagrams/nuevos-fase2/DiagramaBloques.jpg>)
+
+*Figura 17A. Fronteras y responsabilidades observadas al cierre de Fase 2.*
+
+El almacén central consolida el inventario de la red y administra folios y
+existencias por punto de venta; SGO-Logic consolida y concilia ventas, órdenes,
+pagos, información fiscal, despacho y consultas. Los puntos de venta
+(`POS-ONLINE`/`CD-WEB` y `POS-01` a `POS-32`) participan en ventas, traslados,
+retiros y eventos de stock, mientras PayKlik, LogiExpress y SAT permanecen como
+sistemas contratados. ERP-Core solamente recibe el archivo conciliado CSV/XML
+cada 30 minutos. Esta separación evita atribuir al ERP la responsabilidad de
+inventario o presentar a SGO-Logic como dueño de datos externos.
+
+#### 5.1.2 Vista objetivo de Fase 1
+
 ![Diagrama de Bloques de SGO-Logic](./diagramas/bloques.svg)
 
 *Figura 17. Vista ejecutiva de capacidades, controles transversales y valor.*
@@ -1140,7 +1355,7 @@ Durante el último Black Friday, PayKlik permaneció indisponible 45 minutos y M
 
 ##### Decisión
 
-Aislar PayKlik con un **Circuit Breaker** y límites de tiempo en el adaptador de pago. Al fallar o superar el umbral de latencia, SGO-Logic conserva la orden en estado "Pago pendiente de confirmación" y registra el intento con resultado indeterminado. El primer reintento o conciliación se programa en un máximo de 60 segundos y se genera alerta si el caso permanece sin resolver durante cinco minutos. La reserva de inventario no se libera de inmediato, sino que permanece comprometida según la política de caducidad de carrito (CDU-02), de modo que la orden persista y pueda continuar o recuperarse.
+Aislar PayKlik con un **Circuit Breaker** y límites de tiempo en el adaptador de pago. Al fallar o superar el umbral de latencia, SGO-Logic conserva la orden en estado "Pago pendiente de confirmación" y registra el intento con resultado indeterminado. El primer reintento o conciliación se programa en un máximo de 60 segundos y se genera alerta si el caso permanece sin resolver durante cinco minutos. La reserva de inventario no se libera de inmediato, sino que permanece comprometida según la política de expiración del checkout/orden (CDU-02), de modo que la orden persista y pueda continuar o recuperarse.
 
 El módulo de Pagos se mantiene independiente del proveedor mediante un puerto común. Las tarjetas continúan usando PayKlik por el contrato vigente; transferencias y billeteras se conectan mediante adaptadores cuando MegaStore confirme sus contratos. Si PayKlik cae, el cliente puede conservar la orden o elegir un método no dependiente de PayKlik que esté habilitado. Sin un segundo adquirente contratado no se afirma que una tarjeta pueda liquidarse durante la caída; esta limitación queda explícita y evita inventar un proveedor.
 
@@ -1334,9 +1549,51 @@ CUN-11, EaC-08, EaC-07, R3.
 
 ## 6. Vistas Arquitectónicas
 
-Las cuatro vistas se conservan como fuentes Graphviz versionables (`.dot`) y se publican en SVG y PNG para mantener legibilidad al ampliar. El diagrama de Contexto se presenta en §2.3 y la vista de Bloques en §5.1; esta sección contiene las vistas de Componentes y Despliegue derivadas de ambas. Además, existe una [versión consolidada y completamente editable en draw.io](./diagramas/vistas-arquitectonicas-sgo-logic.drawio), con una página por vista. Se declara **UML 2.5.1 simplificado** para Componentes y Despliegue: los estereotipos, fronteras, interfaces y tipos de relación se indican explícitamente. Contexto y Bloques emplean notación complementaria declarada, apropiada para comunicar la frontera del sistema y la visión ejecutiva.
+Las vistas de Fase 1 se conservan como arquitectura objetivo. La realización de
+Fase 2 se documenta aparte en
+[`nuevos-fase2`](<../FASE 2/docs/diagrams/nuevos-fase2/>), con exportaciones JPG
+y dos fuentes `draw.io` multipágina editables: una para
+[`bloques, componentes y despliegue`](<../FASE 2/docs/diagrams/nuevos-fase2/NUEVO-vistas-arquitectonicas-fase2.drawio>)
+y otra para los
+[`casos de uso expandidos`](<../FASE 2/docs/diagrams/nuevos-fase2/NUEVO-cdu-expandidos-fase2.drawio>).
+La separación evita presentar una decisión objetivo como si ya estuviera
+desplegada y, a la vez, conserva trazabilidad con el código ejecutable.
+
+Todas las vistas de cierre usan fondo y relleno blancos, texto y líneas negros,
+sin degradados ni sombras. Los conectores continuos representan llamadas o
+intercambios síncronos; los discontinuos representan eventos. Los rótulos
+declaran el protocolo cuando está respaldado por Compose o por el código.
+
+Para conservar el nivel de presentación de las vistas objetivo, las figuras de
+Fase 2 aplican una jerarquía visual común: título y propósito, frontera del
+sistema, agrupaciones por responsabilidad y detalle técnico progresivo. Esta
+composición evita una lista plana de componentes, reduce cruces innecesarios y
+permite leer primero la decisión arquitectónica y después su realización. El
+blanco y negro no es una limitación estética accidental: garantiza contraste,
+impresión académica legible y que ninguna relación dependa exclusivamente del
+color.
 
 ### 6.1 Diagrama de Componentes
+
+#### 6.1.1 Vista implementada en Fase 2
+
+![Componentes implementados en Fase 2](<../FASE 2/docs/diagrams/nuevos-fase2/DiagramaComponentes.jpg>)
+
+*Figura 18A. Módulos, servicios, puertos e integraciones observados en la
+realización de Fase 2.*
+
+La vista ubica los módulos `orders`, `inventory`, `payments`, `query`,
+`logistics`, `fiscal`, `fulfillment`, `onlinestore`, `inventorysync`,
+`legacyfeed`, `notifications` y `customers`. También separa los sistemas
+desplegados de manera independiente (`inventory-service`, `store-service`,
+`payklik-service` y `logiexpress-service`) y las salidas hacia ERP-Core y Gmail
+SMTP. Las líneas continuas muestran puertos o intercambios síncronos —por
+ejemplo `IReservas`, `IProcesarPago`, `DispatchPort`, REST/JWT y SMTP/TLS— y las
+discontinuas muestran eventos de pago o de estado de envío. Este nivel permite
+seguir las dependencias reales sin confundir módulos internos con servicios o
+sistemas externos.
+
+#### 6.1.2 Vista objetivo de Fase 1
 
 ![Diagrama de Componentes de SGO-Logic](./diagramas/componentes.svg)
 
@@ -1352,6 +1609,26 @@ La vista materializa ADR-001 a ADR-008: un núcleo modular desplegable, una API 
 - Ubica explícitamente Outbox, broker, idempotencia en adaptadores y los seis adaptadores externos requeridos.
 
 ### 6.2 Diagrama de Despliegue
+
+#### 6.2.1 Despliegue ejecutable de Fase 2
+
+![Despliegue real de Fase 2](<../FASE 2/docs/diagrams/nuevos-fase2/DiagramaDespliegue.jpg>)
+
+*Figura 19A. Doce contenedores del `docker-compose.yml` y dependencias externas.*
+
+La vista implementada contiene los doce contenedores definidos para la
+realización: `frontend`, `backend`, `postgres`, `rabbitmq`,
+`inventory-service`, `inventory-db`, `store-service`, `store-db`,
+`logiexpress-service`, `logiexpress-db`, `payklik-service` y `payklik-db`.
+También ubica el volumen `/var/sgo/erp-outbox` y las dependencias externas
+ERP-Core AS/400, POS-02 a POS-32, SAT y Gmail SMTP. Los rótulos hacen explícitos
+HTTP/REST con JWT o API key, AMQP con Outbox/Inbox y DLQ, JDBC, SMTP/TLS y el
+intercambio CSV/XML cada 30 minutos. Cada servicio conserva su base y se
+integra mediante API, eventos o archivos; ningún componente lee tablas de otro
+sistema. Esta regla reduce acoplamiento de datos y permite probar o recuperar
+cada integración de forma independiente.
+
+#### 6.2.2 Vista objetivo de Fase 1
 
 ![Diagrama de Despliegue de SGO-Logic](./diagramas/despliegue.svg)
 
@@ -1386,7 +1663,57 @@ El contorno azul representa el despliegue inicial **on-premises**. El número de
 ### 6.3 Modelo ER
 El modelo entidad-relación (ER) representa la estructura de datos del sistema, mostrando las entidades principales, sus atributos y las relaciones entre ellas. Este modelo se basa en los requisitos funcionales y los atributos de calidad definidos.
 
-![Modelo ER objetivo de SGO-Logic](/FASE%202/docs/diagrams/SGO-Logic-Modelo-ER.jpg)
+![Modelo ER objetivo de SGO-Logic](<../FASE 2/docs/diagrams/SGO-Logic-Modelo-ER.jpg>)
+
+#### 6.3.1 Modelos físicos separados de Fase 2
+
+Los siguientes modelos físicos se contrastan con las migraciones Flyway. Se
+dividen por base porque una sola figura sugeriría un esquema compartido
+inexistente. Las cinco páginas se conservan en una única
+[fuente draw.io editable](<../FASE 2/docs/diagrams/nuevos-fase2/NUEVO-modelos-datos-fase2.drawio>).
+
+##### SGO-Logic — base operacional principal
+
+![Modelo físico de SGO-Logic en Fase 2](<../FASE 2/docs/diagrams/nuevos-fase2/ModeloDatos-01-SGO-Logic.jpg>)
+
+*Figura 20. Tablas incorporadas en Fase 2 y columnas añadidas a `shipments` y
+`erp_sales`. La relación dibujada entre catálogo e imágenes es una FK interna
+de SGO-Logic; las integraciones externas se resuelven por contratos.*
+
+##### Almacén central — `inventory-db`
+
+![Modelo físico del almacén central](<../FASE 2/docs/diagrams/nuevos-fase2/ModeloDatos-02-Almacen-Central.jpg>)
+
+*Figura 21. Modelo completo de las 14 tablas creadas por Flyway para
+`inventory-db`: almacenes, puntos de venta, artículos, existencias, movimientos,
+ventas, traslados, despachos, facturas y auditoría. `invoices.related_folio` es
+informativo y `audit_log_entries.point_of_sale_id` no declara una FK; por ello
+esas tablas no tienen conectores adicionales.*
+
+##### Tienda física POS-01 — `store-db`
+
+![Modelo físico de la tienda POS-01](<../FASE 2/docs/diagrams/nuevos-fase2/ModeloDatos-03-Tienda-POS-01.jpg>)
+
+*Figura 22. Persistencia local de ventas, líneas, artículos, existencias,
+traslados, recepciones y eventos de sincronización de POS-01.*
+
+##### PayKlik (sistema propio `payklik-service`) — `payklik-db`
+
+![Modelo físico de PayKlik](<../FASE 2/docs/diagrams/nuevos-fase2/ModeloDatos-04-PayKlik.jpg>)
+
+*Figura 23. Transacciones de la pasarela PayKlik (llave de idempotencia única
+por comercio, sin PAN/CVV) y estado del servicio, que permite reproducir
+latencia y caídas reales del proveedor.*
+
+##### LogiExpress (sistema propio `logiexpress-service`) — `logiexpress-db`
+
+![Modelo físico de LogiExpress](<../FASE 2/docs/diagrams/nuevos-fase2/ModeloDatos-05-LogiExpress.jpg>)
+
+*Figura 24. Guías, historial de eventos de cada guía y estado del servicio del
+transportista LogiExpress.*
+
+La separación documenta la decisión de integración por contratos y evita que
+una relación conceptual se interprete como clave foránea entre sistemas.
 
 ---
 
@@ -1434,23 +1761,29 @@ Esta segunda lectura verifica que la priorización de la sección 4.4 no deje un
 |---|---|---|---|---|
 | CUN-01 - Carrito omnicanal | CDU-01 / página 1 | ADR-001, ADR-005 | Componentes, Bloques, Prototipo | Iniciar en un canal y recuperar el mismo carrito en otro |
 | CUN-02 - Reservar inventario | CDU-02 / página 2 | ADR-001, ADR-005 | Componentes, Despliegue | Dos solicitudes concurrentes no comprometen la misma unidad |
-| CUN-03 - Procesar pago | CDU-03 / página 3 | ADR-003, ADR-005 | Componentes, Despliegue, Prototipo | Caída de PayKlik conserva orden e intento sin cobro duplicado |
+| CUN-03 - Procesar pago | CDU-03 / página 3 + Fase 2 CDU-03 | ADR-003, ADR-005 | Componentes, Despliegue, `OrderSagaReconciledPaymentTest` | Respuesta tardía se concilia y la Saga continúa o compensa sin cobro duplicado |
 | CUN-04 - Documentación fiscal | CDU-04 / página 4 | ADR-002, ADR-007 | Componentes, Despliegue | Timeout de SAT deja estado fiscal pendiente; no finaliza la orden |
-| CUN-05 - Sincronizar ERP | CDU-05 / página 5 | ADR-002, ADR-004 | Contexto, Componentes, Despliegue | Archivo CSV/XML procesado o preservado para reintento en 30 min |
-| CUN-06 - Eventos a POS | CDU-06 / página 6 | ADR-002, ADR-004 | Componentes, Despliegue | Error de entrega mantiene evento y deduplica desde el adaptador |
-| CUN-07 - Despacho | CDU-07 / página 7 | ADR-004, ADR-005 | Componentes, Despliegue | Cambio de método reasigna origen y conserva trazabilidad |
-| CUN-08 - LogiExpress | CDU-08 / página 8 | ADR-004 | Contexto, Componentes, Despliegue | Simular 2 % de timeout y comprobar reintento sin bloquear preparación |
-| CUN-09 - Consultar orden | CDU-09 / página 9 | ADR-005, ADR-006 | Componentes, Prototipo | Estado consolidado en ≤ 5 s y última información ante dependencia caída |
+| CUN-05 - Sincronizar ERP | CDU-05 / página 5 + Fase 2 CDU-05/CDU-13 | ADR-002, ADR-004 | Componentes, Despliegue, `legacyfeed`, `salesreport` | CSV/XML con control, `DEAD_LETTER`, reintento manual e informe conciliado |
+| CUN-06 - Eventos a POS | CDU-06 / página 6 + Fase 2 CDU-06 | ADR-002, ADR-004 | Componentes, Despliegue | Eventos de orden a 32 POS, stock por tienda y retiro dirigido; fallo preservado |
+| CUN-07 - Despacho | CDU-07 / página 7 + Fase 2 CDU-07/CDU-16 | ADR-004, ADR-005 | Componentes, Despliegue | Origen CD-WEB separado del destino; retiro valida tienda, estado e identidad |
+| CUN-08 - LogiExpress | CDU-08 / página 8 + Fase 2 CDU-08 | ADR-004 | Contexto, Componentes, Despliegue | Guía REST, rastreo cada 10 s, conciliación tardía y reintento controlado |
+| CUN-09 - Consultar orden | CDU-09 / página 9 + Fase 2 CDU-09 | ADR-005, ADR-006 | Componentes, Prototipo | Resumen por eventos incluye pago conciliado sin perder actualizaciones concurrentes |
 | CUN-10 - Devoluciones | CDU-10 / página 10 | ADR-002, ADR-005, ADR-007 | Componentes, Prototipo | Devolución vinculada a venta y documento fiscal original |
 | CUN-11 - Notificar cliente | CDU-11 / página 11 | ADR-002, ADR-008 | Componentes, Despliegue | Falla del proveedor no bloquea orden y conserva solicitud |
 | CUN-12 - Auditar operaciones | CDU-12 / página 12 | ADR-002, ADR-006, ADR-007 | Componentes, Despliegue | Reconstruir quién/cuándo/qué y recuperar evidencia en < 1 s |
+| CUN-02/CUN-06 - Inventario de red | Fase 2 CDU-14 | ADR-011, ADR-015 | Almacén central, POS-01, modelos de datos | Folio de salida, evento de stock y recepción trazables |
+| CUN-01/CUN-05 - Venta omnicanal | Fase 2 CDU-15 | ADR-015 | POS-01, ERP, modelo físico de tienda | Venta local continúa sin central y se sincroniza al recuperar conectividad |
 
 ### 7.3 Cobertura y evidencia de cierre
 
-- Los doce CUN tienen descripción textual y página UML editable en [`cdu-negocio-y-expandidos.drawio`](./diagramas/cdu-negocio-y-expandidos.drawio).
+- Los doce CUN de Fase 1 conservan descripción textual y página UML editable en [`cdu-negocio-y-expandidos.drawio`](./diagramas/cdu-negocio-y-expandidos.drawio); las ampliaciones implementadas y CDU-13 a CDU-16 están en el [draw.io de Fase 2](<../FASE 2/docs/diagrams/nuevos-fase2/NUEVO-cdu-expandidos-fase2.drawio>).
 - EaC-01 a EaC-12 se relacionan explícitamente con elementos de Despliegue en §6.2.
 - ADR-001 a ADR-008 están aceptados y cubren estilo, publicación confiable, pagos, entrega externa, coordinación, observabilidad, SAT y notificaciones.
-- Las cuatro vistas poseen fuente versionable `.dot`, SVG y PNG; los mecanismos de validación se expresan como diseños de prueba de Fase 1 y no como resultados de una implementación inexistente.
+- Las vistas de bloques, componentes, despliegue y CDU implementados poseen
+  fuente editable `draw.io` y exportaciones JPG enlazadas desde este documento;
+  se distinguen de los diseños objetivo de Fase 1 y se respaldan con código y
+  pruebas de Fase 2. Los modelos físicos deben conservar la misma trazabilidad
+  con sus migraciones Flyway.
 
 ### 7.4 Matriz de trazabilidad RF vs. RF
 
@@ -1561,6 +1894,58 @@ Wireframes no funcionales del flujo principal: iniciar compra en la app móvil �
 ---
 
 ## 9. Conclusiones Arquitectónicas
+
+### 9.1 Actualización de Fase 3 — crédito propio
+
+La campaña **“Compra ahora, paga en 30 días”** amplía el frente financiero sin
+reemplazar PayKlik. El objetivo de aumentar el ticket promedio en 40 % se trata
+como hipótesis de negocio que deberá medirse; no se declara como beneficio ya
+obtenido. Marketing/Comercialización patrocina la oferta, Finanzas/Riesgo define
+su apetito y reglas, el Cliente decide la ruta y TI opera y observa la solución.
+
+Se añaden cuatro capacidades funcionales: evaluar elegibilidad, ofrecer la
+alternativa únicamente cuando corresponda, conceder o rechazar una obligación
+propia y notificar el resultado. La decisión arquitectónica completa se registra
+en [ADR-016](<../FASE 2/docs/adr/ADR-016-credito-propio-y-saga-financiera-dual.md>).
+
+La realización implementada mantiene el monolito modular: `credit` posee perfil,
+decisión y operación; publica una API explícita para `orders`; la Saga conserva
+rutas separadas de PayKlik y crédito y converge en el paso fiscal; `fiscal`
+referencia una operación financiera neutral; `audit` registra la decisión; y
+`notifications` consume eventos por Outbox/Inbox sin bloquear la compra. No se
+ha creado un microservicio ni una base independiente de crédito.
+
+```text
+Checkout -> orders -> credit::api -> perfil/proyección + decisión
+                    |              -> Outbox -> notifications
+                    +-> PayKlik (solo ruta PAYKLIK)
+                    +-> fiscal(financialOperationId, type) -> SAT
+                    +-> audit
+```
+
+Los estados nuevos son `CREDIT_PENDING`, `CREDIT_APPROVED` y
+`CREDIT_REJECTED`. Un rechazo no crea deuda ni intento PayKlik y permite una
+elección posterior de PayKlik mientras la orden sea recuperable. Una concesión
+se identifica de forma única por orden y llave idempotente y fija vencimiento a
+30 días. La política inicial es configurable, falla de forma cerrada ante
+historial ausente y conserva `ruleVersion` y un código público de resultado.
+
+| Requisito Fase 3 | Decisión / código | Evidencia prevista o existente |
+|---|---|---|
+| Alternativa solo para elegibles | ADR-016; `PaymentOptionsService` | `PaymentOptionsServiceTest` |
+| Decisión basada en historial | `CreditEligibilityPolicy`; perfil y versión de reglas | `CreditEligibilityPolicyTest` |
+| PayKlik independiente | Rutas `PaymentRoute`; degradación segura | prueba de opciones y regresión PayKlik |
+| Concesión sin duplicados | `credit_operations` con unicidad por orden/llave | E2E de compra con crédito |
+| Factura sin pago ficticio | operación financiera neutral; migración V4004 | E2E y compatibilidad fiscal legado |
+| Auditoría y notificación | Outbox `CREDIT_*`, Audit e Inbox | pruebas de consumidores y escaneo EaC-12 |
+| Límite modular | `credit :: api` | `ModularArchitectureTest` |
+
+Antes de producción quedan dos gates explícitos: ligar `customerId` a una
+identidad JWT individual (la cuenta `CLIENT` compartida de la demo no prueba
+autorización por propietario) y acordar fuente, frescura y reconciliación de la
+proyección histórica. También deberán incorporarse carga, estrés, cinco pruebas
+de integración y el total de E2E exigido por el enunciado antes de declarar la
+Fase 3 terminada.
 
 El diseño establece a SGO-Logic como una capa de orquestación e integración omnicanal que conserva ERP-Core y los POS existentes. Los drivers funcionales, de calidad y de restricción quedan atendidos mediante el monolito modular, los puertos y adaptadores, la mensajería confiable, la Saga orquestada y los controles transversales documentados en ADR-001 a ADR-008.
 

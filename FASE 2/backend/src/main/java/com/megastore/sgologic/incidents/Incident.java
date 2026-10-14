@@ -36,6 +36,15 @@ public class Incident {
     @Column(name = "order_id", nullable = false, updatable = false)
     private UUID orderId;
 
+    /**
+     * Opcional: lo entrega quien registra la incidencia (el cliente conoce
+     * su propio identificador desde la sesión autenticada). Permite el
+     * historial de atenciones por cliente sin que Incidents lea tablas de
+     * Orders para resolverlo.
+     */
+    @Column(name = "customer_id")
+    private UUID customerId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 16)
     private IncidentType type;
@@ -73,10 +82,11 @@ public class Incident {
         // Requerido por JPA.
     }
 
-    private Incident(UUID id, UUID orderId, IncidentType type, String reason, boolean partial,
+    private Incident(UUID id, UUID orderId, UUID customerId, IncidentType type, String reason, boolean partial,
                       List<IncidentLineItem> items, UUID correlationId, Instant now) {
         this.id = id;
         this.orderId = orderId;
+        this.customerId = customerId;
         this.type = type;
         this.reason = reason;
         this.partial = partial;
@@ -87,9 +97,9 @@ public class Incident {
         this.updatedAt = now;
     }
 
-    public static Incident register(UUID orderId, IncidentType type, String reason, boolean partial,
-                                     List<IncidentLineItem> items, UUID correlationId, Instant now) {
-        return new Incident(UUID.randomUUID(), orderId, type, reason, partial, items, correlationId, now);
+    public static Incident register(UUID orderId, UUID customerId, IncidentType type, String reason,
+                                     boolean partial, List<IncidentLineItem> items, UUID correlationId, Instant now) {
+        return new Incident(UUID.randomUUID(), orderId, customerId, type, reason, partial, items, correlationId, now);
     }
 
     public void resolve(IncidentStatus resolution, BigDecimal refundAmount, Instant now) {
@@ -105,6 +115,10 @@ public class Incident {
 
     public UUID getOrderId() {
         return orderId;
+    }
+
+    public UUID getCustomerId() {
+        return customerId;
     }
 
     public IncidentType getType() {

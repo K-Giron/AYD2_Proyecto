@@ -54,7 +54,7 @@ class SensitiveDataLeakScanTest {
             Pattern.compile("(?<![0-9.\\-])\\d(?:[ .\\-]?\\d){12,}(?![0-9.\\-])");
     private static final Pattern CVV_PATTERN = Pattern.compile("(?i)\\b(cvv2?|cvc2?|securitycode)\\b");
     private static final Pattern UUID_PATTERN = Pattern.compile(
-            "(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b");
+            "(?i)\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1,12}\\b");
     private static final String PAN_SQL_REGEX = "(?<![0-9.\\-])[0-9]([ .\\-]?[0-9]){12,}(?![0-9.\\-])";
     private static final String CVV_SQL_REGEX = "(?i)\\y(cvv2?|cvc2?|securitycode)\\y";
 
@@ -123,6 +123,14 @@ class SensitiveDataLeakScanTest {
         assertThat(findings)
                 .as("EaC-12: no debe aparecer PAN completo ni CVV en base, mensajes o logs")
                 .isEmpty();
+    }
+
+    @Test
+    void detectorFindsRealCardsButNotUuidsOrTimestamps() {
+        assertThat(containsPan("pago con 4111 1111 1111 1111")).isTrue();
+        assertThat(containsPan("ref 5500-0000-0000-0004")).isTrue();
+        assertThat(containsPan("orden 12345678-1234-4123-8123-123456789012")).isFalse();
+        assertThat(containsPan("imagen?v=1791390657671")).isFalse();
     }
 
     private record ScanResult(List<String> findings, int columnsScanned) {
@@ -239,13 +247,57 @@ class SensitiveDataLeakScanTest {
         for (String[] tableColumn : columns) {
             String table = tableColumn[0];
             String column = tableColumn[1];
-            int panMatches = countMatches(table, column, PAN_SQL_REGEX);
+            int panMatches = countPans(table, column);
             int cvvMatches = countMatches(table, column, CVV_SQL_REGEX);
             if (panMatches > 0 || cvvMatches > 0) {
                 findings.add(table + "." + column + " -> PAN=" + panMatches + ", CVV=" + cvvMatches);
             }
         }
         return new ScanResult(findings, columns.size());
+    }
+
+    /**
+     * El regex SQL solo preselecciona: un UUID aleatorio o un instante en
+     * milisegundos también tienen 13 o más dígitos. Cada candidato se confirma
+     * en Java (sin UUID y con dígito verificador Luhn, como toda tarjeta real),
+     * para que la prueba no falle al azar sin dejar pasar un PAN verdadero.
+     */
+    private int countPans(String table, String column) {
+        List<String> candidates = jdbcTemplate.queryForList(
+                "SELECT " + table + "." + column + "::text FROM " + table + " WHERE " + table + "." + column + "::text ~ ?",
+                String.class, PAN_SQL_REGEX);
+        return (int) candidates.stream().filter(SensitiveDataLeakScanTest::containsPan).count();
+    }
+
+    static boolean containsPan(String value) {
+        if (value == null) {
+            return false;
+        }
+        java.util.regex.Matcher candidate = PAN_PATTERN.matcher(UUID_PATTERN.matcher(value).replaceAll("<uuid>"));
+        while (candidate.find()) {
+            String digits = candidate.group().replaceAll("[^0-9]", "");
+            if (digits.length() >= 13 && digits.length() <= 19 && passesLuhn(digits)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean passesLuhn(String digits) {
+        int sum = 0;
+        boolean doubleIt = false;
+        for (int i = digits.length() - 1; i >= 0; i--) {
+            int digit = digits.charAt(i) - '0';
+            if (doubleIt) {
+                digit *= 2;
+                if (digit > 9) {
+                    digit -= 9;
+                }
+            }
+            sum += digit;
+            doubleIt = !doubleIt;
+        }
+        return sum % 10 == 0;
     }
 
     private int countMatches(String table, String column, String regex) {
@@ -261,11 +313,11 @@ class SensitiveDataLeakScanTest {
             String message = event.getFormattedMessage();
             // Un UUID aleatorio puede contener trece o más dígitos unidos por
             // guiones y parecer una tarjeta al regex. Se excluyen únicamente
-            // UUID completos antes de buscar datos de pago; las referencias
-            // numéricas, incluso separadas por guiones, siguen detectándose.
+            // UUID completos o truncados por el logger antes de buscar datos
+            // de pago; las referencias numéricas de tarjeta (que no tienen
+            // forma 8-4-4-4-N), incluso separadas por guiones, se detectan.
             String scannable = message == null ? null : UUID_PATTERN.matcher(message).replaceAll("<uuid>");
-            if (scannable != null
-                    && (PAN_PATTERN.matcher(scannable).find() || CVV_PATTERN.matcher(scannable).find())) {
+            if (scannable != null && (containsPan(scannable) || CVV_PATTERN.matcher(scannable).find())) {
                 findings.add("log -> " + message);
             }
         }

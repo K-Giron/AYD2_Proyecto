@@ -72,7 +72,21 @@ public class OrderSummaryProjection {
         return projection;
     }
 
+    /**
+     * Aplica el hecho de una fuente. Los eventos pueden llegar desordenados
+     * (colas distintas): uno más viejo que el ya registrado no lo reemplaza.
+     */
     void apply(ProjectionSource source, String status, Instant asOf, Instant now) {
+        Instant current = switch (source) {
+            case ORDER -> orderStatusAsOf;
+            case PAYMENT -> paymentStatusAsOf;
+            case DISPATCH -> dispatchStatusAsOf;
+            case DELIVERY -> deliveryStatusAsOf;
+            case INCIDENT -> incidentStatusAsOf;
+        };
+        if (current != null && asOf != null && asOf.isBefore(current)) {
+            return;
+        }
         switch (source) {
             case ORDER -> {
                 this.orderStatus = status;

@@ -5,12 +5,15 @@ import com.megastore.sgologic.messaging.InboxService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
+import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -21,9 +24,11 @@ class OrderStatusNotificationConsumerTest {
 
     private final InboxService inbox = mock(InboxService.class);
     private final NotificationService notificationService = mock(NotificationService.class);
-    private final CustomerContactRepository contacts = mock(CustomerContactRepository.class);
-    private final OrderStatusNotificationConsumer consumer =
-            new OrderStatusNotificationConsumer(inbox, notificationService, contacts);
+    private final CustomerLookupService customerLookup = mock(CustomerLookupService.class);
+    private final OrderCustomerLinkRepository customerLinkRepository = mock(OrderCustomerLinkRepository.class);
+    private final Clock clock = Clock.fixed(Instant.parse("2026-09-23T23:30:00Z"), ZoneOffset.UTC);
+    private final OrderStatusNotificationConsumer consumer = new OrderStatusNotificationConsumer(
+            inbox, notificationService, customerLookup, customerLinkRepository, clock);
 
     @Test
     void createsOneNotificationUsingThePreferredVerifiedContact() {
@@ -35,8 +40,7 @@ class OrderStatusNotificationConsumerTest {
                 Map.of("newStatus", "CONFIRMED", "customerId", customerId.toString()));
         CustomerContact preferred = CustomerContact.verified(customerId, NotificationChannel.EMAIL,
                 "cliente@megastore.test", 1, occurredAt);
-        when(contacts.findByCustomerIdAndEnabledTrueAndVerifiedAtIsNotNullOrderByPreferenceRankAsc(customerId))
-                .thenReturn(List.of(preferred));
+        when(customerLookup.resolvePreferredContact(customerId)).thenReturn(Optional.of(preferred));
         ArgumentCaptor<Runnable> action = ArgumentCaptor.forClass(Runnable.class);
 
         consumer.consume(event);
@@ -45,6 +49,23 @@ class OrderStatusNotificationConsumerTest {
         action.getValue().run();
         verify(notificationService).requestNotification(NotificationEventType.ORDER_CONFIRMED,
                 NotificationChannel.EMAIL, "cliente@megastore.test", orderId, correlationId);
+        verify(customerLinkRepository).save(any(OrderCustomerLink.class));
+    }
+
+    @Test
+    void recordsCustomerLinkEvenForStatusesThatDoNotNotify() {
+        UUID orderId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        BusinessEventEnvelope event = event(orderId, UUID.randomUUID(), Instant.now(),
+                Map.of("newStatus", "PAYMENT_APPROVED", "customerId", customerId.toString()));
+        ArgumentCaptor<Runnable> action = ArgumentCaptor.forClass(Runnable.class);
+
+        consumer.consume(event);
+        verify(inbox).processOnce(eq(OrderStatusNotificationConsumer.CONSUMER_NAME), eq(event), action.capture());
+        action.getValue().run();
+
+        verify(customerLinkRepository).save(any(OrderCustomerLink.class));
+        verify(notificationService, never()).requestNotification(any(), any(), any(), any(), any());
     }
 
     @Test

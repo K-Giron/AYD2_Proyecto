@@ -4,6 +4,7 @@ import com.megastore.sgologic.shared.http.CorrelationIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +29,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/shipments")
 public class ShipmentController {
 
+    private static final int MAX_CONCURRENT_UPDATE_ATTEMPTS = 3;
+
     private final ShipmentService shipmentService;
 
     public ShipmentController(ShipmentService shipmentService) {
@@ -41,7 +44,8 @@ public class ShipmentController {
             HttpServletRequest httpRequest) {
         UUID correlationId = correlationId(httpRequest);
         Shipment shipment = shipmentService.createDispatch(
-                request.orderId(), request.origin(), request.destination(), correlationId, idempotencyKey);
+                request.orderId(), request.origin(), request.originCode(), request.destination(), correlationId,
+                idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED).body(ShipmentResponse.from(shipment));
     }
 
@@ -74,8 +78,23 @@ public class ShipmentController {
     public ShipmentResponse recordTrackingEvent(
             @PathVariable UUID shipmentId,
             @Valid @RequestBody RecordTrackingEventRequest request) {
-        return ShipmentResponse.from(
-                shipmentService.recordTrackingEvent(shipmentId, request.status(), "LOGIEXPRESS"));
+        // Tras crear el despacho, otro hilo pide la guía a LogiExpress y actualiza el mismo
+        // registro (@Version). Si ambos coinciden, esta transacción pierde el bloqueo optimista:
+        // no es un error del cliente, basta reintentar con el estado ya actualizado.
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return ShipmentResponse.from(
+                        shipmentService.recordTrackingEvent(shipmentId, request.status(), "CONSOLA"));
+            } catch (OptimisticLockingFailureException concurrentUpdate) {
+                if (attempt >= MAX_CONCURRENT_UPDATE_ATTEMPTS) throw concurrentUpdate;
+            }
+        }
+    }
+
+    /** LOG-03: vuelve a pedir la guía a LogiExpress tras agotar los reintentos automáticos. */
+    @PostMapping("/{shipmentId}/label-retry")
+    public ShipmentResponse retryLabel(@PathVariable UUID shipmentId) {
+        return ShipmentResponse.from(shipmentService.retryLabel(shipmentId));
     }
 
     @PatchMapping("/{shipmentId}/delivery-method")

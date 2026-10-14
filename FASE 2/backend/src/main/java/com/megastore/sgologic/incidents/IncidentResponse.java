@@ -8,6 +8,7 @@ import java.util.UUID;
 public record IncidentResponse(
         UUID id,
         UUID orderId,
+        UUID customerId,
         IncidentType type,
         String reason,
         boolean partial,
@@ -22,6 +23,7 @@ public record IncidentResponse(
         return new IncidentResponse(
                 incident.getId(),
                 incident.getOrderId(),
+                incident.getCustomerId(),
                 incident.getType(),
                 incident.getReason(),
                 incident.isPartial(),

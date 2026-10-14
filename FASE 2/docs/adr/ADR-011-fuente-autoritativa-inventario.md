@@ -3,7 +3,8 @@
 - **Fecha:** 2026-09-22
 - **Estado:** Proposed
 - **Responsable del borrador:** Jorge Pumay
-- **Aprobación pendiente:** Jairo Gómez, Edson Sosa, Andy Sánchez y Kevin Girón
+- **Aprobado por:** Kevin Girón (2026-10-14)
+- **Aprobación pendiente:** Jairo Gómez, Edson Sosa y Andy Sánchez
 - **Resuelve:** DEC-03 del Gate 0 (Planificación Fase 2)
 
 ## Contexto
@@ -62,6 +63,29 @@ Para el MVP de Fase 2, el **módulo `inventory` de SGO-Logic es la única fuente
 - INV-02 demuestra, mediante prueba de concurrencia (INV-05), que dos solicitudes simultáneas por la última unidad producen exactamente una reserva confirmada.
 - El README y la documentación de demo declaran explícitamente que los datos de inventario son simulados.
 - Al menos tres integrantes registran su aprobación antes de que este ADR pase a `Accepted`.
+
+## Actualización Fase 2 (2026-10-13)
+
+La decisión se mantiene **para la reserva atómica** (CDU-02, EaC-03): el
+módulo `inventory` sigue siendo la única fuente con la que la Saga reserva,
+confirma y libera. Fase 2 agregó, con responsabilidades separadas (ADR-015):
+
+| Fuente | Qué es autoritativa | Cómo se actualiza |
+|---|---|---|
+| `inventory` (monolito) | Reservas y existencias **vendibles por la web**, en la ubicación `CD-WEB` (almacén propio de la tienda online) | Solo entra mercadería por folio recibido del almacén central (`onlinestore`); sale por venta confirmada o por traslado |
+| `inventory-service` (almacén central, base propia) | Existencias del almacén central y **stock propio de cada punto de venta** (POS-01, POS-02…, POS-ONLINE) | Folios de entrada, salida, ajuste y traslado; facturas que suben las tiendas; venta web reflejada por `inventorysync` |
+
+Consecuencias:
+- Las 34 ubicaciones sembradas (CD-01, CD-02, ST-01…ST-32) siguen como datos
+  simulados para demostrar el algoritmo de ADR-014; la web vende desde `CD-WEB`.
+- Ningún sistema lee tablas de otro: el monolito y el central se hablan solo
+  por API y eventos, con reintentos y bandeja de fallidos (`inventorysync`).
+- La pregunta abierta del DDA §2.6 (sistema físico definitivo) sigue abierta.
+  El central es el candidato natural, pero eso lo decide Negocio.
+
+Evidencia: `OnlineStoreIntegrationTest` (recepción → CD-WEB → compra con
+reserva; dos compradores concurrentes por la última unidad producen una sola
+reserva) e `InventoryConcurrencyIntegrationTest`.
 
 ## Referencias
 

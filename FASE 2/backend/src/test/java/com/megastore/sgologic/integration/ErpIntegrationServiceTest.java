@@ -70,8 +70,12 @@ class ErpIntegrationServiceTest {
 
         assertThat(batch.getStatus()).isEqualTo(ErpBatchStatus.DELIVERED);
         assertThat(batch.getSaleCount()).isEqualTo(1);
-        assertThat(batch.getPayload()).startsWith("orderId,confirmedAt,netTotal,taxTotal,grandTotal,currency");
-        assertThat(batch.getPayload()).contains(sale.getOrderId().toString(), "100.00,12.00,112.00,GTQ");
+        assertThat(batch.getPayload()).startsWith(
+                "recordType,saleId,channel,pointOfSale,reference,financialRoute,confirmedAt,netTotal,taxTotal,grandTotal,currency");
+        assertThat(batch.getPayload()).contains("SALE," + sale.getOrderId(), "WEB,POS-ONLINE", "PAYKLIK",
+                "100.00,12.00,112.00,GTQ");
+        // Registro de control: cantidad y sumas del lote, para que el ERP valide el archivo completo.
+        assertThat(batch.getPayload()).endsWith("TRAILER,1,,,,,,100.00,12.00,112.00,GTQ");
         assertThat(sale.getStatus()).isEqualTo(ErpSaleStatus.DELIVERED);
     }
 
@@ -98,6 +102,38 @@ class ErpIntegrationServiceTest {
     }
 
     @Test
+    void deadLetterBatchCanBeRetriedManuallyOnceTheErpIsBack() {
+        when(gateway.deliver(any(), any(), any()))
+                .thenThrow(new ErpGatewayPort.ErpUnavailableException("ERP fuera de linea"))
+                .thenThrow(new ErpGatewayPort.ErpUnavailableException("ERP fuera de linea"))
+                .thenThrow(new ErpGatewayPort.ErpUnavailableException("ERP fuera de linea"))
+                .thenThrow(new ErpGatewayPort.ErpUnavailableException("ERP fuera de linea"))
+                .thenReturn(new ErpGatewayPort.DeliveryResult(true, "ERP-FILE:ventas.csv", null));
+        ErpSale sale = registerSale(UUID.randomUUID());
+        ErpBatch batch = service.runBatch(ErpExportFormat.CSV);
+        assertThat(batch.getStatus()).isEqualTo(ErpBatchStatus.DEAD_LETTER);
+
+        ErpBatch retried = service.retryBatch(batch.getId());
+
+        assertThat(retried.getStatus()).isEqualTo(ErpBatchStatus.DELIVERED);
+        assertThat(retried.getAttempts()).isEqualTo(1);
+        assertThat(sale.getStatus()).isEqualTo(ErpSaleStatus.DELIVERED);
+    }
+
+    @Test
+    void scheduledWindowResumesBatchesLeftPendingByARestart() {
+        when(gateway.deliver(any(), any(), any())).thenReturn(
+                new ErpGatewayPort.DeliveryResult(true, "ERP-ACK-2", null));
+        ErpBatch orphan = ErpBatch.create(ErpExportFormat.CSV, "recordType\n", 1, clock.instant().minusSeconds(600));
+        batches.put(orphan.getId(), orphan);
+        when(batchRepository.findByStatusInAndUpdatedAtBefore(any(), any())).thenReturn(java.util.List.of(orphan));
+
+        service.runScheduledBatch();
+
+        assertThat(orphan.getStatus()).isEqualTo(ErpBatchStatus.DELIVERED);
+    }
+
+    @Test
     void registrationIsIdempotentByOrderAndRejectsInconsistentTotals() {
         UUID orderId = UUID.randomUUID();
         ErpSale first = registerSale(orderId);
@@ -109,6 +145,22 @@ class ErpIntegrationServiceTest {
                 BigDecimal.ONE, BigDecimal.TEN, "GTQ", clock.instant()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("neto mas impuesto");
+    }
+
+    @Test
+    void creditSaleIsExportedWithItsFinancialRoute() {
+        when(gateway.deliver(any(), any(), any())).thenReturn(
+                new ErpGatewayPort.DeliveryResult(true, "ERP-ACK-CREDIT", null));
+        UUID orderId = UUID.randomUUID();
+        service.registerConfirmedSale(orderId, new BigDecimal("803.57"), new BigDecimal("96.43"),
+                new BigDecimal("900.00"), "GTQ", clock.instant(), "WEB", "POS-ONLINE",
+                orderId.toString(), "OWN_CREDIT");
+
+        ErpBatch batch = service.runBatch(ErpExportFormat.CSV);
+
+        assertThat(batch.getPayload()).contains(",OWN_CREDIT,");
+        assertThat(service.saleFor(orderId)).get().extracting(ErpSaleView::financialRoute)
+                .isEqualTo("OWN_CREDIT");
     }
 
     private ErpSale registerSale(UUID orderId) {

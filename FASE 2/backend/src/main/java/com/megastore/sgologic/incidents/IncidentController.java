@@ -34,7 +34,7 @@ public class IncidentController {
         UUID correlationId = UUID.fromString(
                 httpRequest.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME).toString());
         Incident incident = incidentService.register(
-                request.orderId(), request.type(), request.reason(), request.partial(),
+                request.orderId(), request.customerId(), request.type(), request.reason(), request.partial(),
                 request.items().stream().map(IncidentLineItemDto::toDomain).toList(), correlationId);
         return ResponseEntity.status(HttpStatus.CREATED).body(IncidentResponse.from(incident));
     }
@@ -44,9 +44,22 @@ public class IncidentController {
         return IncidentResponse.from(incidentService.getIncident(id));
     }
 
+    /**
+     * Acepta {@code orderId} (devoluciones de una orden) o {@code customerId}
+     * (historial de atenciones del cliente a través de todas sus órdenes).
+     * Exactamente uno de los dos es requerido.
+     */
     @GetMapping
-    public List<IncidentResponse> getIncidentsForOrder(@RequestParam UUID orderId) {
-        return incidentService.getIncidentsForOrder(orderId).stream().map(IncidentResponse::from).toList();
+    public List<IncidentResponse> search(
+            @RequestParam(required = false) UUID orderId,
+            @RequestParam(required = false) UUID customerId) {
+        if (orderId != null) {
+            return incidentService.getIncidentsForOrder(orderId).stream().map(IncidentResponse::from).toList();
+        }
+        if (customerId != null) {
+            return incidentService.getIncidentsForCustomer(customerId).stream().map(IncidentResponse::from).toList();
+        }
+        throw new MissingIncidentSearchParameterException();
     }
 
     @PatchMapping("/{id}/resolution")

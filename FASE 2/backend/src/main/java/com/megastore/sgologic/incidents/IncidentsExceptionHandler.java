@@ -24,6 +24,12 @@ class IncidentsExceptionHandler {
         return build(HttpStatus.CONFLICT, "INCIDENT_ALREADY_RESOLVED", exception.getMessage(), request);
     }
 
+    @ExceptionHandler(MissingIncidentSearchParameterException.class)
+    public ResponseEntity<ApiError> handleMissingSearchParameter(MissingIncidentSearchParameterException exception,
+                                                                   HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "MISSING_SEARCH_PARAMETER", exception.getMessage(), request);
+    }
+
     private ResponseEntity<ApiError> build(HttpStatus status, String code, String message,
                                             HttpServletRequest request) {
         Object correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME);

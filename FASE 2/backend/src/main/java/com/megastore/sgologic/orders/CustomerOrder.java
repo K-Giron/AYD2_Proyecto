@@ -47,6 +47,13 @@ public class CustomerOrder {
     @Column(name = "status", nullable = false, length = 40)
     private OrderStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_route", length = 24)
+    private PaymentRoute paymentRoute;
+
+    @Column(name = "financial_operation_id")
+    private UUID financialOperationId;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "customer_order_items", joinColumns = @JoinColumn(name = "order_id"))
     private List<OrderLine> items = new ArrayList<>();
@@ -103,13 +110,17 @@ public class CustomerOrder {
     private static Map<OrderStatus, Set<OrderStatus>> transitions() {
         Map<OrderStatus, Set<OrderStatus>> map = new EnumMap<>(OrderStatus.class);
         map.put(OrderStatus.CREATED, EnumSet.of(OrderStatus.INVENTORY_RESERVED, OrderStatus.CANCELLED));
-        map.put(OrderStatus.INVENTORY_RESERVED, EnumSet.of(OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED));
+        map.put(OrderStatus.INVENTORY_RESERVED, EnumSet.of(
+                OrderStatus.PAYMENT_PENDING, OrderStatus.CREDIT_PENDING, OrderStatus.CANCELLED));
         map.put(OrderStatus.PAYMENT_PENDING, EnumSet.of(OrderStatus.PAYMENT_APPROVED,
                 OrderStatus.PAYMENT_REJECTED, OrderStatus.PAYMENT_INDETERMINATE));
         map.put(OrderStatus.PAYMENT_REJECTED, EnumSet.of(OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED));
         map.put(OrderStatus.PAYMENT_INDETERMINATE,
                 EnumSet.of(OrderStatus.PAYMENT_APPROVED, OrderStatus.PAYMENT_REJECTED));
         map.put(OrderStatus.PAYMENT_APPROVED, EnumSet.of(OrderStatus.FISCAL_PENDING));
+        map.put(OrderStatus.CREDIT_PENDING, EnumSet.of(OrderStatus.CREDIT_APPROVED, OrderStatus.CREDIT_REJECTED));
+        map.put(OrderStatus.CREDIT_REJECTED, EnumSet.of(OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED));
+        map.put(OrderStatus.CREDIT_APPROVED, EnumSet.of(OrderStatus.FISCAL_PENDING));
         map.put(OrderStatus.FISCAL_PENDING,
                 EnumSet.of(OrderStatus.FISCAL_APPROVED, OrderStatus.FISCAL_REJECTED));
         map.put(OrderStatus.FISCAL_REJECTED, EnumSet.of(OrderStatus.FISCAL_PENDING));
@@ -131,4 +142,27 @@ public class CustomerOrder {
     public UUID getCorrelationId() { return correlationId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public PaymentRoute getPaymentRoute() { return paymentRoute; }
+    public UUID getFinancialOperationId() { return financialOperationId; }
+
+    void selectPaymentRoute(PaymentRoute route) {
+        if (route == null) throw new IllegalArgumentException("La ruta financiera es obligatoria.");
+        if (paymentRoute != null && paymentRoute != route && status != OrderStatus.CREDIT_REJECTED) {
+            throw new IllegalStateException("La orden ya inició la ruta financiera " + paymentRoute + ".");
+        }
+        if (paymentRoute == PaymentRoute.OWN_CREDIT
+                && route == PaymentRoute.PAYKLIK
+                && status == OrderStatus.CREDIT_REJECTED) {
+            financialOperationId = null;
+        }
+        paymentRoute = route;
+    }
+
+    void recordFinancialOperation(UUID operationId) {
+        if (operationId == null) throw new IllegalArgumentException("La operación financiera es obligatoria.");
+        if (financialOperationId != null && !financialOperationId.equals(operationId)) {
+            throw new IllegalStateException("La orden ya tiene otra operación financiera.");
+        }
+        financialOperationId = operationId;
+    }
 }

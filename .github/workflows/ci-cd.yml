@@ -1,0 +1,201 @@
+name: CI/CD - SGO-Logic
+
+# Pipeline de Fase 3 (ADR-017): build -> test -> imágenes Docker -> deploy a Google Cloud.
+# - Pull requests y ramas de git-flow: compilan y prueban todo; las imágenes se
+#   construyen pero no se publican.
+# - Tags v1, v2, v3... (releases desde main): publican imágenes inmutables en
+#   GHCR y despliegan a la VM. Si cualquier prueba falla, no hay imágenes ni deploy.
+# - Ejecución manual: redeploy o rollback a un tag ya publicado, sin recompilar.
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main, "release/**", "hotfix/**"]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      deploy_tag:
+        description: "Tag de imagen ya publicado a desplegar (p. ej. v2). Sirve para rollback manual."
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ---------------------------------------------------------------- BUILD + TEST
+  test-java:
+    name: Build y pruebas - ${{ matrix.project }}
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: true
+      matrix:
+        project: [backend, inventory-service, store-service, payklik-service, logiexpress-service]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          cache-dependency-path: "FASE 2/${{ matrix.project }}/pom.xml"
+      - name: Compilar y ejecutar pruebas unitarias, de integración y arquitectura
+        working-directory: "FASE 2/${{ matrix.project }}"
+        run: ./mvnw --batch-mode clean verify
+      - name: Publicar reportes de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pruebas-${{ matrix.project }}-${{ github.run_id }}
+          path: "FASE 2/${{ matrix.project }}/target/surefire-reports/"
+          if-no-files-found: warn
+          retention-days: 30
+
+  test-frontend:
+    name: Build y validación - frontend
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validar sintaxis de todo el JavaScript
+        working-directory: "FASE 2/frontend"
+        run: for f in *.js; do node --check "$f"; done
+      - name: Validar Compose base y de producción
+        working-directory: "FASE 2"
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          docker compose --env-file deploy/.env.production.example -f docker-compose.yml -f deploy/docker-compose.prod.yml config --quiet
+
+  # ---------------------------------------------------------------- IMÁGENES
+  images:
+    name: Imagen Docker - ${{ matrix.image }}
+    needs: [test-java, test-frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { image: sgo-logic-backend, context: "FASE 2/backend" }
+          - { image: sgo-logic-frontend, context: "FASE 2/frontend" }
+          - { image: sgo-logic-inventory-service, context: "FASE 2/inventory-service" }
+          - { image: sgo-logic-store-service, context: "FASE 2/store-service" }
+          - { image: sgo-logic-payklik-service, context: "FASE 2/payklik-service" }
+          - { image: sgo-logic-logiexpress-service, context: "FASE 2/logiexpress-service" }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Calcular nombre y tags inmutables
+        id: meta
+        run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          name="${REGISTRY}/${owner}/${{ matrix.image }}"
+          tags="${name}:sha-${GITHUB_SHA::7}"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then tags="${tags},${name}:${GITHUB_REF_NAME}"; fi
+          if [[ "${GITHUB_REF}" == refs/heads/* ]]; then tags="${tags},${name}:$(echo "${GITHUB_REF_NAME}" | tr '/' '-')"; fi
+          echo "tags=${tags}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - name: Iniciar sesión en GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Construir (y publicar solo en push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  # ---------------------------------------------------------------- DEPLOY
+  deploy:
+    name: Deploy a Google Cloud
+    needs: [images]
+    # Solo se despliega un tag de release cuyas pruebas e imágenes pasaron, o
+    # un tag ya publicado pedido a mano (rollback). always() permite el caso manual,
+    # en el que las pruebas e imágenes se omiten porque no se recompila nada.
+    if: >-
+      always() && (
+        (startsWith(github.ref, 'refs/tags/v') && needs.images.result == 'success') ||
+        github.event_name == 'workflow_dispatch'
+      )
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment:
+      name: produccion
+      url: http://${{ vars.GCP_VM_HOST }}
+    concurrency:
+      group: deploy-produccion
+      cancel-in-progress: false
+    env:
+      DEPLOY_TAG: ${{ github.event.inputs.deploy_tag || github.ref_name }}
+      VM_HOST: ${{ vars.GCP_VM_HOST }}
+      VM_USER: ${{ vars.GCP_VM_USER }}
+      APP_DIR: /opt/sgo-logic
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar llave SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.GCP_VM_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "${VM_HOST}" >> ~/.ssh/known_hosts
+      - name: Copiar Compose y scripts a la VM
+        run: |
+          SSH="ssh -i ~/.ssh/id_deploy ${VM_USER}@${VM_HOST}"
+          scp -i ~/.ssh/id_deploy "FASE 2/docker-compose.yml" "FASE 2/deploy/docker-compose.prod.yml" "${VM_USER}@${VM_HOST}:${APP_DIR}/"
+          scp -i ~/.ssh/id_deploy "FASE 2"/deploy/scripts/*.sh "FASE 2/scripts/reset-demo-data.sh" "${VM_USER}@${VM_HOST}:${APP_DIR}/scripts/"
+          $SSH "chmod +x ${APP_DIR}/scripts/*.sh"
+      - name: Escribir variables de producción (desde el secreto PROD_ENV_FILE)
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+        run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          {
+            printf '%s\n' "${PROD_ENV_FILE}" | grep -vE '^(IMAGE_REGISTRY|IMAGE_TAG)='
+            echo "IMAGE_REGISTRY=${REGISTRY}/${owner}"
+            echo "IMAGE_TAG=${DEPLOY_TAG}"
+          } | ssh -i ~/.ssh/id_deploy "${VM_USER}@${VM_HOST}" "umask 077 && cat > ${APP_DIR}/.env"
+      - name: Iniciar sesión en GHCR desde la VM
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | ssh -i ~/.ssh/id_deploy "${VM_USER}@${VM_HOST}" \
+            "docker login ${REGISTRY} -u ${{ github.actor }} --password-stdin"
+      - name: Desplegar con health check y rollback automático
+        # El despliegue corre en la VM con nohup y aquí solo se sigue su log: si
+        # la conexión SSH se corta, el despliegue (o su rollback) termina igual.
+        run: |
+          SSH="ssh -i $HOME/.ssh/id_deploy -o ServerAliveInterval=30 -o ServerAliveCountMax=10 ${VM_USER}@${VM_HOST}"
+          $SSH "cd ${APP_DIR} && rm -f deploy-run.rc && nohup sh -c './scripts/deploy.sh ${DEPLOY_TAG}; echo \$? > deploy-run.rc' > deploy-run.log 2>&1 < /dev/null &"
+          for _ in $(seq 1 90); do
+            if $SSH "test -f ${APP_DIR}/deploy-run.rc"; then break; fi
+            sleep 10
+          done
+          $SSH "cat ${APP_DIR}/deploy-run.log"
+          rc=$($SSH "cat ${APP_DIR}/deploy-run.rc 2>/dev/null || echo 1")
+          exit "${rc}"
+      - name: Smoke externo desde internet
+        run: bash "FASE 2/deploy/scripts/smoke.sh" "http://${VM_HOST}"
+      - name: Cerrar sesión de GHCR en la VM
+        if: always()
+        run: ssh -i ~/.ssh/id_deploy "${VM_USER}@${VM_HOST}" "docker logout ${REGISTRY}" || true

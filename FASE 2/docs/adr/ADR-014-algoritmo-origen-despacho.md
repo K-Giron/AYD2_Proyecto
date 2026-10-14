@@ -3,7 +3,8 @@
 - **Fecha:** 2026-09-23
 - **Estado:** Proposed
 - **Responsable del borrador:** Jorge Pumay
-- **Aprobación pendiente:** Jairo Gómez, Edson Sosa, Andy Sánchez y Kevin Girón
+- **Aprobado por:** Kevin Girón (2026-10-14)
+- **Aprobación pendiente:** Jairo Gómez, Edson Sosa y Andy Sánchez
 - **Resuelve:** INV-04
 
 ## Contexto
@@ -51,6 +52,34 @@ El DDA (CDU-02, A1) ya contempla esto: "No hay existencia en la ubicación prefe
 - Existe una prueba que demuestra que, si la primera candidata por prioridad no tiene stock, se intenta la siguiente.
 - El endpoint documenta que `locationId` es opcional y describe el criterio en el README.
 - Al menos tres integrantes registran su aprobación antes de pasar a `Accepted`.
+
+## Actualización Fase 2 (2026-10-13)
+
+- **El algoritmo no cambió.** `InventoryReservationService` sigue probando las
+  ubicaciones con stock en orden CD → tienda y por código (`ORIGIN_PRIORITY`),
+  con un `UPDATE` atómico por intento. La Saga toma el origen del despacho de
+  la ubicación donde quedó la reserva (`OrderSagaService`:
+  `DISTRIBUTION_CENTER` o `STORE` más `originCode`).
+- **Decisión de negocio de Fase 2 (ADR-015):** la tienda online tiene su propio
+  almacén `CD-WEB`, que se surte por folio desde el almacén central. Como los
+  productos publicados en la web solo tienen existencia vendible en `CD-WEB`,
+  el algoritmo elige ese origen para las compras web. El resultado es
+  explicable y se ve en el despacho ("Centro de distribución · CD-WEB").
+- **Destino:** lo elige el cliente en el checkout: su domicilio o un punto de
+  retiro activo (almacén central o Tienda Centro POS-01,
+  `sgo.integrations.online-store.pickup-points`). Con retiro en tienda,
+  LogiExpress lleva el paquete de `CD-WEB` a esa tienda (guía con
+  `pickupPoint`) y la tienda lo entrega (CDU-16).
+- **Cómo defenderlo:** el criterio "selección óptima según ubicación del stock"
+  se cumple porque solo se elige un origen con existencia suficiente, siguiendo
+  una prioridad explicable y determinista. Si el equipo decide vender desde
+  más ubicaciones, basta con cargar existencia vendible en ellas: el mismo
+  algoritmo las considera sin cambiar código.
+
+Evidencia: `InventoryReservationServiceTest`
+(`reserveAtBestOriginPrefersDistributionCenterOverStoreRegardlessOfOrder`,
+`reserveAtBestOriginFallsBackToNextCandidateWhenPreferredHasNoStock`) y
+`OnlineStoreIntegrationTest` (compra web reservada en `CD-WEB`).
 
 ## Referencias
 

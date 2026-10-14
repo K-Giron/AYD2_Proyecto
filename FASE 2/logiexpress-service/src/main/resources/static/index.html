@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LogiExpress Operación</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="portal.css" />
+</head>
+<body>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <!-- El mensajero o supervisor de turno queda como responsable de cada movimiento. -->
+    <div id="courier-gate" class="gate hidden">
+        <form id="courier-form" class="card gate-card">
+            <div class="brand"><div class="brand-mark">LX</div><div class="brand-text"><h1>LogiExpress</h1><span>Operación de envíos</span></div></div>
+            <label>Tu usuario de operación<input type="text" name="courier" required maxlength="80" autocomplete="username" placeholder="ej. mensajero.juan" /></label>
+            <button type="submit" class="btn btn-primary">Entrar</button>
+            <p class="hint">Queda registrado en cada recolección y entrega.</p>
+        </form>
+    </div>
+
+    <div class="shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">LX</div>
+                <div class="brand-text"><h1>LogiExpress</h1><span>Operación de envíos</span></div>
+            </div>
+            <nav class="nav">
+                <button class="nav-btn active" data-tab="guides" data-title="Guías" data-lede="Envíos de los comercios: recolecta en el origen y entrega en el domicilio o en la tienda de retiro.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="10" rx="1.5"/><path d="M14 10h4l4 3.5V17h-8"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg>
+                    Guías <span class="nav-count hidden" id="pending-count">0</span>
+                </button>
+                <button class="nav-btn" data-tab="tracking" data-title="Rastreo" data-lede="Historial completo de una guía.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                    Rastreo
+                </button>
+                <button class="nav-btn" data-tab="operation" data-title="Estado del servicio" data-lede="Disponibilidad de la API para los comercios (mantenimiento y contingencias).">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><circle cx="12" cy="12" r="4"/></svg>
+                    Estado del servicio
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="session-card">
+                    <div class="session-avatar" id="courier-avatar">··</div>
+                    <div class="session-meta"><div class="name" id="courier-name">—</div><div class="role" id="service-mode">Servicio: —</div></div>
+                </div>
+                <button id="change-courier-btn" class="btn btn-ghost btn-sm" style="width:100%">Cambiar usuario</button>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div>
+                    <h2 id="topbar-title">Guías</h2>
+                    <p class="lede" id="topbar-lede">Envíos de los comercios: recolecta en el origen y entrega en el domicilio o en la tienda de retiro.</p>
+                </div>
+                <nav class="system-links" aria-label="Sistemas conectados">
+                    <a href="http://localhost:8081/staff.html" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Operaciones</a>
+                    <a href="http://localhost:8082" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Almacén central</a>
+                    <a href="http://localhost:8084" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">POS-01</a>
+                </nav>
+            </header>
+            <main class="content">
+                <section id="view-guides" class="view active">
+                    <div class="card">
+                        <div class="section-toolbar">
+                            <div class="filters">
+                                <select id="status-filter" aria-label="Estado">
+                                    <option value="">Todas</option>
+                                    <option value="CREADA">Por recolectar</option>
+                                    <option value="EN_TRANSITO">En tránsito</option>
+                                    <option value="EN_PUNTO_DE_RETIRO">En tienda de retiro</option>
+                                    <option value="ENTREGADA">Entregadas</option>
+                                </select>
+                                <input type="search" id="guide-search" placeholder="Guía, pedido o destino" aria-label="Buscar" />
+                            </div>
+                            <button id="refresh-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                        </div>
+                        <div id="guides-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+
+                <section id="view-tracking" class="view">
+                    <div class="card">
+                        <form id="tracking-form" class="filters">
+                            <input type="text" id="tracking-input" placeholder="Número de guía (LGX-…)" autocomplete="off" required />
+                            <button type="submit" class="btn btn-primary btn-sm">Rastrear</button>
+                        </form>
+                        <div id="tracking-result" style="margin-top:1rem"></div>
+                    </div>
+                </section>
+
+                <section id="view-operation" class="view">
+                    <div class="card">
+                        <h3 style="margin-top:0">Disponibilidad de la API de guías</h3>
+                        <div class="segmented" id="mode-options">
+                            <button type="button" class="seg" data-mode="NORMAL"><strong>Normal</strong>Responde al instante.</button>
+                            <button type="button" class="seg" data-mode="LENTO"><strong>Lento</strong>Procesa, pero responde tarde (más que el tiempo de espera del comercio).</button>
+                            <button type="button" class="seg" data-mode="FUERA_DE_SERVICIO"><strong>Fuera de servicio</strong>Rechaza toda solicitud (503).</button>
+                        </div>
+                        <p class="mode-note" id="mode-note">—</p>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

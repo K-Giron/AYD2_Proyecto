@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PayKlik Comercios</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="portal.css" />
+</head>
+<body>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <div id="user-gate" class="gate hidden">
+        <form id="user-form" class="card gate-card">
+            <div class="brand"><div class="brand-mark">PK</div><div class="brand-text"><h1>PayKlik</h1><span>Portal de comercios</span></div></div>
+            <label>Tu usuario<input type="text" name="user" required maxlength="80" autocomplete="username" placeholder="ej. operador.pagos" /></label>
+            <button type="submit" class="btn btn-primary">Entrar</button>
+            <p class="hint">Queda registrado en los cambios del estado del servicio.</p>
+        </form>
+    </div>
+
+    <div class="shell">
+        <aside class="sidebar">
+            <div class="brand"><div class="brand-mark">PK</div><div class="brand-text"><h1>PayKlik</h1><span>Portal de comercios</span></div></div>
+            <nav class="nav">
+                <button class="nav-btn active" data-tab="transactions" data-title="Transacciones" data-lede="Cobros autorizados y rechazados del comercio, con su llave de idempotencia.">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+                    Transacciones
+                </button>
+                <button class="nav-btn" data-tab="operation" data-title="Estado del servicio" data-lede="Disponibilidad de la API de autorizaciones (mantenimiento y contingencias).">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><circle cx="12" cy="12" r="4"/></svg>
+                    Estado del servicio
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="session-card">
+                    <div class="session-avatar" id="user-avatar">··</div>
+                    <div class="session-meta"><div class="name" id="user-name">—</div><div class="role" id="service-mode">Servicio: —</div></div>
+                </div>
+                <button id="change-user-btn" class="btn btn-ghost btn-sm" style="width:100%">Cambiar usuario</button>
+            </div>
+        </aside>
+        <div class="main">
+            <header class="topbar">
+                <div>
+                    <h2 id="topbar-title">Transacciones</h2>
+                    <p class="lede" id="topbar-lede">Cobros autorizados y rechazados del comercio, con su llave de idempotencia.</p>
+                </div>
+                <nav class="system-links" aria-label="Sistemas conectados">
+                    <a href="http://localhost:8081/staff.html" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Operaciones</a>
+                    <a href="http://localhost:8081/tienda-online.html" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Tienda online</a>
+                </nav>
+            </header>
+            <main class="content">
+                <section id="view-transactions" class="view active">
+                    <div class="card">
+                        <div class="kpis" id="kpis"></div>
+                        <div class="section-toolbar">
+                            <div class="filters">
+                                <select id="status-filter" aria-label="Estado"><option value="">Todas</option><option value="APROBADA">Aprobadas</option><option value="RECHAZADA">Rechazadas</option></select>
+                                <input type="search" id="tx-search" placeholder="Autorización, pedido o llave" aria-label="Buscar" />
+                            </div>
+                            <button id="refresh-btn" class="btn btn-ghost btn-sm">Actualizar</button>
+                        </div>
+                        <div id="tx-table" class="table-wrap"><p class="empty-state">Cargando…</p></div>
+                    </div>
+                </section>
+                <section id="view-operation" class="view">
+                    <div class="card">
+                        <h3 style="margin-top:0">Disponibilidad de la API de autorizaciones</h3>
+                        <div class="segmented" id="mode-options">
+                            <button type="button" class="seg" data-mode="NORMAL"><strong>Normal</strong>Autoriza al instante.</button>
+                            <button type="button" class="seg" data-mode="RECHAZAR"><strong>Emisor declina</strong>Todos los cobros se rechazan.</button>
+                            <button type="button" class="seg" data-mode="LENTO"><strong>Lento</strong>Autoriza, pero responde después del tiempo de espera del comercio.</button>
+                            <button type="button" class="seg" data-mode="FUERA_DE_SERVICIO"><strong>Fuera de servicio</strong>Rechaza toda solicitud (503).</button>
+                        </div>
+                        <p class="mode-note" id="mode-note">—</p>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

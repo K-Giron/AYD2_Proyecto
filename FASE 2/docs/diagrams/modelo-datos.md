@@ -446,3 +446,105 @@ Estados según `docs/contracts/orders/order-states.md` (propuesta `PROPOSED`).
 - Matriz EaC: `docs/qa/QA-03-matriz-eac.md`
 - Trazabilidad CUN → código → datos → despliegue: `docs/qa/trazabilidad-cun-mvp.md`
 - Vistas arquitectónicas de Fase 1: `Docs/DDA.md` §6 y `Docs/diagramas/`
+
+## 7. NUEVO · Ampliación de Fase 2 (Kevin Girón, 2026-10-07)
+
+> Sección agregada; no modifica las anteriores. El detalle está en
+> `nuevos-fase2/` (diagramas generados desde las migraciones reales).
+
+| Sistema / módulo | Tablas | Migraciones | Diagrama |
+|---|---|---|---|
+| `onlinestore` (monolito) | `online_catalog_products`, `online_catalog_images`, `online_store_receipts`, `online_store_transfers`, `online_store_sync_log`, `online_store_stock_events` | V1010, V1012, V1013 | `NUEVO-modelo-datos-sgo-logic-nuevas` |
+| `inventorysync` (monolito) | `inventorysync_order_origins`, `inventory_bridge_dead_letters` | V1007, V1009 | ídem |
+| `customers` (monolito) | `customers`, `customer_contacts` | V1008, V4003 | ídem |
+| `logistics` (monolito) | `shipments.origin_code`; estado `READY_FOR_PICKUP`; fuentes de tracking `LOGIEXPRESS`, `TIENDA POS-xx`, `CONSOLA` | V1011 | ídem |
+| `integration` (monolito) | `erp_sales.channel`, `point_of_sale`, `source_reference` | V2004 | ídem |
+| `query` (monolito) | `order_summary_projections` alimentada por orden, pago, despacho e incidencia; alta con `ON CONFLICT` | — | — |
+| Almacén central (`inventory-db`) | 14 tablas, incluida la bandeja `pos_stock_events` | V1–V19 | `NUEVO-modelo-datos-central` |
+| Tienda POS-01 (`store-db`) | 9 tablas | V1–V5 | `NUEVO-modelo-datos-tienda-pos01` |
+| PayKlik (`payklik-db`) | `transactions` (llave de idempotencia única por comercio; sin PAN/CVV), `operation_settings` | V1 | `NUEVO-modelo-datos-payklik` |
+| LogiExpress (`logiexpress-db`) | `guides` (número LGX, referencia del comercio única, punto de retiro), `guide_events`, `operation_settings` | V1 | `NUEVO-modelo-datos-logiexpress` |
+
+Regla que se suma a §5: **cada sistema tiene su propia base y solo se integra
+por API, eventos o archivos; nunca lee tablas de otro sistema.**
+
+## 8. Fase 3 · `credit` — crédito propio (Jorge Pumay)
+
+> Sección agregada; no modifica las anteriores. Migraciones `V4005`, `V4007`,
+> `V4008` y `V4009`. Contratos: `docs/contracts/credit/credit-v1.md` y
+> `credit-history-v1.md`.
+
+```mermaid
+erDiagram
+    credit_history_records }o--|| credit_customer_profiles : "se resume en (por customer_id, sin FK)"
+    credit_customer_profiles ||--o{ credit_decisions : "se evalúa en (por customer_id, sin FK)"
+    credit_decisions ||--o| credit_operations : "origina"
+    credit_history_records {
+        uuid id PK
+        uuid customer_id
+        varchar source_reference UK "llave de idempotencia del ERP"
+        varchar record_type "PURCHASE | PAYMENT | RETURN | INCIDENT"
+        timestamptz occurred_at
+        numeric amount "CHECK >= 0"
+        boolean on_time "obligatorio en PAYMENT"
+        boolean critical
+        varchar contract_version
+        timestamptz ingested_at
+    }
+    credit_customer_profiles {
+        uuid customer_id PK
+        int completed_purchases "CHECK >= 0"
+        numeric on_time_payment_rate "0..1"
+        numeric return_rate "0..1"
+        int critical_incidents
+        boolean has_overdue_credit "lo gobierna el ciclo de vida"
+        numeric available_credit "CHECK >= 0"
+        timestamptz observed_at
+        bigint version
+    }
+    credit_decisions {
+        uuid id PK
+        uuid customer_id
+        numeric requested_amount "CHECK > 0"
+        boolean eligible
+        numeric approved_limit
+        varchar rule_version
+        varchar reason_code
+        text inputs_snapshot "perfil, monto y umbrales evaluados"
+        uuid correlation_id
+        timestamptz evaluated_at
+    }
+    credit_operations {
+        uuid id PK
+        uuid order_id UK "sin FK a orders"
+        uuid customer_id
+        uuid decision_id FK
+        numeric amount "CHECK > 0"
+        varchar status "GRANTED | REJECTED | OVERDUE | SETTLED | CANCELLED"
+        date due_date "NULL solo si REJECTED"
+        varchar idempotency_key UK
+        timestamptz overdue_at
+        timestamptz settled_at
+        timestamptz cancelled_at
+        timestamptz created_at
+    }
+```
+
+### Invariantes
+
+1. `credit_history_records.source_reference` es único: reprocesar un hecho no
+   lo duplica. El perfil se **reconstruye** desde los hechos de la ventana, no
+   se acumula.
+2. Una operación `REJECTED` no tiene vencimiento; cualquier otra lo tiene
+   (`ck_credit_operation_due_date`). El vencimiento es 30 días después de la
+   concesión y se persiste como dato de negocio.
+3. `order_id` e `idempotency_key` son únicos: una orden produce una sola
+   operación aunque la Saga reintente.
+4. Cada marca temporal solo existe en su estado (`settled_at` solo en
+   `SETTLED`, `cancelled_at` solo en `CANCELLED`).
+5. `available_credit` nunca es negativo y cada concesión lo descuenta bajo un
+   bloqueo por cliente; pago y anulación lo devuelven una sola vez.
+6. Toda decisión conserva `rule_version` e `inputs_snapshot`, de modo que se
+   puede reconstruir por qué se aprobó o rechazó.
+7. `credit` no tiene llaves foráneas hacia otros módulos: la correlación con
+   clientes y órdenes es por `UUID` (regla 1 de §5).

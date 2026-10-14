@@ -44,6 +44,21 @@ class ErpSale {
     @Column(name = "batch_id")
     private UUID batchId;
 
+    /** WEB (orden del monolito) o STORE (factura de tienda física). */
+    @Column(name = "channel", nullable = false, length = 16)
+    private String channel;
+
+    @Column(name = "point_of_sale", length = 32)
+    private String pointOfSale;
+
+    /** Referencia legible para el ERP: id de la orden o folio de la factura de tienda (FT-…/TKT-…). */
+    @Column(name = "source_reference", length = 64)
+    private String sourceReference;
+
+    /** PAYKLIK, OWN_CREDIT o STORE; nunca se infiere del estado de cobro. */
+    @Column(name = "financial_route", nullable = false, length = 24)
+    private String financialRoute;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -64,8 +79,31 @@ class ErpSale {
         sale.currency = currency;
         sale.confirmedAt = confirmedAt;
         sale.status = ErpSaleStatus.PENDING;
+        sale.channel = "WEB";
+        sale.pointOfSale = "POS-ONLINE";
+        sale.sourceReference = orderId.toString();
+        sale.financialRoute = "PAYKLIK";
         sale.createdAt = now;
         sale.updatedAt = now;
+        return sale;
+    }
+
+    static ErpSale register(UUID orderId, BigDecimal netTotal, BigDecimal taxTotal, BigDecimal grandTotal,
+                            String currency, Instant confirmedAt, String channel, String pointOfSale,
+                            String sourceReference, Instant now) {
+        return register(orderId, netTotal, taxTotal, grandTotal, currency, confirmedAt,
+                channel, pointOfSale, sourceReference,
+                "STORE".equals(channel) ? "STORE" : "PAYKLIK", now);
+    }
+
+    static ErpSale register(UUID orderId, BigDecimal netTotal, BigDecimal taxTotal, BigDecimal grandTotal,
+                            String currency, Instant confirmedAt, String channel, String pointOfSale,
+                            String sourceReference, String financialRoute, Instant now) {
+        ErpSale sale = register(orderId, netTotal, taxTotal, grandTotal, currency, confirmedAt, now);
+        sale.channel = channel;
+        sale.pointOfSale = pointOfSale;
+        sale.sourceReference = sourceReference;
+        sale.financialRoute = financialRoute;
         return sale;
     }
 
@@ -91,4 +129,8 @@ class ErpSale {
     UUID getBatchId() { return batchId; }
     Instant getCreatedAt() { return createdAt; }
     Instant getUpdatedAt() { return updatedAt; }
+    String getChannel() { return channel; }
+    String getPointOfSale() { return pointOfSale; }
+    String getSourceReference() { return sourceReference; }
+    String getFinancialRoute() { return financialRoute; }
 }

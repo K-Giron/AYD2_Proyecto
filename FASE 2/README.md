@@ -8,14 +8,19 @@ Materializar el DDA de la Fase 1 como un MVP reproducible de gestión de órdene
 
 El backend es un único JAR organizado como monolito modular. Cada paquete directo bajo `com.megastore.sgologic` es un módulo Spring Modulith con identidad estable. Cada módulo será propietario de su lógica y datos; la colaboración futura será mediante APIs públicas o eventos, nunca mediante repositorios, entidades JPA, adaptadores o tablas privadas ajenas. `shared` contiene solo infraestructura transversal mínima.
 
-Docker Compose conecta los tres servicios mediante una red bridge dedicada al proyecto. La red no se comparte con otros proyectos; sus puertos publicados permiten el acceso local requerido. En un ambiente real, PostgreSQL y RabbitMQ deben permanecer sin exposición pública.
+Docker Compose levanta **12 contenedores** en una red bridge dedicada al proyecto: SGO-Logic (`frontend`, `backend`, `postgres`, `rabbitmq`) y cuatro sistemas propios, cada uno con su base de datos (almacén central, tienda física POS-01, PayKlik y LogiExpress; ver "Sistemas propios de Fase 2" y ADR-015). La red no se comparte con otros proyectos; sus puertos publicados permiten el acceso local requerido. En un ambiente real, PostgreSQL y RabbitMQ deben permanecer sin exposición pública.
 
 ## Estructura
 
 ```text
 FASE 2/
-├── backend/          Spring Boot, módulos y pruebas
-├── frontend/         Base de UI (UI-01): página estática + nginx
+├── backend/              SGO-Logic: Spring Boot, módulos y pruebas
+├── frontend/             Tienda web, consola interna y tienda online (nginx)
+├── inventory-service/    Almacén central (sistema propio, :8082)
+├── store-service/        Tienda física POS-01, POS local (:8084)
+├── payklik-service/      Pasarela PayKlik (:8086)
+├── logiexpress-service/  Transportista LogiExpress (:8085)
+├── scripts/              reset-demo-data.sh (limpia los datos de operación)
 ├── simulator-data/   Salidas reproducibles futuras de simuladores
 ├── tests/            Arquitectura, smoke, E2E, k6, seguridad y datos
 ├── docs/             ADR, contratos, integración, evidencia y diagramas
@@ -27,11 +32,13 @@ FASE 2/
 └── qa-integracion-base.yml
 ```
 
-`frontend/` (Kevin Girón, UI-01) es un sitio estático de tres páginas, sin build tooling (HTML/CSS/JS planos), servido por nginx con proxy inverso hacia `/api/` para evitar configurar CORS:
+`frontend/` (Kevin Girón, UI-01) es un sitio estático, sin build tooling (HTML/CSS/JS planos), servido por nginx con proxy inverso hacia `/api/` para evitar configurar CORS:
 
 - `index.html` — landing que elige entre las dos experiencias siguientes.
 - `cliente.html` (tema claro, `store.css`) — tienda omnicanal con catálogo público, carrito persistente, checkout real mediante `OrderSagaService`, pedidos, seguimiento y devoluciones. La Saga se puede repetir para continuar una confirmación SAT pendiente sin duplicar reservas, cobros, facturas ni despachos.
-- `staff.html` (tema oscuro, `styles.css`) — consola operativa para Personal de logística/atención al cliente (actores reales de CDU-07, 09, 10 y 11): buscar una orden y gestionar despacho (LOG-01/02/03), notificaciones (NOT-01), resumen consolidado (QRY-01) y devoluciones (INC-01).
+- `registro.html` y `login.html` — registro de clientes y acceso por rol.
+- `tienda-online.html` — administración de la tienda online (POS-ONLINE): recepción por folio, inventario CD-WEB, catálogo publicado con imagen, ventas y facturas, traslados y bitácora.
+- `staff.html` (tema oscuro, `styles.css`) — consola operativa. Desde Fase 2 incluye lotes ERP, eventos POS, informe de ventas conciliado, kárdex de CD-WEB y call center por correo. Funciones originales: para Personal de logística/atención al cliente (actores reales de CDU-07, 09, 10 y 11): buscar una orden y gestionar despacho (LOG-01/02/03), notificaciones (NOT-01), resumen consolidado (QRY-01) y devoluciones (INC-01).
 
 ## Tecnologías y versiones
 
@@ -88,6 +95,14 @@ Copie manualmente `.env.example` como `.env` solo si desea personalizar el entor
 - `SGO_SECURITY_ENABLED`, `SGO_SECURITY_JWT_SECRET`, `SGO_SECURITY_JWT_ISSUER`, `SGO_SECURITY_JWT_TTL`
 - `SGO_SECURITY_{CLIENT,SUPPORT,LOGISTICS,FINANCE}_{USER,PASSWORD}`
 - `SGO_PAYKLIK_TIMEOUT_MS`, `SGO_PAYKLIK_CALL_POOL_SIZE`, `SGO_PAYKLIK_FAILURE_RATE_THRESHOLD`, `SGO_PAYKLIK_SLIDING_WINDOW_SIZE`, `SGO_PAYKLIK_MINIMUM_CALLS`, `SGO_PAYKLIK_OPEN_STATE_WAIT`, `SGO_PAYKLIK_HALF_OPEN_CALLS`
+- Fase 2 (ADR-015):
+  - `SGO_PAYKLIK_BASE_URL`, `PAYKLIK_MERCHANT_API_KEY` y `SGO_LOGIEXPRESS_BASE_URL`, `LOGIEXPRESS_MERCHANT_API_KEY`, `SGO_LOGIEXPRESS_TIMEOUT_MS`, `SGO_LOGIEXPRESS_TRACKING_INTERVAL_MS`. Con la URL vacía (pruebas) se usan los simuladores.
+  - `SGO_ERP_OUTBOX_DIR` (carpeta del ERP), `SGO_POS_STORE_01_ENDPOINT` (POS real de la tienda 1), `SGO_POS_TIMEOUT_MS`.
+  - `SGO_INVENTORY_RESERVATION_TTL` (15 min por defecto; `PT2M` para probar la liberación) y `SGO_INVENTORY_EXPIRATION_SWEEP_INTERVAL`.
+  - `SGO_MAIL_USERNAME` y `SGO_MAIL_PASSWORD` (correo real por Gmail con contraseña de aplicación; vacíos = simulador), `SGO_PUBLIC_SITE_URL`.
+  - Cuentas: `SGO_SECURITY_ONLINE_STORE_*`, `SGO_SECURITY_STORE_TERMINAL_*`, `SGO_SECURITY_CENTRAL_EVENTS_*`.
+  - Almacén central: `INVENTORY_*` (base, JWT, cuentas por rol y por punto de venta, URLs de eventos de stock).
+  - Tienda física: `STORE_*`. Proveedores: `PAYKLIK_*` y `LOGIEXPRESS_*` (bases y puertos).
 - `SGO_PAYMENT_RECONCILIATION_ENABLED`, `SGO_PAYMENT_RECONCILIATION_POLL_INTERVAL_MS`, `SGO_PAYMENT_RECONCILIATION_BATCH_SIZE`, `SGO_PAYMENT_RECONCILIATION_MAX_ATTEMPTS`, `SGO_PAYMENT_RECONCILIATION_FIRST_DELAY`, `SGO_PAYMENT_RECONCILIATION_STALE_PENDING_AFTER`, `SGO_PAYMENT_RECONCILIATION_RETRY_DELAYS`, `SGO_PAYMENT_RECONCILIATION_ALERT_AFTER`
 
 Los valores predeterminados son exclusivamente locales y ficticios.
@@ -137,7 +152,67 @@ curl -i http://localhost:8080/api/v1/platform/status
 docker compose down
 ```
 
+Para empezar con datos de operación limpios en todos los sistemas (conserva catálogos semilla, ubicaciones y cuentas):
+
+```bash
+./scripts/reset-demo-data.sh --yes
+```
+
 No use `docker compose down -v` salvo que se quiera eliminar deliberadamente los datos locales. La API queda en `8080`, el frontend (UI-01) en `8081` (`http://localhost:8081` = landing, `/cliente.html` = tienda, `/staff.html` = consola operativa), RabbitMQ Management en `15672` y PostgreSQL en `5432` por defecto. PostgreSQL se expone solo para comodidad local; en un ambiente real debe permanecer interno.
+
+## Sistemas propios de Fase 2 (Kevin Girón, ADR-015)
+
+| Sistema | URL local | Cuenta | Qué hace | Pruebas |
+|---|---|---|---|---|
+| Tienda web | `http://localhost:8081` | Cliente: regístrese en `/registro.html` (o `cliente@megastore.com` / `Cliente123`) | Catálogo publicado, carrito omnicanal, checkout con PayKlik, retiro en tienda, Mis pedidos | — |
+| Consola interna | `http://localhost:8081/staff.html` | `tienda-online@megastore.com` / `TiendaOnline123` (también `finanzas@`, `logistica@`, `staff@`) | Órdenes, despacho, ERP/POS, informe de ventas, call center, auditoría | — |
+| Almacén central | `http://localhost:8082` | `almacen@almacencentral.local` / `Almacen123` (`finanzas@` y `logistica@` con `Finanzas123` y `Logistica123`) | Artículos, existencias, folios, stock por tienda, eventos de stock, vista general | `inventory-service`: `./mvnw clean verify` (40) |
+| Tienda física POS-01 | `http://localhost:8084` | Solo el nombre del vendedor | Venta CF/NIT, recepción por folio, traslados, pedidos web y entrega al cliente, bitácora | `store-service` (15) |
+| LogiExpress | `http://localhost:8085` | Solo el nombre del mensajero | Guías, recolección y entrega, rastreo, estado del servicio | `logiexpress-service` (4) |
+| PayKlik | `http://localhost:8086` | Solo el nombre del operador | Transacciones y estado del servicio (normal, declina, lento, fuera de servicio) | `payklik-service` (4) |
+
+Los portales de PayKlik y LogiExpress permiten provocar fallas reales del
+proveedor desde "Estado del servicio" para demostrar reintentos y conciliación
+(EaC-04/EaC-05). Las pruebas de cada sistema se ejecutan con
+`./mvnw clean verify` dentro de su carpeta (requieren Docker por
+Testcontainers).
+
+Flujo de demostración sugerido:
+1. En el central, crear un artículo, darle existencia y sacar folios a POS-ONLINE y POS-01.
+2. Recibirlos en la tienda online y en la tienda física, y publicar el artículo.
+3. Comprar en la web con retiro en Tienda Centro.
+4. En LogiExpress, "Recolectar" y luego "Dejar en tienda".
+5. En la tienda, "Entregar al cliente".
+6. En la consola, "Generar lote ERP ahora" e "Informe de ventas".
+
+## Despliegue en la nube y CI/CD (Fase 3, ADR-017)
+
+- **Pipeline** `.github/workflows/ci-cd.yml`:
+  - Pruebas de los 5 proyectos Java y del frontend.
+  - Imágenes Docker de las 6 aplicaciones en GHCR.
+  - Despliegue en una VM de Google Cloud al empujar un tag `vN`.
+  - **Si una prueba falla, no se publica ni se despliega.**
+- **Producción:** `deploy/docker-compose.prod.yml` (se combina con `docker-compose.yml`), plantilla `deploy/.env.production.example` (los valores reales viven en el secreto `PROD_ENV_FILE`).
+- **Scripts:**
+  - `deploy/scripts/deploy.sh`: despliegue con health check y rollback automático.
+  - `smoke.sh`: verificación de punta a punta.
+  - `backup.sh`: respaldo de las 5 bases.
+  - `vm-bootstrap.sh`: preparación inicial de la VM.
+- **Guías:**
+  - `docs/operacion/GUIA-GCP-Y-PIPELINE.md`: puesta en marcha, una sola vez.
+  - `docs/operacion/RUNBOOK.md`: operación, logs, rollback y respaldo.
+  - `docs/operacion/RELEASES-GITFLOW.md`: releases `v1` a `v4`.
+
+Prueba de humo contra cualquier ambiente: `bash deploy/scripts/smoke.sh http://<host>`.
+
+**Ambiente en la nube:**
+- Tienda y consola: http://136.65.180.39
+- Almacén central: :8082
+- Tienda POS-01: :8084
+- LogiExpress: :8085
+- PayKlik: :8086
+
+Las cuentas son las de la tabla anterior.
 
 ## Ejecución desde IntelliJ IDEA
 
@@ -228,7 +303,15 @@ Los encabezados de actor son un contrato provisional hasta implementar autentica
 
 Fiscal, ERP y POS persisten estado, correlación, intentos y resultados. Los fallos transitorios usan reintentos 2/8/32 s; la entrega durable después de un reinicio se conectará al Outbox de BB-04 cuando Edson lo entregue.
 
-Los simuladores de PayKlik, SAT, ERP, POS, LogiExpress y notificaciones admiten `SUCCESS`, `REJECTION`, `LATENCY`, `TIMEOUT`, `OUTAGE` y `RANDOM`. Son contratos de desarrollo propuestos en ADR-012, no integraciones reales con proveedores.
+Los simuladores de PayKlik, SAT, ERP, POS, LogiExpress y notificaciones admiten `SUCCESS`, `REJECTION`, `LATENCY`, `TIMEOUT`, `OUTAGE` y `RANDOM` (ADR-012). Desde Fase 2, en Compose, **PayKlik y LogiExpress son sistemas propios por REST**, la tienda 1 recibe sus eventos en `store-service`, el lote ERP se escribe como archivo en `/var/sgo/erp-outbox` y el correo sale por SMTP si hay credenciales. Los simuladores quedan para SAT, SMS/push, los POS 2–32 y las pruebas automáticas.
+
+Endpoints agregados en Fase 2 (ADR-015):
+- ERP: `GET /api/v1/integrations/erp/batches`, `GET /batches/{id}/file`, `POST /batches/{id}/retry` y `GET /sales/{orderId}`.
+- POS: `GET /api/v1/integrations/pos/deliveries?orderId=`.
+- `GET /api/v1/reports/sales` y `/export` (FINANCE): informe de ventas conciliado y auditado.
+- `POST /api/v1/shipments/{id}/label-retry` (reintentar guía) y `POST /api/v1/store-pickups/{orderId}/handoff` (rol STORE): entrega en la tienda de retiro.
+- `GET /api/v1/invoices/orders/{orderId}`: factura del cliente.
+- `/api/v1/online-store/**` (rol ONLINE_STORE) y `GET /api/v1/online-catalog`: tienda online y catálogo publicado.
 
 ## Outbox e Inbox (Edson Sosa, BB-04)
 
@@ -331,6 +414,11 @@ Se prepararon la estructura oficial, backend Spring Boot, módulos, configuraci�
 
 Kevin Girón agregó, sobre esa base: `logistics` (LOG-01/02/03, con integración simulada de LogiExpress y reintentos 2/8/32 s), `notifications` (NOT-01, despacho no bloqueante), `query` (QRY-01, vista consolidada con indicador de dato desactualizado) e `incidents` (INC-01, devoluciones/incidencias), cada uno con su propia migración Flyway y pruebas. El frontend de cliente fue integrado al flujo real de carrito, reserva, pago y SAT, con identidad azul/cian compartida por portada, login y tienda.
 
+En la segunda parte de Fase 2 (2026-10-01 al 2026-10-13, ADR-015) se agregaron:
+- Los sistemas propios `inventory-service`, `store-service`, `payklik-service` y `logiexpress-service`.
+- Los módulos `onlinestore`, `inventorysync`, `customers`, `legacyfeed` (ERP y POS automáticos), `salesreport` (informe de ventas) y `fulfillment`.
+- Los adaptadores REST reales de PayKlik y LogiExpress, el retiro en tienda, los eventos de stock a los POS y el correo real.
+
 Andy Sánchez agregó `fiscal` (XML, CUI/serie, estado `FISCAL_PENDING`, SAT asíncrono, idempotencia y compuerta de confirmación), lotes ERP CSV/XML cada 30 minutos, distribución POS a 32 tiendas y los simuladores configurables BB-06, además de las migraciones `V2001`–`V2003`, ADR-010/ADR-012 y pruebas de FIS-03.
 
 Edson Sosa agregó el Outbox/Inbox transversal (BB-04: `V3001`, `PublishEvent`, dispatcher con reintentos y DLQ, `IdempotentConsumer`) y la seguridad del MVP (BB-07/ADR-013: login JWT, autorización por roles, respuestas 401/403 con `ApiError` y sanitización de PAN/CVV).
@@ -342,7 +430,7 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 ## Limitaciones actuales
 
 - El endpoint de plataforma no representa funcionalidad de negocio ni sustituye Actuator.
-- Orders, Inventory, Payments y la compuerta Fiscal cubren el camino principal hasta `CONFIRMED`; el tramo automático de despacho, entrega y compensaciones continúa incompleto.
+- El camino completo funciona sin intervención: carrito, reserva, pago (con conciliación), SAT, confirmación, despacho con LogiExpress, rastreo y entrega (a domicilio o en la tienda de retiro). Las compensaciones cubren pago rechazado y cancelación antes del cobro.
 - El Outbox transversal está operativo y Orders publica sus transiciones; Query y Notifications las consumen con Inbox idempotente. Fiscal, ERP y POS todavía deben completar su participación en el flujo transversal.
 - La autenticación JWT y la autorización por roles están implementadas (BB-07/ADR-013); las cuentas son de demostración local y no hay refresh token, revocación ni límite de intentos.
 - `audit` registra evidencia transversal atómica (AUD-01, `V3002`) y expone consulta indexada y exportación (AUD-02); `incidents` y `payments` son sus consumidores. Fiscal y logística aún deben sumar sus acciones al registro para completar la reconstrucción de CDU-12.
@@ -352,9 +440,10 @@ BB-02 permanece parcial porque ADR-009 está `Proposed`. BB-05 también permanec
 - El entorno Compose es local y no define redundancia, capacidad, RTO, RPO ni topología productiva.
 - Las mediciones de QA-02 son de una sola instancia y host de desarrollo; EaC-03 queda parcial hasta contar con Orders/Saga (ORD-01 a ORD-05) y un ambiente con balanceo.
 - La planificación menciona JUnit 5, pero el BOM de Spring Boot 4.1.1 resuelve JUnit Jupiter 6.0.3. No se sobrescribió manualmente el BOM; el equipo debe ratificar esta diferencia o cambiar de versión de plataforma mediante ADR.
-- `logistics` y `notifications` ya usan los adaptadores BB-06 configurables; todavía deben revisarse con Kevin antes de integrar.
+- En Compose, `logistics` usa LogiExpress real (`logiexpress-service`) y `notifications` envía correo real por SMTP si `SGO_MAIL_*` tiene credenciales; SMS y push siguen simulados.
 - `logistics` (`shipment_dead_letters`) conserva una cola de fallidos local; todavía no está conectado al Outbox transversal ya disponible para eventos de orden.
-- `query` consume automáticamente `ORDER_STATUS_CHANGED` mediante la cola durable `sgo.query.order-status.v1` y deduplica por consumidor/evento en `inbox_messages`; las demás fuentes todavía usan `POST /api/v1/query/order-summary`.
+- `query` consume automáticamente los eventos de orden, pago, despacho e incidencia con Inbox idempotente; `POST /api/v1/query/order-summary` queda solo como ingesta manual de respaldo.
+- Los portales de `store-service`, `payklik-service` y `logiexpress-service` no piden contraseña al operador: están pensados para la red interna (decisión de alcance, ADR-015). SAT, SMS/push y los POS de las tiendas 2–32 siguen simulados.
 - `shared` se declaró `@ApplicationModule(type = OPEN)` y `ModularArchitectureTest` se amplió para permitir que un módulo de negocio dependa de `shared`; ambos cambios tocan código compartido y están pendientes de revisión por Jairo Gómez (arquitecto integrador).
 - Las migraciones `V3001`-`V3002` reservan el rango posterior a las entregas existentes y fueron validadas sobre una base persistente que ya estaba en `V2003`.
 - Las 14 migraciones se ejecutaron correctamente contra PostgreSQL 17 en Docker durante la suite y el recorrido HTTP del MVP.
