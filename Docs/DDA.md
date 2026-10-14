@@ -505,7 +505,10 @@ Precondiciones:
     confirmación fiscal requerida para considerar confirmada la venta
 Flujo principal:
   1. El sistema asigna CD-WEB como origen de la venta web y registra el método
-     de entrega elegido por el cliente
+     de entrega elegido por el cliente. Regla de selección (ADR-014): entre las
+     ubicaciones con stock se prueba primero el centro de distribución y luego
+     la tienda, por código, con un UPDATE atómico por intento; como la web solo
+     tiene existencia vendible en CD-WEB (ADR-015), ese es su origen
   2. SGO-Logic solicita a LogiExpress una guía REST idempotente por id de
      despacho e indica la tienda de retiro cuando corresponde
   3. Personal de logística prepara el pedido y el mensajero lo recolecta
@@ -527,7 +530,8 @@ Postcondiciones:
 Relacionado con EaC: EaC-05 (confiabilidad LogiExpress), EaC-06
   (confiabilidad hacia POS/tienda), EaC-07 (trazabilidad)
 Implementación: logistics, fulfillment, HttpLogiExpressAdapter,
-  LogiExpressTrackingSync
+  LogiExpressTrackingSync, InventoryReservationService (ORIGIN_PRIORITY,
+  ADR-014)
 Evidencia: ShipmentServiceTest, HttpLogiExpressAdapterTest,
   LogiExpressTrackingSyncTest, LogiExpressIntegrationTest
 ```
