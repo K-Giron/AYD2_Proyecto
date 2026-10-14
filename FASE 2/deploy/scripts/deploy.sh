@@ -18,6 +18,11 @@ log() { printf '[deploy %s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 
 set_tag() { sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$1/" .env; }
 
+# `up` falla si un servicio Java tarda más que su healthcheck en arrancar (pasa
+# cuando arrancan todos a la vez en la VM) y deja sin crear a los que dependen
+# de él. No se aborta aquí: wait_healthy lo vuelve a intentar y decide.
+up_all() { "${COMPOSE[@]}" up -d --no-build --remove-orphans || log "up terminó con error; se sigue esperando la salud."; }
+
 wait_healthy() {
   local deadline=$((SECONDS + HEALTH_TIMEOUT))
   while (( SECONDS < deadline )); do
@@ -27,6 +32,7 @@ wait_healthy() {
     log "contenedores sanos: ${healthy}/${total}"
     if (( total >= EXPECTED_SERVICES && healthy == total )); then return 0; fi
     sleep 10
+    if (( total < EXPECTED_SERVICES )); then up_all >/dev/null 2>&1; fi
   done
   return 1
 }
@@ -39,7 +45,7 @@ rollback() {
   log "ROLLBACK a ${PREVIOUS_TAG}"
   set_tag "${PREVIOUS_TAG}"
   [[ "${SKIP_PULL}" == 1 ]] || "${COMPOSE[@]}" pull --quiet
-  "${COMPOSE[@]}" up -d --no-build --remove-orphans
+  up_all
   wait_healthy && ${SMOKE_CMD} || true
   log "Servicio restaurado con ${PREVIOUS_TAG}. Revise los logs de ${NEW_TAG}."
 }
@@ -49,7 +55,7 @@ log "Versión actual: ${PREVIOUS_TAG:-ninguna}; nueva: ${NEW_TAG}"
 
 set_tag "${NEW_TAG}"
 [[ "${SKIP_PULL}" == 1 ]] || "${COMPOSE[@]}" pull --quiet
-"${COMPOSE[@]}" up -d --no-build --remove-orphans
+up_all
 
 if wait_healthy && ${SMOKE_CMD}; then
   [[ -n "${PREVIOUS_TAG}" && "${PREVIOUS_TAG}" != "${NEW_TAG}" ]] && echo "${PREVIOUS_TAG}" > .previous_tag

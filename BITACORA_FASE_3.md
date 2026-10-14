@@ -48,9 +48,14 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   - Corregidos dos defectos de operación encontrados al desplegar:
     - `backup.sh` fallaba con valores de `.env` con espacios; ahora lee solo las claves que necesita.
     - Un corte de SSH podía dejar el despliegue a medias; ahora el pipeline lo ejecuta en la VM con `nohup` y solo sigue su log (probado: el código de salida se propaga).
+- **Actualización 2026-10-14 (tarde):**
+  - Probando la nube se encontró que la tienda del cliente no cargaba sus botones (ni cerrar sesión): `crypto.randomUUID` solo existe en HTTPS o `localhost` y la nube se sirve por `http://<IP>`. Se agregó un respaldo en `session.js`.
+  - nginx ahora comprime HTML, CSS, JS y JSON y guarda en caché las imágenes un día (la portada pesa 1.8 MB).
+  - `deploy.sh`: si un servicio Java tardaba más que su healthcheck al arrancar, `docker compose up` fallaba y el script terminaba sin rollback. Ahora sigue esperando la salud, reintenta `up` y después decide.
+  - Nube actualizada a `v0-manual-3`: 12 de 12 contenedores sanos y smoke 10 de 10.
 - Impedimentos, responsable e impacto:
-  - **KEV3-02 (resuelto en la nube; pendiente en GitHub):** falta crear la VM y cargar en GitHub los secretos (`GCP_VM_SSH_KEY`, `PROD_ENV_FILE`) y las variables (`GCP_VM_HOST`, `GCP_VM_USER`). Requiere la cuenta de GCP de Kevin y el rol de administrador del repositorio (Jairo).
-  - **KEV3-07:** el primer despliegue y el smoke externo dependen de lo anterior.
-  - Todavía no existe código de crédito en `develop`; los releases `v2` a `v4` dependen de Jorge, Jairo, Edson y Andy.
+  - **KEV3-02:** la infraestructura en GCP está lista. Falta cargar en GitHub los secretos (`GCP_VM_SSH_KEY`, `PROD_ENV_FILE`) y las variables (`GCP_VM_HOST`, `GCP_VM_USER`); requiere el rol de administrador del repositorio.
+  - **KEV3-07:** el despliegue automático por el pipeline (release `v1`) depende de lo anterior. El despliegue manual y el smoke externo ya están hechos.
+  - Los releases `v2` a `v4` dependen de las entregas de Jorge, Jairo, Edson y Andy.
 - Horas reales y estimadas restantes: pendiente de registrar por Kevin.
-- Persona que quedaría bloqueada y acción temporal: Andy (carga y estrés) necesita la URL de la nube; mientras tanto puede preparar los escenarios k6 contra el sistema local.
+- Persona que quedaría bloqueada y acción temporal: ninguna; Andy ya puede usar la nube (`http://136.65.180.39`) para carga y estrés.
