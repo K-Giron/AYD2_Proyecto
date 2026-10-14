@@ -10,6 +10,15 @@
  * página, sin módulos ES ni build tooling.
  */
 
+// crypto.randomUUID solo existe en contextos seguros (HTTPS o localhost). En
+// la nube el sitio se sirve por http://<IP>, así que sin este respaldo los
+// scripts que generan correlation ids fallan al cargar. getRandomValues sí
+// está disponible por HTTP y produce un UUID v4 equivalente.
+if (typeof crypto.randomUUID !== "function") {
+    crypto.randomUUID = () => "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+        (Number(c) ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (Number(c) / 4)))).toString(16));
+}
+
 const SGO_SESSION_KEY = "sgo.session";
 const SGO_REGISTERED_ACCOUNTS_KEY = "sgo.registeredAccounts";
 

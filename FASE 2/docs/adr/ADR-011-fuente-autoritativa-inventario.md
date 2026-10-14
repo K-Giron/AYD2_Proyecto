@@ -3,7 +3,8 @@
 - **Fecha:** 2026-09-22
 - **Estado:** Proposed
 - **Responsable del borrador:** Jorge Pumay
-- **Aprobación pendiente:** Jairo Gómez, Edson Sosa, Andy Sánchez y Kevin Girón
+- **Aprobado por:** Kevin Girón (2026-10-14)
+- **Aprobación pendiente:** Jairo Gómez, Edson Sosa y Andy Sánchez
 - **Resuelve:** DEC-03 del Gate 0 (Planificación Fase 2)
 
 ## Contexto
