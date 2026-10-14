@@ -27,7 +27,8 @@ public record SalesReport(UUID reportId, LocalDate from, LocalDate to, Instant g
      * {@code erpStatus}: SIN_REGISTRAR, PENDING, BATCHED o DELIVERED.
      */
     public record Row(UUID saleId, Instant date, String channel, String pointOfSale, String reference,
-                      String orderStatus, BigDecimal total, String paymentStatus, String paymentReference,
+                      String orderStatus, BigDecimal total, String financialRoute,
+                      String paymentStatus, String paymentReference,
                       String fiscalStatus, String fiscalDocument, String erpStatus, BigDecimal erpTotal,
                       String erpBatchStatus, List<String> discrepancies) {
     }

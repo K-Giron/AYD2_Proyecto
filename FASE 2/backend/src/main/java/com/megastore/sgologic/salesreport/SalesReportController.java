@@ -39,14 +39,15 @@ class SalesReportController {
         from = from == null ? today : from;
         to = to == null ? today : to;
         SalesReport report = service.generate(from, to, "SALES_REPORT_EXPORTED");
-        String header = "fecha,canal,puntoVenta,referencia,estadoVenta,total,pago,referenciaPago,factura,documentoFiscal,erp,totalErp,loteErp,diferencias";
+        String header = "fecha,canal,puntoVenta,referencia,estadoVenta,total,rutaFinanciera,estadoFinanciero,referenciaFinanciera,factura,documentoFiscal,erp,totalErp,loteErp,diferencias";
         String body = report.rows().stream().map(row -> String.join(",",
                         row.date().toString(), row.channel(), csv(row.pointOfSale()), csv(row.reference()), row.orderStatus(),
-                        row.total().toPlainString(), row.paymentStatus(), csv(row.paymentReference()), row.fiscalStatus(),
+                        row.total().toPlainString(), row.financialRoute(), row.paymentStatus(),
+                        csv(row.paymentReference()), row.fiscalStatus(),
                         csv(row.fiscalDocument()), row.erpStatus(), row.erpTotal() == null ? "" : row.erpTotal().toPlainString(),
                         csv(row.erpBatchStatus()), csv(String.join(" | ", row.discrepancies()))))
                 .collect(Collectors.joining("\n"));
-        String trailer = "\nTOTAL,,,,," + report.summary().total().toPlainString() + ",,,,,,"
+        String trailer = "\nTOTAL,,,,," + report.summary().total().toPlainString() + ",,,,,,,"
                 + report.summary().deliveredToErp().toPlainString() + ",,diferencias=" + report.summary().discrepancies()
                 + "\nGENERADO," + report.generatedAt() + "," + csv(report.generatedBy()) + ",informe=" + report.reportId();
         return ResponseEntity.ok()

@@ -9,10 +9,8 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 /**
- * Proyecta el resultado de pago publicado por Payments (PaymentApproved,
- * PaymentRejected, PaymentIndeterminate; incluida la conciliación con
- * PayKlik) en {@code paymentStatus} del resumen de CUN-09, sin leer tablas
- * de Payments.
+ * Proyecta la autorización financiera de PayKlik o crédito propio en el
+ * resumen de CUN-09, sin leer tablas privadas de esos módulos.
  */
 @Component
 @ConditionalOnProperty(name = "sgo.messaging.consumers.enabled", havingValue = "true", matchIfMissing = true)
@@ -30,8 +28,10 @@ class PaymentStatusChangedConsumer {
 
     @RabbitListener(queues = OrderSummaryConsumerConfig.PAYMENT_QUEUE)
     public void consume(BusinessEventEnvelope event) {
+        boolean creditEvent = event.eventType().startsWith("CREDIT_");
+        String expectedAggregate = creditEvent ? "CREDIT_OPERATION" : "PaymentAttempt";
         if (!OrderSummaryConsumerConfig.PAYMENT_EVENTS.contains(event.eventType())
-                || !"PaymentAttempt".equals(event.aggregateType())) {
+                || !expectedAggregate.equals(event.aggregateType())) {
             throw new IllegalArgumentException("Evento incompatible con la proyección de pago");
         }
         Object rawStatus = event.payload().get("status");
@@ -40,7 +40,8 @@ class PaymentStatusChangedConsumer {
             throw new IllegalArgumentException("El evento de pago no contiene status u orderId");
         }
         UUID orderId = UUID.fromString(rawOrderId.toString());
+        String projectedStatus = creditEvent ? "CREDIT_" + rawStatus : rawStatus.toString();
         inboxService.processOnce(CONSUMER_NAME, event,
-                () -> queryService.upsert(orderId, ProjectionSource.PAYMENT, rawStatus.toString(), event.occurredAt()));
+                () -> queryService.upsert(orderId, ProjectionSource.PAYMENT, projectedStatus, event.occurredAt()));
     }
 }

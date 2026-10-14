@@ -39,7 +39,8 @@ public class FiscalController {
             HttpServletRequest request) {
         UUID correlationId = UUID.fromString(request.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME).toString());
         FiscalDocument document = service.requestDocument(
-                body.orderId(), body.paymentAttemptId(), body.documentType(), body.originalDocumentId(),
+                body.orderId(), body.financialOperationId(), body.financialOperationType(),
+                body.documentType(), body.originalDocumentId(),
                 body.taxIdentifier(), body.customerName(), body.total(), body.currency(),
                 correlationId, idempotencyKey);
         return ResponseEntity.accepted().body(FiscalDocumentResponse.from(document));
@@ -62,7 +63,9 @@ public class FiscalController {
 
     public record CreateFiscalDocumentRequest(
             @NotNull UUID orderId,
-            @NotNull UUID paymentAttemptId,
+            @NotNull UUID financialOperationId,
+            @NotNull FinancialOperationType financialOperationType,
+            UUID paymentAttemptId,
             @NotNull FiscalDocumentType documentType,
             UUID originalDocumentId,
             @NotBlank @Size(max = 32) String taxIdentifier,
@@ -70,12 +73,28 @@ public class FiscalController {
             @NotNull @DecimalMin("0.01") BigDecimal total,
             @NotBlank @Pattern(regexp = "[A-Za-z]{3}") String currency
     ) {
+        public CreateFiscalDocumentRequest {
+            // Compatibilidad hacia atrás: los consumidores de Fase 2 enviaban
+            // únicamente paymentAttemptId. Internamente todo queda normalizado
+            // al contrato neutral de operación financiera de Fase 3.
+            if (financialOperationId == null && paymentAttemptId != null) {
+                financialOperationId = paymentAttemptId;
+            }
+            if (financialOperationType == null && paymentAttemptId != null) {
+                financialOperationType = FinancialOperationType.PAYKLIK;
+            }
+            if (paymentAttemptId == null && financialOperationType == FinancialOperationType.PAYKLIK) {
+                paymentAttemptId = financialOperationId;
+            }
+        }
     }
 
     public record FiscalDocumentResponse(
             UUID id,
             UUID orderId,
             UUID paymentAttemptId,
+            UUID financialOperationId,
+            FinancialOperationType financialOperationType,
             FiscalDocumentType documentType,
             UUID originalDocumentId,
             String cui,
@@ -95,7 +114,8 @@ public class FiscalController {
     ) {
         static FiscalDocumentResponse from(FiscalDocument document) {
             return new FiscalDocumentResponse(document.getId(), document.getOrderId(),
-                    document.getPaymentAttemptId(), document.getDocumentType(), document.getOriginalDocumentId(),
+                    document.getPaymentAttemptId(), document.getFinancialOperationId(),
+                    document.getFinancialOperationType(), document.getDocumentType(), document.getOriginalDocumentId(),
                     document.getCui(), document.getSeries(), document.getTotal(), document.getCurrency(),
                     document.getStatus(), document.getSatAuthorization(), document.getFailureCode(),
                     document.getFailureMessage(), document.getSubmissionAttempts(), document.getCorrelationId(),

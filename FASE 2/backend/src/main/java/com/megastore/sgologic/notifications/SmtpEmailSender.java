@@ -55,7 +55,11 @@ class SmtpEmailSender {
             String shortId = referenceId == null ? "" : referenceId.toString().substring(0, 8).toUpperCase();
             String[] copy = switch (eventType) {
                 case ORDER_CONFIRMED -> new String[]{"Tu compra " + shortId + " fue confirmada",
-                        "¡Gracias por tu compra!", "Recibimos tu pago y tu factura electrónica fue certificada por SAT. Ya estamos preparando tu pedido."};
+                        "¡Gracias por tu compra!", "La operación financiera y tu factura electrónica fueron confirmadas. Ya estamos preparando tu pedido."};
+                case CREDIT_GRANTED -> new String[]{"Tu crédito para la compra " + shortId + " fue aprobado",
+                        "Crédito propio aprobado", "Aprobamos tu compra para pagar en 30 días. Consulta tu pedido para ver el detalle y la fecha de vencimiento."};
+                case CREDIT_REJECTED -> new String[]{"Resultado del crédito para la compra " + shortId,
+                        "Crédito no disponible para esta compra", "Esta vez no pudimos aprobar el crédito propio. Tu orden puede continuar de forma segura con PayKlik."};
                 case SHIPMENT_PREPARING -> new String[]{"Estamos preparando tu pedido " + shortId,
                         "Tu pedido está en preparación", "Estamos alistando tus productos. Te avisaremos cuando salga hacia su destino."};
                 case SHIPMENT_IN_TRANSIT -> new String[]{"Tu pedido " + shortId + " va en camino",

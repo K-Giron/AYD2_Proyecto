@@ -29,18 +29,20 @@ public class JwtTokenService {
         this.clock = clock;
     }
 
-    public String issueToken(String username, List<String> roles) {
+    public String issueToken(String username, List<String> roles, UUID customerId) {
         Instant now = clock.instant();
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
                 .issuer(properties.getJwt().getIssuer())
                 .issuedAt(now)
                 .expiresAt(now.plus(properties.getJwt().getTtl()))
                 .subject(username)
                 .id(UUID.randomUUID().toString())
-                .claim("roles", roles)
-                .build();
+                .claim("roles", roles);
+        if (customerId != null) {
+            claims.claim("customer_id", customerId.toString());
+        }
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
-        return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+        return jwtEncoder.encode(JwtEncoderParameters.from(header, claims.build())).getTokenValue();
     }
 
     public Instant expiresAt() {

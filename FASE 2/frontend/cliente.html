@@ -60,12 +60,19 @@
                     <div id="pickup-block" class="pickup-block"><p class="pickup-title">¿Dónde lo recoges?</p><div id="pickup-points" class="pickup-points"><p class="catalog-status">Cargando ubicaciones…</p></div></div>
                     <label class="field hidden" id="home-block">Dirección de entrega<input type="text" id="checkout-destination" placeholder="Calle, número, zona y municipio" maxlength="200" /></label></section>
                     <section class="store-card"><span class="section-index">02</span><h2>Datos fiscales</h2><div class="form-grid compact"><label>Nombre para la factura<input id="fiscal-name" type="text" value="Consumidor final" maxlength="200" /></label><label>NIT<input id="fiscal-tax-id" type="text" value="CF" maxlength="32" /></label></div></section>
-                    <section class="store-card"><span class="section-index">03</span><h2>Forma de pago</h2><div class="delivery-options">
-                        <label class="delivery-option"><input type="radio" name="payment" value="CARD" checked /><span><strong>Tarjeta de crédito o débito</strong><small>Pagas en la ventana segura de PayKlik. No guardamos el número ni el CVV.</small></span></label>
-                        <label class="delivery-option"><input type="radio" name="payment" value="TRANSFER" /><span><strong>Transferencia bancaria</strong><small>Te mostramos la cuenta de MegaStore y una referencia para tu transferencia.</small></span></label>
-                    </div></section>
+                    <section class="store-card"><span class="section-index">03</span><h2>Forma de pago</h2>
+                        <div class="delivery-options payment-route-options">
+                            <label class="delivery-option"><input type="radio" name="payment-route" value="PAYKLIK" checked /><span><strong>Pago inmediato con PayKlik</strong><small>Tarjeta o transferencia procesada por nuestro proveedor de pago.</small></span></label>
+                            <label class="delivery-option credit-payment-option hidden" id="credit-payment-option"><input type="radio" name="payment-route" value="OWN_CREDIT" /><span><strong>Compra ahora, paga en 30 días</strong><small id="credit-payment-detail">Sujeto a evaluación de tu historial.</small></span></label>
+                        </div>
+                        <p id="credit-options-status" class="catalog-status">Evaluaremos las opciones disponibles para este carrito.</p>
+                        <div id="payklik-methods"><p class="pickup-title">Método en PayKlik</p><div class="delivery-options">
+                            <label class="delivery-option"><input type="radio" name="payment" value="CARD" checked /><span><strong>Tarjeta de crédito o débito</strong><small>Pagas en la ventana segura de PayKlik. No guardamos el número ni el CVV.</small></span></label>
+                            <label class="delivery-option"><input type="radio" name="payment" value="TRANSFER" /><span><strong>Transferencia bancaria</strong><small>Te mostramos la cuenta de MegaStore y una referencia para tu transferencia.</small></span></label>
+                        </div></div>
+                    </section>
                 </div>
-                <aside class="checkout-summary"><p class="eyebrow">Resumen</p><h2>Tu compra</h2><div id="checkout-totals"></div><button id="confirm-purchase-btn" class="btn btn-primary btn-block">Reservar y pagar</button><p class="checkout-legal">La orden se confirma únicamente después de inventario, PayKlik y SAT.</p><div id="checkout-result" class="checkout-result" aria-live="polite"></div></aside>
+                <aside class="checkout-summary"><p class="eyebrow">Resumen</p><h2>Tu compra</h2><div id="checkout-totals"></div><button id="confirm-purchase-btn" class="btn btn-primary btn-block">Reservar y pagar</button><p id="checkout-financial-legal" class="checkout-legal">La orden se confirma únicamente después de inventario, PayKlik y SAT.</p><div id="checkout-result" class="checkout-result" aria-live="polite"></div></aside>
             </div>
         </section>
 

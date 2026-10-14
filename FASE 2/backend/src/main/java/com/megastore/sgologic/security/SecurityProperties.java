@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Configuración externalizada de seguridad (BB-07, ADR-013).
@@ -47,12 +48,15 @@ public class SecurityProperties {
 
         private String username;
         private String password;
+        private UUID customerId;
         private List<String> roles = new ArrayList<>();
 
         public String getUsername() { return username; }
         public void setUsername(String username) { this.username = username; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+        public UUID getCustomerId() { return customerId; }
+        public void setCustomerId(UUID customerId) { this.customerId = customerId; }
         public List<String> getRoles() { return roles; }
         public void setRoles(List<String> roles) { this.roles = roles; }
     }

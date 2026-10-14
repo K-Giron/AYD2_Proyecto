@@ -721,7 +721,7 @@ async function generateSalesReport() {
                     <span data-label="Venta"><strong>${escapeHtml(r.reference.length > 20 ? r.reference.slice(0, 8) : r.reference)}</strong><small>${formatDate(r.date)}${r.orderStatus ? " · " + escapeHtml(r.orderStatus) : ""}</small></span>
                     <span data-label="Canal">${escapeHtml(CHANNEL_LABEL[r.channel] || r.channel)}<small>${escapeHtml(r.pointOfSale || "")}</small></span>
                     <span data-label="Total">${money(r.total)}</span>
-                    <span data-label="Pago">${r.paymentStatus ? badge(r.paymentStatus) : "—"}<small>${escapeHtml(r.paymentReference || "")}</small></span>
+                    <span data-label="Pago"><strong>${r.financialRoute === "OWN_CREDIT" ? "Crédito propio" : r.financialRoute === "STORE" ? "Cobro en tienda" : "PayKlik"}</strong>${r.paymentStatus ? badge(r.paymentStatus) : "—"}<small>${escapeHtml(r.paymentReference || "")}</small></span>
                     <span data-label="Factura">${r.fiscalStatus ? badge(r.fiscalStatus) : "—"}<small>${escapeHtml(r.fiscalDocument || "")}</small></span>
                     <span data-label="ERP">${erpSaleBadge(r.erpStatus)}<small>${escapeHtml(r.erpBatchStatus || "")}</small></span>
                     <span data-label="Conciliación">${r.discrepancies.length ? r.discrepancies.map(d => `<small class="report-issue">${escapeHtml(d)}</small>`).join("") : toneBadge("ok", "Cuadra")}</span>

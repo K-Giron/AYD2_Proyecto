@@ -1,6 +1,9 @@
 package com.megastore.sgologic.salesreport;
 
 import com.megastore.sgologic.audit.api.AuditRecorder;
+import com.megastore.sgologic.credit.api.CreditOperationResult;
+import com.megastore.sgologic.credit.api.CreditOperationStatus;
+import com.megastore.sgologic.credit.api.CreditPort;
 import com.megastore.sgologic.fiscal.FiscalProcessingPort;
 import com.megastore.sgologic.fiscal.FiscalProcessingResult;
 import com.megastore.sgologic.fiscal.FiscalStatus;
@@ -9,6 +12,7 @@ import com.megastore.sgologic.integration.ErpSaleView;
 import com.megastore.sgologic.orders.CustomerOrder;
 import com.megastore.sgologic.orders.OrderStatus;
 import com.megastore.sgologic.orders.OrdersService;
+import com.megastore.sgologic.orders.PaymentRoute;
 import com.megastore.sgologic.orders.SalesChannel;
 import com.megastore.sgologic.payments.api.PaymentPort;
 import com.megastore.sgologic.payments.api.PaymentResult;
@@ -26,6 +30,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,11 +38,13 @@ class SalesReportServiceTest {
 
     private final OrdersService orders = mock(OrdersService.class);
     private final PaymentPort payments = mock(PaymentPort.class);
+    private final CreditPort credits = mock(CreditPort.class);
     private final FiscalProcessingPort fiscal = mock(FiscalProcessingPort.class);
     private final ErpIntegrationService erp = mock(ErpIntegrationService.class);
     private final AuditRecorder audit = mock(AuditRecorder.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-10-06T22:00:00Z"), ZoneOffset.UTC);
-    private final SalesReportService service = new SalesReportService(orders, payments, fiscal, erp, audit, clock);
+    private final SalesReportService service = new SalesReportService(
+            orders, payments, credits, fiscal, erp, audit, clock);
     private final Instant during = Instant.parse("2026-10-06T18:00:00Z");
 
     private CustomerOrder order(UUID id, OrderStatus status, String total) {
@@ -46,6 +53,7 @@ class SalesReportServiceTest {
         when(order.getStatus()).thenReturn(status);
         when(order.getTotal()).thenReturn(new BigDecimal(total));
         when(order.getChannel()).thenReturn(SalesChannel.WEB);
+        when(order.getPaymentRoute()).thenReturn(PaymentRoute.PAYKLIK);
         when(order.getCreatedAt()).thenReturn(during);
         return order;
     }
@@ -58,6 +66,7 @@ class SalesReportServiceTest {
 
     private ErpSaleView erpSale(UUID id, String channel, String pos, String total, String status, String batchStatus) {
         return new ErpSaleView(id, channel, pos, channel.equals("STORE") ? "FT-000001/TKT-000001" : id.toString(),
+                channel.equals("STORE") ? "STORE" : "PAYKLIK",
                 new BigDecimal(total).divide(new BigDecimal("1.12"), 2, java.math.RoundingMode.HALF_UP),
                 BigDecimal.ZERO, new BigDecimal(total), "GTQ", during, status, null, batchStatus);
     }
@@ -104,8 +113,39 @@ class SalesReportServiceTest {
         assertThat(report.summary().discrepancies()).isEqualTo(2);
         assertThat(report.rows()).flatExtracting(SalesReport.Row::discrepancies)
                 .anyMatch(text -> text.contains("No registrada en el ERP"))
-                .anyMatch(text -> text.contains("Pago aprobado sin venta confirmada"));
+                .anyMatch(text -> text.contains("Operación financiera aprobada sin venta confirmada"));
         // La orden no confirmada no suma al total vendido.
         assertThat(report.summary().total()).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void ownCreditSaleIsClassifiedAndReconciledWithoutPretendingThereWasAPayKlikPayment() {
+        UUID orderId = UUID.randomUUID();
+        UUID creditOperationId = UUID.randomUUID();
+        CustomerOrder creditOrder = order(orderId, OrderStatus.CONFIRMED, "900.00");
+        when(creditOrder.getPaymentRoute()).thenReturn(PaymentRoute.OWN_CREDIT);
+        when(orders.getAllOrders()).thenReturn(List.of(creditOrder));
+        when(credits.latestForOrder(orderId)).thenReturn(Optional.of(new CreditOperationResult(
+                creditOperationId, UUID.randomUUID(), CreditOperationStatus.GRANTED,
+                new BigDecimal("2500.00"), LocalDate.of(2026, 11, 5), "credit-rules-v1",
+                "ELIGIBLE", during)));
+        when(fiscal.latestForOrder(orderId)).thenReturn(Optional.of(new FiscalProcessingResult(
+                UUID.randomUUID(), orderId, FiscalStatus.APPROVED, "CUI-CREDIT", "SGO-2026", "SAT-1", null)));
+        ErpSaleView erpCredit = new ErpSaleView(orderId, "WEB", "POS-ONLINE", orderId.toString(),
+                "OWN_CREDIT", new BigDecimal("803.57"), new BigDecimal("96.43"),
+                new BigDecimal("900.00"), "GTQ", during, "DELIVERED", null, "DELIVERED");
+        when(erp.saleFor(orderId)).thenReturn(Optional.of(erpCredit));
+        when(erp.salesConfirmedBetween(any(), any())).thenReturn(List.of(erpCredit));
+
+        SalesReport report = service.generate(
+                LocalDate.of(2026, 10, 6), LocalDate.of(2026, 10, 6), "SALES_REPORT_VIEWED");
+
+        assertThat(report.rows()).singleElement().satisfies(row -> {
+            assertThat(row.financialRoute()).isEqualTo("OWN_CREDIT");
+            assertThat(row.paymentStatus()).isEqualTo("CREDIT_GRANTED");
+            assertThat(row.paymentReference()).isEqualTo(creditOperationId.toString());
+            assertThat(row.discrepancies()).isEmpty();
+        });
+        verify(payments, never()).latestForOrder(orderId);
     }
 }

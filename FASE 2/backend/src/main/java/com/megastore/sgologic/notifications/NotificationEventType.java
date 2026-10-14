@@ -8,6 +8,8 @@ package com.megastore.sgologic.notifications;
  */
 public enum NotificationEventType {
     ORDER_CONFIRMED,
+    CREDIT_GRANTED,
+    CREDIT_REJECTED,
     SHIPMENT_PREPARING,
     SHIPMENT_IN_TRANSIT,
     /** LogiExpress dejó el pedido en la tienda que el cliente eligió para recogerlo. */

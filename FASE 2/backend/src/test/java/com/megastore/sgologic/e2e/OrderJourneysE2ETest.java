@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -49,6 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OrderJourneysE2ETest {
 
     private static final UUID PRODUCT_ID = UUID.fromString("11111111-1111-1111-1111-111111111102");
+    private static final UUID DEMO_CUSTOMER_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
 
     @Container
@@ -75,6 +77,7 @@ class OrderJourneysE2ETest {
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
+    @Autowired JdbcTemplate jdbcTemplate;
 
     @Test
     void customerLogsInBuysProductAndSagaStartsDispatch() throws Exception {
@@ -91,7 +94,7 @@ class OrderJourneysE2ETest {
     @Test
     void customerRecoversCartOnSecondChannelAndRepeatedSagaDoesNotDuplicate() throws Exception {
         String client = login("cliente@megastore.com", "Cliente123");
-        UUID customerId = UUID.randomUUID();
+        UUID customerId = DEMO_CUSTOMER_ID;
         JsonNode webCart = openCart(client, customerId, "WEB", key("cart-web"));
         addProduct(client, webCart.get("id").asText(), 1);
         JsonNode mobileCart = openCart(client, customerId, "MOBILE", key("cart-mobile"));
@@ -111,7 +114,7 @@ class OrderJourneysE2ETest {
     @Test
     void customerCancelsBeforePaymentAndReservationIsReleasedIdempotently() throws Exception {
         String client = login("cliente@megastore.com", "Cliente123");
-        UUID customerId = UUID.randomUUID();
+        UUID customerId = DEMO_CUSTOMER_ID;
         JsonNode cart = openCart(client, customerId, "WEB", key("cart-cancel"));
         addProduct(client, cart.get("id").asText(), 2);
         JsonNode order = checkout(client, cart.get("id").asText(), key("checkout-cancel"));
@@ -166,8 +169,92 @@ class OrderJourneysE2ETest {
         assertThat(getJson("/api/v1/incidents?orderId=" + purchase.orderId(), client).size()).isEqualTo(1);
     }
 
+    @Test
+    void eligibleCustomerBuysWithOwnCreditWithoutCreatingPayKlikAttempt() throws Exception {
+        String client = login("cliente@megastore.com", "Cliente123");
+        JsonNode cart = openCart(client, DEMO_CUSTOMER_ID, "WEB", key("cart-credit"));
+        addProduct(client, cart.get("id").asText(), 1);
+
+        String optionsContent = mvc.perform(get("/api/v1/carts/" + cart.get("id").asText() + "/payment-options")
+                        .header("Authorization", "Bearer " + client))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        JsonNode options = mapper.readTree(optionsContent);
+        assertThat(options.get("options").size()).isEqualTo(2);
+        assertThat(options.get("options").get(0).get("route").asText()).isEqualTo("PAYKLIK");
+        assertThat(options.get("options").get(1).get("route").asText()).isEqualTo("OWN_CREDIT");
+
+        JsonNode order = checkout(client, cart.get("id").asText(), key("checkout-credit"));
+        String sagaKey = key("saga-credit");
+        JsonNode saga = awaitCreditSaga(client, order.get("id").asText(), sagaKey);
+        JsonNode repeated = awaitCreditSaga(client, order.get("id").asText(), sagaKey);
+
+        assertThat(saga.get("sagaStatus").asText()).isEqualTo("COMPLETED");
+        assertThat(saga.get("creditOperationId").asText()).isNotBlank();
+        assertThat(saga.get("creditDueDate").asText()).isNotBlank();
+        assertThat(saga.has("paymentAttemptId")).isFalse();
+        assertThat(repeated.get("creditOperationId").asText())
+                .isEqualTo(saga.get("creditOperationId").asText());
+        assertThat(repeated.get("fiscalDocumentId").asText())
+                .isEqualTo(saga.get("fiscalDocumentId").asText());
+        assertThat(repeated.get("shipmentId").asText())
+                .isEqualTo(saga.get("shipmentId").asText());
+        JsonNode persisted = getJson("/api/v1/orders/" + order.get("id").asText(), client);
+        assertThat(persisted.get("paymentRoute").asText()).isEqualTo("OWN_CREDIT");
+        UUID orderId = UUID.fromString(order.get("id").asText());
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM payment_attempts WHERE order_id = ?", Integer.class, orderId))
+                .isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM credit_operations WHERE order_id = ?", Integer.class, orderId))
+                .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT available_credit FROM credit_customer_profiles WHERE customer_id = ?",
+                BigDecimal.class, DEMO_CUSTOMER_ID)).isEqualByComparingTo("2101.00");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM fiscal_documents WHERE order_id = ?", Integer.class, orderId))
+                .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT financial_operation_type FROM fiscal_documents WHERE order_id = ?",
+                String.class, orderId)).isEqualTo("OWN_CREDIT");
+    }
+
+    @Test
+    void rejectedCreditCreatesNoDebtAndSameOrderContinuesWithPayKlik() throws Exception {
+        String client = login("cliente@megastore.com", "Cliente123");
+        JsonNode cart = openCart(client, DEMO_CUSTOMER_ID, "WEB", key("cart-credit-rejected"));
+        addProduct(client, cart.get("id").asText(), 7);
+        JsonNode order = checkout(client, cart.get("id").asText(), key("checkout-credit-rejected"));
+        UUID orderId = UUID.fromString(order.get("id").asText());
+
+        JsonNode rejected = awaitCreditSaga(client, orderId.toString(), key("saga-credit-rejected"));
+
+        assertThat(rejected.get("sagaStatus").asText()).isEqualTo("CREDIT_REJECTED");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT status FROM credit_operations WHERE order_id = ?", String.class, orderId))
+                .isEqualTo("REJECTED");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT due_date FROM credit_operations WHERE order_id = ?", Object.class, orderId))
+                .isNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM payment_attempts WHERE order_id = ?", Integer.class, orderId))
+                .isZero();
+
+        JsonNode recovered = awaitSaga(client, orderId.toString(), key("saga-payklik-after-credit"),
+                "Zona 1, Guatemala");
+
+        assertThat(recovered.get("sagaStatus").asText()).isEqualTo("COMPLETED");
+        assertThat(getJson("/api/v1/orders/" + orderId, client).get("paymentRoute").asText())
+                .isEqualTo("PAYKLIK");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM payment_attempts WHERE order_id = ?", Integer.class, orderId))
+                .isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM fiscal_documents WHERE order_id = ?", Integer.class, orderId))
+                .isEqualTo(1);
+    }
+
     private Purchase purchase(String token, String channel, String destination) throws Exception {
-        JsonNode cart = openCart(token, UUID.randomUUID(), channel, key("cart"));
+        JsonNode cart = openCart(token, DEMO_CUSTOMER_ID, channel, key("cart"));
         addProduct(token, cart.get("id").asText(), 1);
         JsonNode order = checkout(token, cart.get("id").asText(), key("checkout"));
         String sagaKey = key("saga");
@@ -196,6 +283,21 @@ class OrderJourneysE2ETest {
                 "paymentMethod", "CARD", "currency", "GTQ", "paymentReference", "tok_e2e_4242",
                 "taxIdentifier", "CF-E2E", "customerName", "Cliente E2E", "destination", destination),
                 Map.of("Idempotency-Key", sagaKey, "X-Actor", "customer:e2e"));
+    }
+
+    private JsonNode awaitCreditSaga(String token, String orderId, String sagaKey) throws Exception {
+        long deadline = System.nanoTime() + AWAIT_TIMEOUT.toNanos();
+        JsonNode result;
+        do {
+            result = postJson("/api/v1/orders/" + orderId + "/saga", token, Map.of(
+                    "paymentRoute", "OWN_CREDIT", "currency", "GTQ",
+                    "taxIdentifier", "CF-CREDIT", "customerName", "Cliente Crédito",
+                    "destination", "Zona 10, Guatemala"),
+                    Map.of("Idempotency-Key", sagaKey, "X-Actor", "customer:credit-e2e"));
+            if (!"WAITING_FISCAL".equals(result.get("sagaStatus").asText())) return result;
+            Thread.sleep(150);
+        } while (System.nanoTime() < deadline);
+        throw new AssertionError("La Saga de crédito no salió de WAITING_FISCAL: " + result);
     }
 
     private void moveShipmentAndOrder(String token, String orderId, String shipmentId, String state) throws Exception {
