@@ -22,6 +22,36 @@ if (typeof crypto.randomUUID !== "function") {
 const SGO_SESSION_KEY = "sgo.session";
 const SGO_REGISTERED_ACCOUNTS_KEY = "sgo.registeredAccounts";
 
+/**
+ * Resuelve los accesos entre portales usando el host desde el que el usuario
+ * abrió la plataforma. En desarrollo el frontend se publica en 8081; en nube
+ * se sirve por el puerto estándar, mientras los portales conservan sus puertos.
+ */
+function configurePortalLinks() {
+    const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+    const ports = {
+        main: localHosts.has(window.location.hostname) ? "8081" : "",
+        inventory: "8082",
+        store: "8084",
+        logiexpress: "8085",
+        payklik: "8086",
+    };
+
+    document.querySelectorAll("a[data-portal]").forEach(link => {
+        const port = ports[link.dataset.portal];
+        if (port === undefined) return;
+
+        const url = new URL(window.location.href);
+        url.port = port;
+        url.pathname = link.dataset.portalPath || "/";
+        url.search = "";
+        url.hash = "";
+        link.href = url.toString();
+    });
+}
+
+configurePortalLinks();
+
 /** Traduce los roles del backend a las dos experiencias de la UI. */
 function sgoUiRoleFor(roles) {
     if (Array.isArray(roles) && roles.includes("ONLINE_STORE")) return "ONLINE_STORE";

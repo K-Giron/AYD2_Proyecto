@@ -1940,12 +1940,19 @@ historial ausente y conserva `ruleVersion` y un código público de resultado.
 | Auditoría y notificación | Outbox `CREDIT_*`, Audit e Inbox | pruebas de consumidores y escaneo EaC-12 |
 | Límite modular | `credit :: api` | `ModularArchitectureTest` |
 
-Antes de producción quedan dos gates explícitos: ligar `customerId` a una
-identidad JWT individual (la cuenta `CLIENT` compartida de la demo no prueba
-autorización por propietario) y acordar fuente, frescura y reconciliación de la
-proyección histórica. También deberán incorporarse carga, estrés, cinco pruebas
-de integración y el total de E2E exigido por el enunciado antes de declarar la
-Fase 3 terminada.
+La identidad canónica de demostración ya viaja como claim JWT firmado y el
+backend impide operar carritos u órdenes ajenos. El historial ERP cuenta con un
+contrato de ingesta idempotente, trazabilidad de entradas y dataset de
+demostración. Antes de una operación productiva siguen pendientes un IdP que
+emita identidades individuales y el gobierno formal de fuente, frescura y
+reconciliación del historial; estas limitaciones no afectan la demostración
+controlada de Fase 3.
+
+La rebanada funcional supera el mínimo de cinco integraciones y cinco E2E y el
+SHA `274ee02` pasó CI y despliegue en GCP. La medición de los cinco casos de
+carga y cinco de estrés continúa como gate de cierre no funcional; el arnés
+existe en la rama de rendimiento, pero sus métricas no deben declararse hasta
+ejecutarlo e integrarlo.
 
 El diseño establece a SGO-Logic como una capa de orquestación e integración omnicanal que conserva ERP-Core y los POS existentes. Los drivers funcionales, de calidad y de restricción quedan atendidos mediante el monolito modular, los puertos y adaptadores, la mensajería confiable, la Saga orquestada y los controles transversales documentados en ADR-001 a ADR-008.
 

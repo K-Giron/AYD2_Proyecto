@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0752b8" />
-    <meta name="description" content="Compra moda y calzado con disponibilidad real en MegaStore." />
+    <meta name="description" content="Compra moda, tecnología y productos para el hogar con disponibilidad real en MegaStore." />
     <title>MegaStore | Compra en línea</title>
     <link rel="preload" as="image" href="assets/megastore-campaign-hero.png" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
@@ -20,13 +20,21 @@
         <label class="commerce-search"><span class="sr-only">Buscar productos</span><input id="public-search" type="search" placeholder="Buscar productos, categorías o SKU" autocomplete="off" /><button type="button" id="public-search-btn">Buscar</button></label>
         <nav id="public-account-nav" class="commerce-actions" aria-label="Cuenta y compra"></nav>
     </header>
-    <nav class="department-nav" aria-label="Departamentos">
-        <button type="button" data-category="all" class="active">Todos</button>
-        <button type="button" data-category="Moda hombre">Moda hombre</button>
-        <button type="button" data-category="Básicos">Básicos</button>
-        <button type="button" data-category="Calzado">Calzado</button>
-        <a href="#beneficios">Servicios</a>
-        <a href="#condiciones">Condiciones de compra</a>
+    <nav id="department-nav" class="department-nav" aria-label="Departamentos">
+        <div class="department-nav-inner">
+            <button type="button" data-category="all" class="active" aria-pressed="true">Todos</button>
+            <div id="featured-categories" class="department-featured" aria-label="Categorías destacadas"></div>
+            <details id="all-categories" class="all-categories">
+                <summary><span>Todas las categorías</span><small id="category-total">0</small><i aria-hidden="true"></i></summary>
+                <div class="category-menu-panel">
+                    <div class="category-menu-heading"><span>Explorar catálogo</span><strong>Compra por categoría</strong></div>
+                    <div id="all-category-options" class="category-menu-options"></div>
+                </div>
+            </details>
+            <span class="department-spacer" aria-hidden="true"></span>
+            <a href="#beneficios">Servicios</a>
+            <a class="purchase-conditions-link" href="#condiciones">Condiciones de compra</a>
+        </div>
     </nav>
     <main>
         <section class="campaign-hero" aria-labelledby="campaign-title">

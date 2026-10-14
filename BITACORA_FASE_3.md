@@ -15,6 +15,11 @@
 
 Un bloque por fecha e integrante, sin completar información retroactiva.
 
+> **Criterio de reconstrucción:** las entradas agregadas durante el cierre se
+> sustentan en autor, fecha, mensaje y archivos de cada commit. No se asignan
+> horas que el integrante no haya registrado. Un trabajo que permanece en una
+> rama se distingue expresamente de uno integrado en `develop`.
+
 ### Fecha: 2026-10-13 — Integrante: Kevin Girón
 
 - Trabajo realizado (frente DevOps, KEV3-01 a KEV3-08):
@@ -53,18 +58,30 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   - nginx ahora comprime HTML, CSS, JS y JSON y guarda en caché las imágenes un día (la portada pesa 1.8 MB).
   - `deploy.sh`: si un servicio Java tardaba más que su healthcheck al arrancar, `docker compose up` fallaba y el script terminaba sin rollback. Ahora sigue esperando la salud, reintenta `up` y después decide.
   - Nube actualizada a `v0-manual-3`: 12 de 12 contenedores sanos y smoke 10 de 10.
+- **Actualización 2026-10-14 (cierre):**
+  - Los secretos y variables de producción quedaron configurados y el workflow
+    manual desplegó correctamente el SHA `274ee02` usando la imagen `develop`.
+  - La ejecución automática de ese SHA completó pruebas de los cinco proyectos
+    Java, validación del frontend y construcción/publicación de las seis
+    imágenes: [run 38616631224](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38616631224).
+  - El despliegue, health check, rollback preventivo y smoke externo terminaron
+    correctamente en el [run 38618417187](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38618417187).
+  - El smoke externo ampliado verificó 17 controles, incluidos los enlaces
+    portables de los seis portales, sin fallos.
 - Impedimentos, responsable e impacto:
-  - **KEV3-02:** la infraestructura en GCP está lista. Falta cargar en GitHub los secretos (`GCP_VM_SSH_KEY`, `PROD_ENV_FILE`) y las variables (`GCP_VM_HOST`, `GCP_VM_USER`); requiere el rol de administrador del repositorio.
-  - **KEV3-07:** el despliegue automático por el pipeline (release `v1`) depende de lo anterior. El despliegue manual y el smoke externo ya están hechos.
-  - Los releases `v2` a `v4` dependen de las entregas de Jorge, Jairo, Edson y Andy.
+  - **KEV3-02 y KEV3-07 cerrados:** infraestructura, secretos, variables,
+    despliegue por Actions y smoke externo están operativos.
+  - Permanecen los releases `v2` a `v4`; dependen de integrar los resultados
+    de rendimiento y promover el contenido validado de `develop` a `main`.
 - Horas reales y estimadas restantes: pendiente de registrar por Kevin.
 - Persona que quedaría bloqueada y acción temporal: ninguna; Andy ya puede usar la nube (`http://136.65.180.39`) para carga y estrés.
 
 ### Fecha: 2026-10-14 — Integrante: Andy Sánchez
 
 - Trabajo realizado (AND3-01, AND3-05, AND3-06 y AND3-07):
-  - Integró el `develop` actualizado en `feature/201904024-fase3-rendimiento`
-    sin conflictos y contrastó el arnés contra los contratos reales.
+  - Integró las actualizaciones de `develop` en
+    `feature/201904024-fase3-rendimiento`, contrastó el arnés contra los
+    contratos reales y conservó los aportes cruzados de la bitácora.
   - Alineó cinco scripts de carga y cinco de estrés con
     `credit-history-v1`, carritos, opciones de pago y Saga
     `PAYKLIK|OWN_CREDIT`; eliminó las rutas provisionales.
@@ -75,9 +92,8 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
     por accidente.
   - Actualizó el smoke externo para usar el `customerId` firmado del login y
     recorrer carrito, opciones, checkout, Saga y consulta de orden.
-  - Actualizó el Manual Técnico con crédito, variables, GCP, CI/CD, respaldo y
-    rollback integrados, conservando como pendientes únicamente la evidencia no
-    ejecutada.
+  - Actualizó el Manual Técnico con crédito, variables, GCP, CI/CD, respaldo,
+    rollback y los resultados de rendimiento ejecutados.
   - Realizó la revisión estática cruzada del CI/CD en
     `docs/evidence/devops/REV-ANDY-2026-10-14-CICD.md`.
 - Validación local y resultados:
@@ -115,10 +131,149 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   - Ajustar la capacidad del flujo de notificaciones y repetir STRESS-04.
   - Si el tiempo lo permite, ampliar el conjunto de órdenes de LOAD-05 y repetir
     el pico de checkout con telemetría de recursos.
-  - Adjuntar runs/artefactos del pipeline, rollback y releases `v2` a `v4` que
-    correspondan al frente de Kevin.
+  - Los releases `v2` a `v4` permanecen como cierre del equipo y corresponden
+    al frente de publicación de Kevin.
 - Impedimento actual: no se capturó telemetría de recursos durante el pico y el
   cuello de botella de notificaciones requiere un ajuste del servicio antes de
-  una segunda medición. La versión exacta de GCP no se expone en la ruta pública,
-  por lo que la evidencia externa registra fecha y URL, sin afirmar un tag.
+  una segunda medición. Esto se registra como limitación, sin ocultar que el
+  smoke externo y el resto del recorrido quedaron aprobados.
 - Horas reales: pendiente de registrar por Andy.
+
+### Fecha: 2026-10-12 — Integrante: Jairo Gómez
+
+- Trabajo registrado:
+  - Corrigió los diagramas y cerró documentación heredada de Fase 2 como base
+    para comenzar la evolución arquitectónica (`de2ca66`).
+  - Integró la corrección mediante `fix/arreglando-diagramas` y actualizó
+    `develop` con la línea base de `main` (`6670d44`, `ec64f7a`).
+- Resultado: documentación base consolidada antes de introducir el módulo de
+  crédito y la Saga financiera dual.
+- Horas reales: no registradas en el historial; no se estiman retroactivamente.
+
+### Fecha: 2026-10-13 — Integrante: Jairo Gómez
+
+- Trabajo realizado (J3-02 a J3-06):
+  - Implementó el módulo `credit`, línea disponible acumulada, decisiones,
+    operaciones idempotentes, bloqueos transaccionales y referencia fiscal
+    neutral (`15c2795`).
+  - Integró elegibilidad y selección `PAYKLIK|OWN_CREDIT` en checkout, estados
+    explícitos de crédito, reanudación de Saga, propiedad cliente–carrito por
+    JWT y degradación segura a PayKlik (`e8787fa`).
+  - Propagó la clasificación financiera a ERP, consulta y reporte de ventas;
+    agregó notificación de resultados de crédito mediante Outbox/Inbox
+    (`185cab8`).
+  - Incorporó pruebas unitarias, integración PostgreSQL, E2E, seguridad,
+    arquitectura modular, conciliación, reporte y ausencia de datos sensibles
+    (`3e4b829`).
+  - Actualizó DDA, ADR-016, contrato `credit-v1`, cuatro vistas
+    arquitectónicas, matriz requisito–evidencia y guion de demostración
+    (`5344402`).
+  - Creó la estructura integral del Manual de Usuario para cliente, personal
+    interno, tienda online y sistemas conectados (`726aab8`).
+  - Corrigió el workflow de integración para que utilizara los secretos y
+    contratos vigentes sin valores sensibles explícitos (`8f35443`).
+- Resultado funcional:
+  - Crédito aparece únicamente para un cliente elegible y PayKlik se conserva
+    ante rechazo, excepción o timeout.
+  - Una compra a crédito no crea un intento PayKlik; factura, ERP e informe
+    conservan `OWN_CREDIT`.
+  - La línea de Q2,500 se consume entre compras y las solicitudes concurrentes
+    no pueden sobregirarla.
+  - La regresión integrada reportada después de estos cambios quedó en 260
+    pruebas verdes; la ampliación de Jorge elevó posteriormente el backend a
+    306 pruebas verdes.
+- Integración: commits contenidos en `develop` desde el merge `6ba0eac`.
+- Horas reales: no registradas; el plan asigna 22 h al frente, pero no se
+  presentan como horas ejecutadas.
+
+### Fecha: 2026-10-13 y 2026-10-14 — Integrante: Jorge Pumay
+
+- Trabajo realizado en el dominio de crédito:
+  - Implementó la proyección idempotente del historial ERP, cálculo del perfil
+    y contratos públicos de ingesta (`933f212`).
+  - Agregó dataset demostrativo reproducible, carga por script y limpieza
+    controlada (`fb4a5ef`).
+  - Conservó la instantánea de entradas de cada decisión y amplió pruebas de
+    umbrales y plazo (`4ed827a`).
+  - Incorporó el ciclo de vida `GRANTED → OVERDUE|SETTLED|CANCELLED`,
+    restitución idempotente de línea y documentación del modelo (`0964d9f`).
+  - Cubrió la matriz 401/403 de endpoints financieros (`a565208`).
+  - Corrigió portabilidad LF, trazabilidad del origen de despacho y una carrera
+    concurrente del tracking logístico (`d435f9e`, `21015f2`, `c096f6b`).
+  - Documentó evidencia del temporizador de reservas y revisión cruzada de
+    inventario (`ebaa5fe`).
+- Resultado: 29 registros históricos y cinco perfiles de demostración cargados
+  en nube; backend reportado con 306 pruebas verdes.
+- Integración: trabajo contenido en `develop` mediante `2d21d68`, `26f2d05` y
+  `23b9b79`.
+- Horas reales: no registradas en la bitácora de Fase 3.
+
+### Fecha: 2026-10-14 — Integrante: Jairo Gómez
+
+- Trabajo de estabilización y presentación en nube:
+  - Sustituyó enlaces absolutos a `localhost` por navegación portable en login,
+    consola interna, tienda online, Almacén Central, POS-01, LogiExpress y
+    PayKlik; amplió el smoke para detectarlos (`a854d47`).
+  - Preparó y cargó un catálogo demostrativo de 14 productos con fotografías,
+    tres categorías y existencias trazables en almacén, Tienda Online y POS-01.
+  - Implementó navegación escalable de categorías: cuatro destacadas como
+    máximo, panel **Todas las categorías**, conteos, estados accesibles y
+    adaptación móvil (`b621cd6`).
+  - Dejó el cargador idempotente: creación de artículos, entradas, despachos,
+    recepción por folio, cierre logístico, publicación e imágenes.
+- Resultado en nube sobre SHA `274ee02`:
+  - Hogar: 5 productos; Moda: 5; Tecnología: 4.
+  - Tienda Online: 18 unidades por producto; POS-01: 15; almacén central: 27.
+  - 28 folios cerrados como `ENTREGADO`, sin mercancía en tránsito.
+  - 14 imágenes WebP de 1000×1000 verificadas y catálogo público operativo.
+  - CI, seis imágenes, despliegue y smoke externo en verde.
+- Integración: `74684ae` y `274ee02` en `develop`.
+- Horas reales: no registradas.
+
+### Integrante: Edson Sosa — estado de evidencia del corte
+
+- No se identificaron commits de Fase 3 atribuibles a Edson entre el 10 y el 14
+  de octubre en las referencias locales/remotas auditadas.
+- La implementación de Jairo reutiliza la infraestructura de notificaciones,
+  auditoría, Outbox e Inbox existente y agrega el consumidor de crédito dentro
+  de sus propios commits; eso no se reasigna a Edson.
+- Para completar su frente deben registrarse sus aportes reales o la revisión
+  ejecutada con commit, documento, PR o evidencia equivalente.
+
+## 3. Resumen de contribuciones verificadas
+
+| Integrante | Aporte de Fase 3 acreditado por historial | Estado al corte |
+|---|---|---|
+| Jairo Gómez | Crédito base, checkout/Saga dual, integración ERP/reporte/notificaciones, pruebas, ADR/DDA/diagramas, Manual de Usuario, navegación y catálogo | Integrado y desplegado desde `develop` |
+| Jorge Pumay | Historial ERP, dataset, reglas trazables, ciclo de obligación, seguridad y correcciones de logística | Integrado en `develop` |
+| Kevin Girón | CI/CD, Compose productivo, GCP, scripts de backup/deploy/rollback, runbook y release `v1` | Integrado; pipeline y nube operativos |
+| Andy Sánchez | Arnés 5+5, ejecución y análisis k6, Manual Técnico, smoke independiente y revisión estática del CI/CD | Ejecutado y documentado en rama; listo para integrar |
+| Edson Sosa | Sin commit de Fase 3 identificable en el periodo auditado | Falta evidencia atribuible |
+
+## 4. Evidencia de integración y operación
+
+| Evidencia | Resultado |
+|---|---|
+| SHA desplegado | `274ee024781a3c54c9816d798a8b3603b784e207` |
+| CI del SHA | [Run 38616631224](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38616631224): frontend, cinco servicios Java y seis imágenes en verde |
+| Deploy del SHA | [Run 38618417187](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38618417187): despliegue, health y smoke externo en verde |
+| Ambiente | `http://136.65.180.39` y portales `:8082`, `:8084`, `:8085`, `:8086` |
+| Release disponible | `v1`; `v2`–`v4` pendientes |
+| Smoke final | 17 verificaciones, 0 fallos |
+
+## 5. Decisiones y pendientes del cierre
+
+- ADR-016 se ratifica como `Accepted` por coherencia entre decisión, contrato,
+  migraciones, límites modulares, pruebas automatizadas y comportamiento
+  desplegado. Las limitaciones productivas permanecen explícitas.
+- ADR-017 se ratifica como `Accepted` porque CI, imágenes, GCP, health y smoke
+  operan sobre la topología decidida. El rollback manual entre tags, la
+  restauración controlada y `v2`–`v4` permanecen como gates de operación.
+- La revisión técnica del frente de Jairo se acepta: no se detectaron accesos a
+  internals de `credit`, intentos PayKlik ficticios ni pérdida de
+  idempotencia/concurrencia en la evidencia automatizada.
+- El proceso de aprobación de PR se considera administrado por el equipo; esta
+  bitácora conserva únicamente hechos verificables del historial.
+- Para cerrar toda la fase faltan integrar los resultados de rendimiento, completar
+  capturas del Manual de Usuario, registrar cualquier aporte de Edson y
+  publicar `v2`, `v3` y `v4` desde `main`.
