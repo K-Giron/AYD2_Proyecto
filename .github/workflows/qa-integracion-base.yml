@@ -68,25 +68,50 @@ jobs:
         working-directory: "FASE 2"
     env:
       BACKEND_PORT: "8080"
-      POSTGRES_DB: ${{ secrets.SGO_POSTGRES_DB || 'sgo_logic_ci' }}
-      POSTGRES_USER: ${{ secrets.SGO_POSTGRES_USER || 'sgo_ci' }}
-      POSTGRES_PASSWORD: ${{ secrets.SGO_POSTGRES_PASSWORD || 'ci_postgres_only' }}
+      POSTGRES_DB: ${{ secrets.SGO_POSTGRES_DB }}
+      POSTGRES_USER: ${{ secrets.SGO_POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.SGO_POSTGRES_PASSWORD }}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
-      RABBITMQ_USER: ${{ secrets.SGO_RABBITMQ_USER || 'sgo_ci' }}
-      RABBITMQ_PASSWORD: ${{ secrets.SGO_RABBITMQ_PASSWORD || 'ci_rabbitmq_only' }}
+      RABBITMQ_USER: ${{ secrets.SGO_RABBITMQ_USER }}
+      RABBITMQ_PASSWORD: ${{ secrets.SGO_RABBITMQ_PASSWORD }}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: "5672"
       RABBITMQ_MANAGEMENT_PORT: "15672"
+      INVENTORY_POSTGRES_DB: ${{ secrets.INVENTORY_POSTGRES_DB }}
+      INVENTORY_POSTGRES_USER: ${{ secrets.INVENTORY_POSTGRES_USER }}
+      INVENTORY_POSTGRES_PASSWORD: ${{ secrets.INVENTORY_POSTGRES_PASSWORD }}
       SPRING_PROFILES_ACTIVE: local
 
     steps:
       - name: Obtener repositorio
         uses: actions/checkout@v4
 
+      - name: Validar secretos requeridos
+        shell: bash
+        run: |
+          required=(
+            POSTGRES_DB
+            POSTGRES_USER
+            POSTGRES_PASSWORD
+            RABBITMQ_USER
+            RABBITMQ_PASSWORD
+            INVENTORY_POSTGRES_DB
+            INVENTORY_POSTGRES_USER
+            INVENTORY_POSTGRES_PASSWORD
+          )
+          missing=0
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Falta configurar el secreto requerido para ${name}"
+              missing=1
+            fi
+          done
+          exit "${missing}"
+
       - name: Construir y ejecutar smoke test
         run: ./tests/smoke/verify-platform.sh --skip-maven
 
       - name: Apagar servicios residuales
         if: always()
-        run: docker compose down
+        run: docker compose down --remove-orphans || true
