@@ -12,6 +12,7 @@ class ModularArchitectureTest {
 
     private static final Set<String> EXPECTED_MODULES = Set.of(
             "orders",
+            "credit",
             "inventory",
             "payments",
             "fiscal",
@@ -77,8 +78,9 @@ class ModularArchitectureTest {
                     .map(dependency -> dependency.getTargetModule().getIdentifier().toString())
                     .collect(Collectors.toSet());
             Set<String> allowed = switch (module.getIdentifier().toString()) {
-                case "orders" -> Set.of(SHARED_MODULE, "inventory", "payments", "fiscal",
+                case "orders" -> Set.of(SHARED_MODULE, "inventory", "payments", "credit", "fiscal",
                         "integration", "audit", "logistics");
+                case "credit" -> Set.of(SHARED_MODULE, "integration", "audit");
                 case "query" -> Set.of(SHARED_MODULE, "messaging");
                 case "notifications" -> Set.of(SHARED_MODULE, "messaging", "customers");
                 case "payments", "logistics" -> Set.of(SHARED_MODULE, "integration", "audit");
@@ -88,7 +90,8 @@ class ModularArchitectureTest {
                 case "onlinestore" -> Set.of(SHARED_MODULE, "inventory");
                 case "legacyfeed" -> Set.of(SHARED_MODULE, "messaging", "orders", "logistics", "integration");
                 case "fulfillment" -> Set.of(SHARED_MODULE, "messaging", "orders");
-                case "salesreport" -> Set.of(SHARED_MODULE, "orders", "payments", "fiscal", "integration", "audit");
+                case "salesreport" -> Set.of(SHARED_MODULE, "orders", "payments", "credit", "fiscal",
+                        "integration", "audit");
                 default -> Set.of(SHARED_MODULE);
             };
             assertThat(dependencyIds)

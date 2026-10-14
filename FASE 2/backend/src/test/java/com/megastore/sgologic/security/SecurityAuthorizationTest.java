@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -69,6 +70,9 @@ class SecurityAuthorizationTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    JwtDecoder jwtDecoder;
+
     @Test
     void loginWithValidCredentialsReturnsTokenWithRoles() throws Exception {
         JsonNode response = login("cliente@megastore.com", "Cliente123");
@@ -76,6 +80,25 @@ class SecurityAuthorizationTest {
         assertThat(response.get("accessToken").asText()).isNotBlank();
         assertThat(response.get("tokenType").asText()).isEqualTo("Bearer");
         assertThat(response.get("roles").get(0).asText()).isEqualTo("CLIENT");
+        assertThat(response.get("customerId").asText())
+                .isEqualTo("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        assertThat(jwtDecoder.decode(response.get("accessToken").asText())
+                .getClaimAsString("customer_id"))
+                .isEqualTo("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    }
+
+    @Test
+    void clientCannotOpenCartForAnotherCustomer() throws Exception {
+        String token = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
+
+        mockMvc.perform(post("/api/v1/carts")
+                        .header("Authorization", "Bearer " + token)
+                        .header("Idempotency-Key", "security-owner-" + UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "customerId", UUID.randomUUID(), "channel", "WEB"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
 
     @Test

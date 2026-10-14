@@ -1,11 +1,13 @@
 package com.megastore.sgologic.orders;
 
 import com.megastore.sgologic.audit.api.AuditRecorder;
+import com.megastore.sgologic.credit.api.CreditPort;
 import com.megastore.sgologic.fiscal.FiscalProcessingPort;
 import com.megastore.sgologic.inventory.InventoryReservationAllocation;
 import com.megastore.sgologic.inventory.InventoryReservationPort;
 import com.megastore.sgologic.integration.outbox.PublishEvent;
 import com.megastore.sgologic.payments.api.PaymentPort;
+import com.megastore.sgologic.payments.api.PaymentMethod;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +41,7 @@ class OrdersServiceTest {
     private final OrderStatusHistoryRepository historyRepository = mock(OrderStatusHistoryRepository.class);
     private final InventoryReservationPort inventoryReservationPort = mock(InventoryReservationPort.class);
     private final PaymentPort paymentPort = mock(PaymentPort.class);
+    private final CreditPort creditPort = mock(CreditPort.class);
     private final FiscalProcessingPort fiscalProcessingPort = mock(FiscalProcessingPort.class);
     private final PublishEvent eventPublisher = mock(PublishEvent.class);
     private final AuditRecorder auditRecorder = mock(AuditRecorder.class);
@@ -48,7 +51,7 @@ class OrdersServiceTest {
     @BeforeEach
     void setUp() {
         service = new OrdersService(cartRepository, orderRepository, historyRepository,
-                inventoryReservationPort, paymentPort, fiscalProcessingPort,
+                inventoryReservationPort, paymentPort, creditPort, fiscalProcessingPort,
                 eventPublisher, auditRecorder, clock);
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(orderRepository.save(any(CustomerOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -193,6 +196,23 @@ class OrdersServiceTest {
                 org.mockito.ArgumentMatchers.eq(CORRELATION_ID),
                 org.mockito.ArgumentMatchers.eq("reserve-order-1"));
         verify(historyRepository).save(any(OrderStatusHistory.class));
+    }
+
+    @Test
+    void directPaymentEndpointCannotChargeAnOrderAlreadyApprovedByCredit() {
+        CustomerOrder order = newOrder();
+        order.transitionTo(OrderStatus.INVENTORY_RESERVED, NOW);
+        order.selectPaymentRoute(PaymentRoute.OWN_CREDIT);
+        order.transitionTo(OrderStatus.CREDIT_PENDING, NOW);
+        order.transitionTo(OrderStatus.CREDIT_APPROVED, NOW);
+        order.recordFinancialOperation(UUID.randomUUID());
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.processPayment(order.getId(), PaymentMethod.CARD,
+                "GTQ", "tok_should_not_be_used", "late-payment", "customer", CORRELATION_ID))
+                .isInstanceOf(InvalidOrderTransitionException.class);
+
+        verify(paymentPort, never()).requestPayment(any());
     }
 
     private Cart activeCartWithItem() {

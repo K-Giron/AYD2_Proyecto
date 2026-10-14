@@ -43,4 +43,21 @@ class PaymentStatusChangedConsumerTest {
 
         assertThatThrownBy(() -> consumer.consume(event)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void grantedCreditReachesTheFinancialStatusOfTheOrderSummary() {
+        UUID orderId = UUID.randomUUID();
+        Instant occurredAt = Instant.parse("2026-10-13T20:00:00Z");
+        BusinessEventEnvelope event = new BusinessEventEnvelope(UUID.randomUUID(), "CREDIT_GRANTED",
+                "CREDIT_OPERATION", UUID.randomUUID(), UUID.randomUUID(), occurredAt,
+                Map.of("orderId", orderId.toString(), "status", "GRANTED",
+                        "creditOperationId", UUID.randomUUID().toString()));
+        ArgumentCaptor<Runnable> action = ArgumentCaptor.forClass(Runnable.class);
+
+        consumer.consume(event);
+
+        verify(inbox).processOnce(eq(PaymentStatusChangedConsumer.CONSUMER_NAME), eq(event), action.capture());
+        action.getValue().run();
+        verify(query).upsert(orderId, ProjectionSource.PAYMENT, "CREDIT_GRANTED", occurredAt);
+    }
 }

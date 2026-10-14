@@ -64,6 +64,8 @@ class OnlineStoreIntegrationTest {
 
     private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
     private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 13, 10, 26, 10, 0, 0, 0, 13};
+    private static final UUID CLIENT_CUSTOMER_ID =
+            UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     @Container
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
@@ -160,7 +162,7 @@ class OnlineStoreIntegrationTest {
                 .andExpect(status().isForbidden());
 
         // Compra web: la reserva y la confirmación caen en CD-WEB.
-        JsonNode cart = postJson("/api/v1/carts", client, Map.of("customerId", UUID.randomUUID(), "channel", "WEB"),
+        JsonNode cart = postJson("/api/v1/carts", client, Map.of("customerId", CLIENT_CUSTOMER_ID, "channel", "WEB"),
                 Map.of("Idempotency-Key", "cart-" + UUID.randomUUID()));
         mvc.perform(put("/api/v1/carts/" + cart.get("id").asText() + "/items/" + articleId)
                         .header("Authorization", bearer(client)).contentType(MediaType.APPLICATION_JSON)
