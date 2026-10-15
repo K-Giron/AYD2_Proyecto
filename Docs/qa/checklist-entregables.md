@@ -4,7 +4,7 @@
 |---|---|
 | Proyecto | SGO-Logic — MegaStore |
 | Fase | 1 |
-| Grupo | `AYD2_A_2S2025_PROYECTO_G5` |
+| Grupo | `AYD2_A_2S2026_PROYECTO_G5` |
 | Corte documental | 26/08/2026 |
 | Documento arquitectónico | [`Docs/DDA.md`](../DDA.md), versión 1.0 |
 | Estado del checklist | Vigente |

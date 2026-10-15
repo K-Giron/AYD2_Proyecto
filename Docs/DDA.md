@@ -20,7 +20,7 @@
 <p>
   <strong>Proyecto - Fase 3</strong><br>
   Grupo 5<br>
-  AYD2_A_2S2025_PROYECTO_G5
+  AYD2_A_2S2026_PROYECTO_G5
 </p>
 
 <br>
@@ -1157,7 +1157,7 @@ Reflejado en diagrama de despliegue como: adaptador de pago con restricción de 
 | R7 | Ruta viable de pagos/facturación desde el primer mes; Black Friday en noviembre no se mueve | Calendario comercial |
 | R8 | Notación UML 2.5.1 | Cátedra |
 | R9 | Minimizar el consumo energético de la infraestructura | Objetivo organizacional de sostenibilidad y costo |
-| R10 | Repositorio privado de GitHub `AYD2_A_2S2025_PROYECTO_G5` | Cátedra |
+| R10 | Repositorio privado de GitHub `AYD2_A_2S2026_PROYECTO_G5` | Cátedra |
 
 ### 4.4 Priorización de Drivers
 
