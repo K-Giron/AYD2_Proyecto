@@ -24,9 +24,6 @@ class CreditEligibilityPolicy {
                 : profile.getAvailableCredit().min(properties.getMaximumLimit());
         if (profile == null) return new Outcome(false, limit, "INSUFFICIENT_HISTORY");
         if (profile.hasOverdueCredit()) return new Outcome(false, limit, "OVERDUE_CREDIT");
-        if (profile.getCompletedPurchases() < properties.getMinimumCompletedPurchases()) {
-            return new Outcome(false, limit, "INSUFFICIENT_HISTORY");
-        }
         if (profile.getOnTimePaymentRate().compareTo(properties.getMinimumOnTimePaymentRate()) < 0) {
             return new Outcome(false, limit, "LATE_PAYMENT_HISTORY");
         }
@@ -60,8 +57,7 @@ class CreditEligibilityPolicy {
         return "{\"ruleVersion\":\"" + properties.getRuleVersion().replaceAll("[\\\\\"]", "") + "\""
                 + ",\"requestedAmount\":" + amount.toPlainString()
                 + ",\"profile\":" + profileJson
-                + ",\"thresholds\":{\"minimumCompletedPurchases\":" + properties.getMinimumCompletedPurchases()
-                + ",\"minimumOnTimePaymentRate\":" + properties.getMinimumOnTimePaymentRate().toPlainString()
+                + ",\"thresholds\":{\"minimumOnTimePaymentRate\":" + properties.getMinimumOnTimePaymentRate().toPlainString()
                 + ",\"maximumReturnRate\":" + properties.getMaximumReturnRate().toPlainString()
                 + ",\"maximumCriticalIncidents\":" + properties.getMaximumCriticalIncidents()
                 + ",\"maximumLimit\":" + properties.getMaximumLimit().toPlainString() + "}}";

@@ -47,8 +47,9 @@ class CreditGrantTermTest {
         when(operations.findByIdempotencyKey(any())).thenReturn(Optional.empty());
         when(operations.findByOrderId(any())).thenReturn(Optional.empty());
         when(operations.save(any(CreditOperation.class))).thenAnswer(call -> call.getArgument(0));
+        CreditProperties properties = new CreditProperties();
         service = new CreditService(profiles, decisions, operations,
-                new CreditEligibilityPolicy(new CreditProperties()), mock(CreditConcurrencyGuard.class),
+                new CreditEligibilityPolicy(properties), properties, mock(CreditConcurrencyGuard.class),
                 mock(PublishEvent.class), mock(CreditOperationEvents.class), mock(AuditRecorder.class), Clock.fixed(NOW, ZoneOffset.UTC));
     }
 

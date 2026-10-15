@@ -39,11 +39,12 @@ obligaciones.
    `credit_customer_profiles`, `credit_decisions` y `credit_operations`.
    `orders` solo lo consume mediante la interfaz pública `credit :: api`.
 2. La evaluación es síncrona porque el checkout necesita saber qué alternativa
-   mostrar. Es *fail closed*: sin perfil o con historia insuficiente no se ofrece
-   crédito. Una falla técnica al consultar opciones se degrada a PayKlik.
-3. La política inicial es configurable y versionada (`credit-rules-v1`): mínimo
-   de compras completadas, puntualidad mínima, devolución máxima, incidentes
-   críticos máximos, ausencia de mora y límite disponible suficiente. Cada
+   mostrar. Cada cliente recibe idempotentemente una línea inicial individual
+   de Q2,500; las compras de otro cliente nunca consumen ese saldo. Una falla
+   técnica al consultar opciones se degrada a PayKlik.
+3. La política es configurable y versionada (`credit-rules-v1`): línea inicial,
+   puntualidad mínima, devolución máxima, incidentes críticos máximos, ausencia
+   de mora y límite disponible suficiente. Cada
    evaluación persiste entradas, resultado, razón pública, límite y versión.
 4. La concesión es idempotente por orden y por `Idempotency-Key`. Una operación
    `GRANTED` crea una obligación con vencimiento calculado a 30 días; una

@@ -163,7 +163,7 @@ Variables principales de crédito:
 
 | Variable | Predeterminado | Uso |
 |---|---:|---|
-| `SGO_CREDIT_MINIMUM_PURCHASES` | `3` | Compras mínimas |
+| `SGO_CREDIT_INITIAL_LIMIT` | `2500.00` | Línea inicial individual por cliente |
 | `SGO_CREDIT_MINIMUM_ON_TIME_RATE` | `0.80` | Puntualidad mínima |
 | `SGO_CREDIT_MAXIMUM_RETURN_RATE` | `0.30` | Devoluciones máximas |
 | `SGO_CREDIT_MAXIMUM_CRITICAL_INCIDENTS` | `1` | Incidentes críticos máximos |
