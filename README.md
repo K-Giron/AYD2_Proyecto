@@ -280,8 +280,8 @@ Un artefacto puede pasar a `Done` cuando:
 ### Clonar el proyecto
 
 ```bash
-git clone https://github.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5.git
-cd AYD2_A_2S2025_PROYECTO_G5
+git clone https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5.git
+cd AYD2_A_2S2026_PROYECTO_G5
 ```
 
 ### Abrir el prototipo
@@ -306,7 +306,7 @@ La regeneración es opcional porque las versiones SVG y PNG ya están incluidas.
 ## Estructura del proyecto
 
 ```text
-AYD2_A_2S2025_PROYECTO_G5/
+AYD2_A_2S2026_PROYECTO_G5/
 ├── Docs/
 │   ├── DDA.md
 │   ├── diagramas/

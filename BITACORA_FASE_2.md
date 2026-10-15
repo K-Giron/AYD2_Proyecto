@@ -86,7 +86,7 @@ La captura muestra `[BB-02]` en `Blocked`, `[DOC-03]` en `In Progress` y `[BB-01
 La ejecución de GitHub Actions `35944837459`, asociada al commit de integración
 `1294231`, terminó en verde con compilación, pruebas y smoke test de Docker
 Compose. Este resultado también está registrado en §7. La evidencia consultable
-es el [run 35944837459](https://github.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5/actions/runs/35944837459); no se exige una captura duplicada para sustituir ese enlace.
+es el [run 35944837459](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/35944837459); no se exige una captura duplicada para sustituir ese enlace.
 
 ### Fecha: 2026-09-22 — Integrante: Kevin Girón
 

@@ -20,7 +20,7 @@
 <p>
   <strong>Proyecto - Fase 3</strong><br>
   Grupo 5<br>
-  AYD2_A_2S2025_PROYECTO_G5
+  AYD2_A_2S2026_PROYECTO_G5
 </p>
 
 <br>
@@ -1157,7 +1157,7 @@ Reflejado en diagrama de despliegue como: adaptador de pago con restricción de 
 | R7 | Ruta viable de pagos/facturación desde el primer mes; Black Friday en noviembre no se mueve | Calendario comercial |
 | R8 | Notación UML 2.5.1 | Cátedra |
 | R9 | Minimizar el consumo energético de la infraestructura | Objetivo organizacional de sostenibilidad y costo |
-| R10 | Repositorio privado de GitHub `AYD2_A_2S2025_PROYECTO_G5` | Cátedra |
+| R10 | Repositorio privado de GitHub `AYD2_A_2S2026_PROYECTO_G5` | Cátedra |
 
 ### 4.4 Priorización de Drivers
 
@@ -1214,7 +1214,7 @@ inventario o presentar a SGO-Logic como dueño de datos externos.
 
 #### 5.1.2 Realización ampliada en Fase 3
 
-![Componentes y fronteras implementados en Fase 3](<../FASE 2/docs/diagrams/fase3/01-componentes-fase3.svg>)
+![Componentes y fronteras implementados en Fase 3](<../FASE 2/docs/diagrams/fase3/01-Componentes-Fase-3.jpg>)
 
 *Figura 17B. Ampliación del monolito modular con crédito propio y Saga financiera dual.*
 
@@ -1574,7 +1574,7 @@ y dos fuentes `draw.io` multipágina editables: una para
 y otra para los
 [`casos de uso expandidos`](<../FASE 2/docs/diagrams/nuevos-fase2/NUEVO-cdu-expandidos-fase2.drawio>).
 La ampliación de Fase 3 se documenta en
-[`fase3`](<../FASE 2/docs/diagrams/fase3/>), con cuatro exportaciones SVG, un
+[`fase3`](<../FASE 2/docs/diagrams/fase3/>), con cuatro exportaciones JPG, un
 [`catálogo de trazabilidad`](<../FASE 2/docs/diagrams/fase3/CATALOGO_TRAZABILIDAD_FASE_3.md>)
 y una
 [`fuente draw.io editable`](<../FASE 2/docs/diagrams/fase3/NUEVO-vistas-arquitectonicas-fase3.drawio>).
@@ -1617,7 +1617,7 @@ sistemas externos.
 
 #### 6.1.2 Vista implementada en Fase 3
 
-![Componentes implementados en Fase 3](<../FASE 2/docs/diagrams/fase3/01-componentes-fase3.svg>)
+![Componentes implementados en Fase 3](<../FASE 2/docs/diagrams/fase3/01-Componentes-Fase-3.jpg>)
 
 *Figura 18B. Componentes de crédito propio, identidad de cliente y rutas financieras.*
 
@@ -1665,7 +1665,7 @@ cada integración de forma independiente.
 
 #### 6.2.2 Despliegue ejecutado en Fase 3
 
-![Despliegue ejecutado en Fase 3](<../FASE 2/docs/diagrams/fase3/04-despliegue-fase3.svg>)
+![Despliegue ejecutado en Fase 3](<../FASE 2/docs/diagrams/fase3/04-Despliegue-Fase-3.jpg>)
 
 *Figura 19B. Topología Compose desplegada en Google Cloud Platform.*
 
@@ -1766,7 +1766,7 @@ una relación conceptual se interprete como clave foránea entre sistemas.
 
 #### 6.3.2 Modelo de datos de crédito en Fase 3
 
-![Modelo de datos de crédito propio](<../FASE 2/docs/diagrams/fase3/03-datos-credito.svg>)
+![Modelo de datos de crédito propio](<../FASE 2/docs/diagrams/fase3/03-Datos-Credito.jpg>)
 
 *Figura 25. Propiedad lógica y relaciones de perfiles, decisiones y operaciones de crédito.*
 
@@ -1781,7 +1781,7 @@ de una cuenta no pueden consumir el crédito de otra.
 
 ### 6.4 Secuencia de la Saga financiera dual
 
-![Secuencia de la Saga financiera dual](<../FASE 2/docs/diagrams/fase3/02-secuencia-saga-dual.svg>)
+![Secuencia de la Saga financiera dual](<../FASE 2/docs/diagrams/fase3/02-Secuencia-Saga-Dual.jpg>)
 
 *Figura 26. Selección, concesión, rechazo y recuperación de las dos rutas financieras.*
 

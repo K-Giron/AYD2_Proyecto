@@ -9,6 +9,16 @@ existen. Las vistas representan el árbol local ejecutable: `credit` permanece
 dentro del monolito modular y usa la misma base PostgreSQL, con propiedad lógica
 de sus tablas.
 
+## Exportaciones vigentes
+
+- [`01-Componentes-Fase-3.jpg`](./01-Componentes-Fase-3.jpg)
+- [`02-Secuencia-Saga-Dual.jpg`](./02-Secuencia-Saga-Dual.jpg)
+- [`03-Datos-Credito.jpg`](./03-Datos-Credito.jpg)
+- [`04-Despliegue-Fase-3.jpg`](./04-Despliegue-Fase-3.jpg)
+
+Los SVG anteriores fueron sustituidos por estas exportaciones. La fuente
+editable continúa siendo `NUEVO-vistas-arquitectonicas-fase3.drawio`.
+
 | Requisito | Vista | Elemento implementado | Evidencia ejecutable |
 |---|---|---|---|
 | Crédito base para todo cliente registrado | Componentes / datos | perfil individual idempotente de Q2,500; migración V4011 | pruebas de perfil, registro y migración |
