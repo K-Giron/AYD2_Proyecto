@@ -86,8 +86,15 @@ Se ensaya entre `v3` y `v2`, que no tienen migraciones de por medio:
 
 | Paso | Run | Versión en la nube | Smoke |
 |---|---|---|---|
-| Rollback `v3 → v2` | _pendiente_ | _pendiente_ | _pendiente_ |
-| Regreso `v2 → v3` | _pendiente_ | _pendiente_ | _pendiente_ |
+| Rollback `v3 → v2` | [run 38726847745](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38726847745) | `v2` (respaldo previo 2026-10-15 11:22:37 UTC) | Verde |
+| Regreso `v2 → v3` | [run 38727317337](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38727317337) | `v3`, 12/12 contenedores sanos (11:28:51 UTC) | Verde |
+
+Ambos pasos se lanzaron con *Run workflow* sin recompilar: el pipeline
+desplegó imágenes ya publicadas en GHCR, `deploy.sh` respaldó las bases antes
+de cada cambio y el smoke se ejecutó en la VM y desde internet. El log del
+regreso registra `Versión actual: v2; nueva: v3`, lo que confirma que el
+rollback dejó la nube en `v2`. Al terminar, `.current_tag = v3` y
+`.previous_tag = v2`.
 
 ## Plantilla de notas de release
 
