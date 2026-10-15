@@ -2,11 +2,11 @@
 
 const session = sgoRequireSession("CLIENTE");
 const CORRELATION_ID = crypto.randomUUID();
-const CUSTOMER_ID = session?.customerId || "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const CUSTOMER_ID = session?.customerId;
 const CART_CONTEXT_KEY = `sgo.megastore.active-cart.${CUSTOMER_ID}`;
 const LAST_ORDER_KEY = `sgo.megastore.last-order.${CUSTOMER_ID}`;
 const PURCHASE_INTENT_KEY = "sgo.purchaseIntent";
-const FAVORITES_KEY = "sgo.megastore.favorites";
+const FAVORITES_KEY = `sgo.megastore.favorites.${CUSTOMER_ID}`;
 
 let CATALOG = [];
 

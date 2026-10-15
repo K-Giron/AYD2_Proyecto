@@ -8,7 +8,7 @@
 |---|---|---|---|
 | Crédito solo para elegibles | `PaymentOptionsService`, `CreditEligibilityPolicy` | `PaymentOptionsServiceTest` | Verde |
 | PayKlik ante falla o timeout | TimeLimiter configurable, fallback seguro | `degradesToPayKlikWhenCreditFails`, `returnsPayKlikWithinBoundWhenCreditEvaluationTimesOut` | Verde |
-| Propiedad cliente–carrito | claim JWT `customer_id`, `CustomerAccessGuard` | `SecurityAuthorizationTest` | Verde para cuenta canónica |
+| Propiedad cliente–carrito | registro persistente BCrypt, claim JWT individual `customer_id`, `CustomerAccessGuard` | `SecurityAuthorizationTest.registeredClientsHaveIndependentSignedIdentitiesAndResources` | Verde para múltiples clientes |
 | Crédito aprobado sin PayKlik ficticio | Saga `OWN_CREDIT`, referencia fiscal neutral | E2E `eligibleCustomerBuysWithOwnCreditWithoutCreatingPayKlikAttempt` | Verde |
 | Repetición sin duplicar efectos | recuperación por orden/llave | mismo E2E: una operación, factura y despacho | Verde |
 | Dos concesiones simultáneas | advisory locks + restricciones únicas | `CreditServiceIntegrationTest.concurrentEquivalentRequestsCreateOneCreditOperation` | Verde |

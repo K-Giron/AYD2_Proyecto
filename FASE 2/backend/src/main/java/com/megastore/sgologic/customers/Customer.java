@@ -29,17 +29,26 @@ public class Customer {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "password_hash", length = 100)
+    private String passwordHash;
+
     protected Customer() {
         // Requerido por JPA.
     }
 
     static Customer register(String username, String fullName, String registeredChannel, Instant now) {
+        return register(username, fullName, registeredChannel, null, now);
+    }
+
+    static Customer register(String username, String fullName, String registeredChannel,
+                             String passwordHash, Instant now) {
         Customer customer = new Customer();
         customer.id = UUID.randomUUID();
         customer.username = normalize(username);
         customer.fullName = fullName.trim();
         customer.registeredChannel = registeredChannel;
         customer.createdAt = now;
+        customer.passwordHash = passwordHash;
         return customer;
     }
 
@@ -52,4 +61,5 @@ public class Customer {
     public String getFullName() { return fullName; }
     public String getRegisteredChannel() { return registeredChannel; }
     public Instant getCreatedAt() { return createdAt; }
+    String getPasswordHash() { return passwordHash; }
 }

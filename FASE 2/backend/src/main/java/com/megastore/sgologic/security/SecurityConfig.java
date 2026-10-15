@@ -55,7 +55,8 @@ class SecurityConfig {
                         return;
                     }
                     registry
-                            .requestMatchers("/api/v1/auth/login", "/actuator/health", "/actuator/health/**",
+                            .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register",
+                                    "/actuator/health", "/actuator/health/**",
                                     "/actuator/info", "/api/v1/platform/**")
                             .permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/v1/inventory/stock",
