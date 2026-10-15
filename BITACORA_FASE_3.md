@@ -247,16 +247,16 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
 | Jairo Gómez | Crédito base, checkout/Saga dual, integración ERP/reporte/notificaciones, pruebas, ADR/DDA/diagramas, Manual de Usuario, navegación y catálogo | Integrado y desplegado desde `develop` |
 | Jorge Pumay | Historial ERP, dataset, reglas trazables, ciclo de obligación, seguridad y correcciones de logística | Integrado en `develop` |
 | Kevin Girón | CI/CD, Compose productivo, GCP, scripts de backup/deploy/rollback, runbook y release `v1` | Integrado; pipeline y nube operativos |
-| Andy Sánchez | Arnés 5+5, ejecución y análisis k6, Manual Técnico, smoke independiente y revisión estática del CI/CD | Ejecutado y documentado en rama; listo para integrar |
+| Andy Sánchez | Arnés 5+5, ejecución y análisis k6, Manual Técnico, smoke independiente y revisión estática del CI/CD | Integrado en `develop` |
 | Edson Sosa | Sin commit de Fase 3 identificable en el periodo auditado | Falta evidencia atribuible |
 
 ## 4. Evidencia de integración y operación
 
 | Evidencia | Resultado |
 |---|---|
-| SHA desplegado | `274ee024781a3c54c9816d798a8b3603b784e207` |
-| CI del SHA | [Run 38616631224](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38616631224): frontend, cinco servicios Java y seis imágenes en verde |
-| Deploy del SHA | [Run 38618417187](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38618417187): despliegue, health y smoke externo en verde |
+| SHA desplegado | `bcc1cf6c41aa1b6edf4e2313db6889a2c2341adf` |
+| CI del SHA | [Run 38668140432](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38668140432): CI/CD completo en verde |
+| Deploy del SHA | [Run 38669072485](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38669072485): despliegue manual del mismo SHA en verde |
 | Ambiente | `http://136.65.180.39` y portales `:8082`, `:8084`, `:8085`, `:8086` |
 | Release disponible | `v1`; `v2`–`v4` pendientes |
 | Smoke final | 17 verificaciones, 0 fallos |
@@ -274,6 +274,7 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   idempotencia/concurrencia en la evidencia automatizada.
 - El proceso de aprobación de PR se considera administrado por el equipo; esta
   bitácora conserva únicamente hechos verificables del historial.
-- Para cerrar toda la fase faltan integrar los resultados de rendimiento, completar
-  capturas del Manual de Usuario, registrar cualquier aporte de Edson y
-  publicar `v2`, `v3` y `v4` desde `main`.
+- Los resultados de rendimiento ya están integrados y las capturas del Manual
+  de Usuario fueron completadas localmente el 14 de octubre. Para cerrar toda
+  la fase falta incorporar el manual y sus imágenes mediante PR, registrar
+  cualquier aporte de Edson y publicar `v2`, `v3` y `v4` desde `main`.

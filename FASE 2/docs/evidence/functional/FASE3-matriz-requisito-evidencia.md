@@ -46,16 +46,16 @@ ejecutó `./mvnw clean verify` sobre `develop` con Java 25 y Testcontainers:
 las 306 previas. El detalle caso a caso está en
 `docs/qa/reporte-pruebas-funcionales-fase3.md`.
 
-El SHA `274ee024781a3c54c9816d798a8b3603b784e207` pasó el
-[run de CI 38616631224](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38616631224),
-que ejecutó los cinco proyectos Java, validó el frontend y publicó seis
-imágenes. El
-[run 38618417187](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38618417187)
-desplegó ese SHA en `http://136.65.180.39` y completó health checks y smoke
-externo. El smoke independiente posterior verificó 17 controles sin fallos.
+El SHA `bcc1cf6c41aa1b6edf4e2313db6889a2c2341adf`, que incluye la corrección de
+crédito individual para todos los clientes, pasó el
+[run de CI 38668140432](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38668140432).
+El [run 38669072485](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38669072485)
+desplegó correctamente ese mismo SHA en `http://136.65.180.39`. El smoke
+independiente documentado verificó las rutas públicas sin fallos.
 
-Los cinco escenarios de carga y cinco de estrés exigidos permanecen pendientes
-de ejecución. El arnés y el Manual Técnico están desarrollados en
-`origin/feature/201904024-fase3-rendimiento`, pero todavía no forman parte de
-`develop` ni contienen métricas ejecutadas. También quedan pendientes la
-promoción a `main` y los releases `v2`, `v3` y `v4`.
+Los cinco escenarios de carga y cinco de estrés exigidos fueron ejecutados,
+analizados e integrados en `develop` mediante el PR correspondiente. Sus
+métricas, hallazgos y repeticiones se conservan en
+`docs/evidence/performance/FASE3-REPORTE-CARGA-ESTRES.md`; el Manual Técnico
+también refleja esos resultados. Permanecen pendientes la promoción final a
+`main` y los releases de cierre `v2`, `v3` y `v4`.

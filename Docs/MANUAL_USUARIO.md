@@ -7,10 +7,10 @@
 | Sistema | MegaStore / SGO-Logic |
 | Documento | Manual de usuario |
 | Versión funcional | Fase 3 |
-| Versión documental | 1.0 |
-| Fecha de actualización | 13 de octubre de 2026 |
+| Versión documental | 1.1 |
+| Fecha de actualización | 14 de octubre de 2026 |
 | Audiencia | Clientes, soporte, logística, finanzas y administración de la tienda online |
-| Estado | Borrador funcional pendiente de incorporar capturas definitivas |
+| Estado | Final, validado con capturas del ambiente desplegado |
 
 ---
 
@@ -19,6 +19,7 @@
 | Versión | Fecha | Descripción | Responsable |
 |---|---|---|---|
 | 1.0 | 13/10/2026 | Operación integral de la plataforma: tienda, pedidos, inventario, logística, integraciones, postventa y crédito | Equipo SGO-Logic |
+| 1.1 | 14/10/2026 | Incorporación de evidencia visual y depuración de notas internas de edición | Equipo SGO-Logic |
 
 ---
 
@@ -50,7 +51,6 @@
 24. [Solución de problemas](#24-solución-de-problemas)
 25. [Recomendaciones de seguridad](#25-recomendaciones-de-seguridad)
 26. [Cierre de sesión](#26-cierre-de-sesión)
-27. [Lista de capturas pendientes](#27-lista-de-capturas-pendientes)
 
 ---
 
@@ -118,11 +118,14 @@ Antes de comenzar, confirme lo siguiente:
 - conoce las credenciales asignadas a su rol;
 - el equipo tiene acceso a la dirección donde se publicó MegaStore.
 
-En el ambiente local, la dirección principal es:
+La dirección principal del ambiente desplegado es:
 
 ```text
-http://localhost:8081
+http://136.65.180.39
 ```
+
+Para una ejecución local con Docker Compose, utilice
+`http://localhost:8081`.
 
 ## 3.1 Cuentas del ambiente de demostración
 
@@ -142,7 +145,7 @@ http://localhost:8081
 
 La página principal permite consultar productos publicados sin iniciar sesión.
 
-1. Abra `http://localhost:8081`.
+1. Abra `http://136.65.180.39`.
 2. Recorra el catálogo o utilice la navegación hacia **Productos disponibles**.
 3. Abra un producto para consultar su detalle y disponibilidad.
 4. Si desea comprar, seleccione **Iniciar sesión** o **Crear cuenta** cuando el
@@ -151,12 +154,14 @@ La página principal permite consultar productos publicados sin iniciar sesión.
 El stock público es informativo; la reserva definitiva ocurre durante el
 checkout después de autenticar al cliente.
 
-![Portal público](Docs/capturas/manual-usuario/MU-25-portal-publico.png)
+![Portal público de MegaStore con catálogo por departamentos](capturas/manual-usuario/MU-25-portal-publico.png)
+
+*Figura 1. Portal público de MegaStore y acceso al catálogo.*
 ---
 
 # 4. Acceso e inicio de sesión
 
-1. Abra `http://localhost:8081`.
+1. Abra `http://136.65.180.39`.
 2. Seleccione la opción para iniciar sesión.
 3. En la pantalla de acceso, seleccione **Cliente** o **Personal interno**.
 4. Ingrese el correo electrónico y la contraseña correspondientes.
@@ -174,7 +179,9 @@ la consola correspondiente a sus permisos.
 - Si las credenciales son inválidas, el sistema muestra un mensaje y no inicia
   la sesión.
 
-![InicioSesion](Docs/capturas/manual-usuario/MU-01-inicio-sesion.png)
+![Pantalla de inicio de sesión de MegaStore](capturas/manual-usuario/MU-01-inicio-sesion.png)
+
+*Figura 2. Inicio de sesión para clientes y personal interno.*
 
 ## 4.2 Registro de un cliente de demostración
 
@@ -189,10 +196,9 @@ El registro crea una identidad individual en el servidor. La contraseña se
 almacena codificada y el cliente recibe un identificador propio, por lo que su
 carrito, sus pedidos y su crédito no se comparten con otras cuentas.
 
-> **CAPTURA PENDIENTE MU-14 — Registro de cliente**  
-> Insertar aquí una captura de `registro.html` con los campos del formulario y
-> el consentimiento visibles.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-14-registro-cliente.png`
+![Formulario para crear una cuenta de cliente](capturas/manual-usuario/MU-14.png)
+
+*Figura 3. Registro de una cuenta individual de cliente.*
 
 ---
 
@@ -213,10 +219,9 @@ opciones:
 La cabecera también contiene un buscador y un contador con la cantidad de
 productos agregados al carrito.
 
-> **CAPTURA PENDIENTE MU-02 — Pantalla principal de la tienda**  
-> Insertar aquí una captura completa de `cliente.html` donde se distingan la
-> navegación, el buscador, el catálogo y el contador del carrito.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-02-tienda-cliente.png`
+![Pantalla principal de la tienda MegaStore](capturas/manual-usuario/MU-02.png)
+
+*Figura 4. Pantalla principal, buscador, departamentos y acceso al carrito.*
 
 ---
 
@@ -247,14 +252,12 @@ El sistema no debe permitir una cantidad superior al inventario disponible.
 Los favoritos se almacenan en el dispositivo actual; no sustituyen el carrito
 persistido del cliente.
 
-> **CAPTURA PENDIENTE MU-03 — Catálogo y producto agregado**  
-> Insertar aquí una captura con un producto disponible, su precio y el contador
-> del carrito actualizado.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-03-catalogo-producto.png`
+![Detalle de un producto publicado](capturas/manual-usuario/MU-03.png)
+
+*Figura 5. Detalle del producto, precio y controles de compra y favoritos.*
 
 ---
 
-![alt text](image.png)
 # 7. Administración del carrito
 
 1. Seleccione **Mi carrito**.
@@ -272,9 +275,9 @@ El resumen debe mostrar exclusivamente los productos y cantidades vigentes. El
 total utilizado por PayKlik o crédito propio se obtiene del carrito persistido,
 no de un valor escrito manualmente en el navegador.
 
-> **CAPTURA PENDIENTE MU-04 — Carrito de compra**  
-> Insertar aquí una captura con productos, cantidades, subtotal y total.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-04-carrito.png`
+![Carrito de compra con productos y resumen](capturas/manual-usuario/MU-04.png)
+
+*Figura 6. Carrito, cantidades, entrega, datos fiscales y resumen de compra.*
 
 ---
 
@@ -301,10 +304,9 @@ Elija una de estas alternativas:
 PayKlik debe aparecer siempre. La alternativa **Compra ahora, paga en 30 días**
 solo aparece cuando el cliente y el total actual cumplen las reglas de crédito.
 
-> **CAPTURA PENDIENTE MU-05 — Checkout y opciones financieras**  
-> Insertar aquí una captura que muestre entrega, datos fiscales, PayKlik y, para
-> el cliente elegible, la opción de crédito propio.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-05-checkout-opciones.png`
+![Checkout con opciones de pago](capturas/manual-usuario/MU-05.png)
+
+*Figura 7. Checkout con datos de entrega, información fiscal y alternativas financieras.*
 
 ---
 
@@ -335,10 +337,9 @@ Una respuesta aprobada continúa con facturación y preparación. Si el resultad
 queda pendiente, el sistema puede reconciliarlo sin volver a cobrar. No cree
 otra compra ni cambie la referencia mientras la primera esté procesándose.
 
-> **CAPTURA PENDIENTE MU-06 — Ventana de PayKlik**  
-> Insertar aquí una captura del modal de PayKlik con el total y las alternativas
-> de tarjeta o transferencia. No mostrar datos reales de tarjeta.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-06-payklik.png`
+![Ventana segura de PayKlik](capturas/manual-usuario/MU-06.png)
+
+*Figura 8. Ventana de PayKlik con el total y los métodos disponibles.*
 
 ---
 
@@ -364,6 +365,10 @@ Nuevo saldo disponible:     Q2,101.00
 Si el mismo cliente abre otro carrito, conserva Q2,101.00. Una compra superior
 a ese saldo no puede concederse mediante crédito propio.
 
+![Detalle de la línea de crédito disponible](capturas/manual-usuario/MU-13.png)
+
+*Figura 9. Línea individual disponible y fecha estimada de vencimiento.*
+
 ## 10.2 Realizar la compra
 
 1. Prepare entrega y datos fiscales.
@@ -386,15 +391,13 @@ saldo concedido.
 - La facturación referencia la operación de crédito.
 - La venta continúa hacia preparación y despacho.
 
-> **CAPTURA PENDIENTE MU-07 — Selección de crédito propio**  
-> Insertar aquí una captura del checkout con **Compra ahora, paga en 30 días**
-> seleccionada, mostrando límite y vencimiento preliminar.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-07-credito-seleccionado.png`
+![Crédito propio seleccionado en el checkout](capturas/manual-usuario/MU-07.png)
 
-> **CAPTURA PENDIENTE MU-08 — Crédito concedido**  
-> Insertar aquí una captura del resultado exitoso con número de orden,
-> identificador de operación de crédito y fecha de vencimiento.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-08-credito-concedido.png`
+*Figura 10. Selección de crédito propio antes de confirmar la compra.*
+
+![Resultado de una compra mediante crédito propio](capturas/manual-usuario/MU-08.png)
+
+*Figura 11. Confirmación de una compra financiada y su operación de crédito.*
 
 ---
 
@@ -425,11 +428,6 @@ compra ya no cumple las reglas:
 No repita la compra creando órdenes nuevas. Utilice la alternativa disponible
 en la pantalla o contacte a soporte con el identificador de orden.
 
-> **CAPTURA PENDIENTE MU-09 — Rechazo y recuperación por PayKlik**  
-> Insertar aquí una captura del mensaje de rechazo y otra donde PayKlik siga
-> disponible para continuar.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-09-credito-rechazado.png`
-
 ---
 
 # 12. Confirmación y factura
@@ -448,10 +446,9 @@ muestra la confirmación de compra.
 En una compra financiada, la referencia corresponde a la operación de crédito y
 no a un intento de PayKlik.
 
-> **CAPTURA PENDIENTE MU-10 — Factura de compra a crédito**  
-> Insertar aquí una captura de la factura donde pueda identificarse la operación
-> financiera sin exponer información sensible.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-10-factura-credito.png`
+![Factura electrónica de una compra](capturas/manual-usuario/MU-10.png)
+
+*Figura 12. Factura electrónica con productos, impuestos y referencia financiera.*
 
 ---
 
@@ -469,10 +466,13 @@ La vista consolidada permite distinguir el avance de la compra sin consultar
 cada sistema por separado. Si algún dato todavía no ha sido actualizado, espere
 unos segundos y vuelva a consultar la misma orden.
 
-> **CAPTURA PENDIENTE MU-11 — Seguimiento consolidado**  
-> Insertar aquí una captura de **Mis pedidos** con una orden a crédito y su
-> progreso de preparación o despacho.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-11-seguimiento.png`
+![Listado y seguimiento de pedidos](capturas/manual-usuario/MU-11.png)
+
+*Figura 13. Consulta de pedidos y estados del recorrido de una orden.*
+
+![Detalle consolidado de un pedido](capturas/manual-usuario/MU-21.png)
+
+*Figura 14. Detalle del procesamiento financiero, fiscal y logístico de un pedido.*
 
 ---
 
@@ -499,9 +499,9 @@ La aprobación de una devolución no implica que la línea de crédito se restau
 automáticamente en esta versión. Si la compra fue financiada, soporte y finanzas
 deben aplicar el procedimiento definido para la cartera.
 
-> **CAPTURA PENDIENTE MU-12 — Devoluciones e incidencias**  
-> Insertar aquí una captura del formulario y del historial de solicitudes.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-12-devoluciones.png`
+![Formulario e historial de devoluciones](capturas/manual-usuario/MU-12.png)
+
+*Figura 15. Registro y consulta de devoluciones e incidencias.*
 
 ---
 
@@ -510,7 +510,7 @@ deben aplicar el procedimiento definido para la cartera.
 El Centro de operaciones se encuentra en:
 
 ```text
-http://localhost:8081/staff.html
+http://136.65.180.39/staff.html
 ```
 
 El acceso y las acciones disponibles dependen de los roles asignados. La
@@ -538,10 +538,9 @@ Puede abrir una orden de dos maneras:
 Al cargarla se habilita el tablero con resumen, despacho, notificaciones,
 incidencias, ERP/POS, auditoría y cadena de integración.
 
-> **CAPTURA PENDIENTE MU-15 — Centro de operaciones**  
-> Insertar aquí una captura con indicadores, órdenes recientes y selector por
-> identificador.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-15-centro-operaciones.png`
+![Centro de operaciones de MegaStore](capturas/manual-usuario/MU-15.png)
+
+*Figura 16. Indicadores comerciales y listado de órdenes recientes.*
 
 ---
 
@@ -587,6 +586,10 @@ notificación manual de demostración:
 Una falla de notificación no debe revertir una venta confirmada. El evento
 queda disponible para revisión o reintento.
 
+![Notificaciones asociadas a una orden](capturas/manual-usuario/MU-18.png)
+
+*Figura 18. Historial de notificaciones y su estado de entrega.*
+
 ## 16.4 Gestionar devoluciones e incidencias
 
 1. Abra **Devoluciones e incidencias** en la orden seleccionada.
@@ -597,10 +600,9 @@ queda disponible para revisión o reintento.
 
 Antes de resolver, valide productos, cantidades, entrega y ruta financiera.
 
-> **CAPTURA PENDIENTE MU-16 — Operación consolidada de una orden**  
-> Insertar aquí una captura del tablero con resumen, despacho, notificaciones e
-> incidencias de la misma orden.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-16-orden-consolidada.png`
+![Tablero consolidado de una orden](capturas/manual-usuario/MU-16.png)
+
+*Figura 17. Resumen operativo y financiero de la orden seleccionada.*
 
 ---
 
@@ -630,9 +632,9 @@ Solo las unidades disponibles pueden venderse o trasladarse.
 Las reservas vencidas o canceladas deben aparecer como liberadas; una venta
 confirmada consolida la salida correspondiente.
 
-> **CAPTURA PENDIENTE MU-17 — Inventario y kárdex**  
-> Insertar aquí una captura con el resumen de stock y movimientos filtrados.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-17-inventario-kardex.png`
+![Inventario y movimientos de kárdex](capturas/manual-usuario/MU-17.png)
+
+*Figura 19. Existencias y movimientos de inventario de la tienda online.*
 
 ---
 
@@ -650,10 +652,6 @@ carrito utilizado por el cliente en la web.
 
 El call center no debe crear un cliente nuevo cuando ya existe uno con el mismo
 correo. Tampoco debe solicitar contraseñas, datos completos de tarjeta ni CVV.
-
-> **CAPTURA PENDIENTE MU-18 — Atención omnicanal**  
-> Insertar aquí una captura de la búsqueda por correo y el carrito recuperado.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-18-call-center.png`
 
 ---
 
@@ -691,9 +689,9 @@ La sección resume la participación de:
 Una indisponibilidad temporal puede generar reintentos. Antes de repetir una
 acción manual, revise el estado y la evidencia de la orden.
 
-> **CAPTURA PENDIENTE MU-19 — ERP y puntos de venta**  
-> Insertar aquí una captura de lotes ERP y eventos POS con sus estados.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-19-erp-pos.png`
+![Integración con ERP y puntos de venta](capturas/manual-usuario/MU-19.png)
+
+*Figura 20. Estado del lote ERP y de los eventos distribuidos a los puntos de venta.*
 
 ---
 
@@ -712,6 +710,10 @@ Esta función está disponible para el personal con permisos de finanzas.
 
 El informe compara orden, autorización financiera, factura y ERP. Las filas con
 discrepancias requieren revisión antes del cierre financiero.
+
+![Informe conciliado de ventas](capturas/manual-usuario/MU-20A.png)
+
+*Figura 21. Resumen financiero y detalle conciliado de ventas.*
 
 ## 20.2 Consulta financiera de una venta a crédito
 
@@ -736,11 +738,6 @@ La venta a crédito no debe aparecer como **Sin pago** ni como un cobro PayKlik.
 Si la ruta del ERP y la orden son diferentes, el reporte debe señalar una
 discrepancia para revisión.
 
-> **CAPTURA PENDIENTE MU-13 — Informe de venta a crédito**  
-> Insertar aquí una captura del informe con ruta **Crédito propio**, estado
-> **CREDIT_GRANTED** y referencia de la operación.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-13-informe-credito.png`
-
 ## 20.3 Evidencia de auditoría
 
 1. Cargue una orden en el Centro de operaciones.
@@ -751,10 +748,9 @@ discrepancia para revisión.
 La exportación también queda auditada. El archivo no debe alterarse antes de
 ser entregado como evidencia.
 
-> **CAPTURA PENDIENTE MU-20 — Informe y auditoría**  
-> Insertar aquí una captura del resumen financiero y otra del historial de
-> auditoría de una orden.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-20-informe-auditoria.png`
+![Evidencia de auditoría de operaciones](capturas/manual-usuario/MU-20B.png)
+
+*Figura 22. Historial de auditoría consultable por el personal autorizado.*
 
 ---
 
@@ -763,7 +759,7 @@ ser entregado como evidencia.
 La administración de la tienda se encuentra en:
 
 ```text
-http://localhost:8081/tienda-online.html
+http://136.65.180.39/tienda-online.html
 ```
 
 Utilice la cuenta de **Tienda online**. La cabecera muestra el estado de
@@ -781,11 +777,6 @@ conexión con el Almacén Central y permite solicitar una sincronización manual
 La mercadería **En tránsito** no está disponible para venta hasta confirmar la
 recepción. No confirme un folio si existen diferencias físicas.
 
-> **CAPTURA PENDIENTE MU-21 — Recepción por folio**  
-> Insertar aquí una captura con el detalle de un folio y la lista de envíos en
-> tránsito.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-21-recepcion-folio.png`
-
 ## 21.2 Consultar inventario
 
 1. Abra **Inventario**.
@@ -793,6 +784,10 @@ recepción. No confirme un folio si existen diferencias físicas.
 3. Utilice el filtro por código o nombre.
 4. Investigue cualquier saldo negativo o diferencia antes de publicar o
    trasladar productos.
+
+![Inventario administrado por la tienda online](capturas/manual-usuario/MU-22A.png)
+
+*Figura 23. Inventario de productos administrado desde la consola de tienda online.*
 
 ## 21.3 Administrar el catálogo publicado
 
@@ -806,9 +801,9 @@ recepción. No confirme un folio si existen diferencias físicas.
 Para retirar temporalmente un producto de la web, utilice **Despublicar**. Esta
 acción no elimina el producto ni sus movimientos históricos.
 
-> **CAPTURA PENDIENTE MU-22 — Inventario y catálogo online**  
-> Insertar aquí una captura del inventario y otra del editor de producto.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-22-catalogo-online.png`
+![Editor de productos del catálogo online](capturas/manual-usuario/MU-22B.png)
+
+*Figura 24. Edición de la ficha comercial y publicación de un producto.*
 
 ## 21.4 Ventas y facturas
 
@@ -817,6 +812,10 @@ acción no elimina el producto ni sus movimientos históricos.
 3. Presione **Filtrar**.
 4. Revise estado de orden, Saga y factura.
 5. Abra una factura para imprimirla o descargar su XML.
+
+![Ventas y facturas de la tienda online](capturas/manual-usuario/MU-23A.png)
+
+*Figura 25. Consulta de una venta y su factura electrónica.*
 
 ## 21.5 Emitir un traslado
 
@@ -838,10 +837,9 @@ reintenta.
 3. Revise folio, operación, fecha, resultado y mensaje.
 4. Utilice **Sincronizar ahora** solo cuando necesite adelantar el ciclo normal.
 
-> **CAPTURA PENDIENTE MU-23 — Ventas, traslados y bitácora**  
-> Insertar aquí capturas de una venta facturada, un traslado y el registro de
-> sincronización relacionado.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-23-operacion-online.png`
+![Traslados y bitácora de sincronización](capturas/manual-usuario/MU-23B.png)
+
+*Figura 26. Emisión de traslados y consulta de la bitácora de sincronización.*
 
 ---
 
@@ -849,12 +847,12 @@ reintenta.
 
 MegaStore se integra con sistemas que poseen su propia interfaz local.
 
-| Sistema | URL local | Acceso | Uso principal |
+| Sistema | URL desplegada | Acceso | Uso principal |
 |---|---|---|---|
-| Almacén Central | `http://localhost:8082` | `almacen@almacencentral.local` / `Almacen123` | Artículos, existencias, folios y stock por tienda |
-| POS-01 | `http://localhost:8084` | Nombre del vendedor | Venta física, recepción, pedidos web y entrega |
-| LogiExpress | `http://localhost:8085` | Nombre del mensajero | Guías, recolección, entrega y rastreo |
-| PayKlik | `http://localhost:8086` | Nombre del operador | Transacciones y estado del servicio |
+| Almacén Central | `http://136.65.180.39:8082` | `almacen@almacencentral.local` / `Almacen123` | Artículos, existencias, folios y stock por tienda |
+| POS-01 | `http://136.65.180.39:8084` | Nombre del vendedor | Venta física, recepción, pedidos web y entrega |
+| LogiExpress | `http://136.65.180.39:8085` | Nombre del mensajero | Guías, recolección, entrega y rastreo |
+| PayKlik | `http://136.65.180.39:8086` | Nombre del operador | Transacciones y estado del servicio |
 
 ## 22.1 Almacén Central
 
@@ -867,6 +865,10 @@ MegaStore se integra con sistemas que poseen su propia interfaz local.
 El folio representa mercadería en tránsito. No aumente manualmente la
 existencia del destino: esta se incorpora cuando el receptor confirma el folio.
 
+![Portal del Almacén Central](capturas/manual-usuario/MU-24A.png)
+
+*Figura 27. Resumen operativo del Almacén Central.*
+
 ## 22.2 Tienda física POS-01
 
 1. Ingrese el nombre del vendedor.
@@ -876,6 +878,10 @@ existencia del destino: esta se incorpora cuando el receptor confirma el folio.
 5. Entregue al cliente únicamente cuando el pedido esté disponible y se haya
    validado su identidad.
 6. Revise la bitácora ante diferencias de inventario o sincronización.
+
+![Portal de la tienda física POS-01](capturas/manual-usuario/MU-24B.png)
+
+*Figura 28. Inventario y operación de la tienda física POS-01.*
 
 ## 22.3 LogiExpress
 
@@ -889,6 +895,10 @@ existencia del destino: esta se incorpora cuando el receptor confirma el folio.
 El portal permite simular estados del servicio. No marque una entrega si el
 paquete no completó el recorrido previsto en la demostración.
 
+![Portal de LogiExpress](capturas/manual-usuario/MU-24C.png)
+
+*Figura 29. Gestión y seguimiento de guías en LogiExpress.*
+
 ## 22.4 PayKlik
 
 1. Ingrese el nombre del operador.
@@ -900,6 +910,10 @@ paquete no completó el recorrido previsto en la demostración.
 
 Cambiar el estado del proveedor no transforma una compra de crédito propio en
 un pago PayKlik; ambas rutas financieras permanecen separadas.
+
+![Portal operativo de PayKlik](capturas/manual-usuario/MU-24D.png)
+
+*Figura 30. Consulta de transacciones y estado del servicio PayKlik.*
 
 ## 22.5 Flujo integral sugerido
 
@@ -915,11 +929,6 @@ un pago PayKlik; ambas rutas financieras permanecen separadas.
 Los portales de PayKlik y LogiExpress permiten cambiar el estado del proveedor
 para demostrar lentitud, rechazo o indisponibilidad. Utilice esas opciones solo
 en ambientes de prueba y restablezca el modo normal al finalizar.
-
-> **CAPTURA PENDIENTE MU-24 — Sistemas conectados**  
-> Insertar aquí un mosaico o capturas separadas de Almacén Central, POS-01,
-> LogiExpress y PayKlik.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-24-sistemas-conectados.png`
 
 ---
 
@@ -1000,70 +1009,3 @@ referencias privadas de una cuenta bancaria.
 
 La opción **Recordarme en este navegador** conserva la sesión en el dispositivo;
 por ello no debe utilizarse en equipos públicos.
-
----
-
-# 27. Lista de capturas pendientes
-
-Antes de entregar el manual, reemplace cada marcador por una captura tomada en
-el mismo ambiente y con datos coherentes entre sí.
-
-| Código | Captura | Archivo sugerido | Estado |
-|---|---|---|---|
-| MU-01 | Inicio de sesión | `MU-01-inicio-sesion.png` | Pendiente |
-| MU-02 | Pantalla principal del cliente | `MU-02-tienda-cliente.png` | Pendiente |
-| MU-03 | Catálogo y producto agregado | `MU-03-catalogo-producto.png` | Pendiente |
-| MU-04 | Carrito de compra | `MU-04-carrito.png` | Pendiente |
-| MU-05 | Checkout y opciones financieras | `MU-05-checkout-opciones.png` | Pendiente |
-| MU-06 | Ventana PayKlik | `MU-06-payklik.png` | Pendiente |
-| MU-07 | Crédito seleccionado | `MU-07-credito-seleccionado.png` | Pendiente |
-| MU-08 | Crédito concedido | `MU-08-credito-concedido.png` | Pendiente |
-| MU-09 | Crédito rechazado y recuperación | `MU-09-credito-rechazado.png` | Pendiente |
-| MU-10 | Factura de crédito | `MU-10-factura-credito.png` | Pendiente |
-| MU-11 | Seguimiento consolidado | `MU-11-seguimiento.png` | Pendiente |
-| MU-12 | Devoluciones e incidencias | `MU-12-devoluciones.png` | Pendiente |
-| MU-13 | Informe financiero de crédito | `MU-13-informe-credito.png` | Pendiente |
-| MU-14 | Registro de cliente | `MU-14-registro-cliente.png` | Pendiente |
-| MU-15 | Centro de operaciones | `MU-15-centro-operaciones.png` | Pendiente |
-| MU-16 | Operación consolidada de orden | `MU-16-orden-consolidada.png` | Pendiente |
-| MU-17 | Inventario y kárdex | `MU-17-inventario-kardex.png` | Pendiente |
-| MU-18 | Atención omnicanal | `MU-18-call-center.png` | Pendiente |
-| MU-19 | ERP y puntos de venta | `MU-19-erp-pos.png` | Pendiente |
-| MU-20 | Informe y auditoría | `MU-20-informe-auditoria.png` | Pendiente |
-| MU-21 | Recepción por folio | `MU-21-recepcion-folio.png` | Pendiente |
-| MU-22 | Inventario y catálogo online | `MU-22-catalogo-online.png` | Pendiente |
-| MU-23 | Ventas, traslados y bitácora | `MU-23-operacion-online.png` | Pendiente |
-| MU-24 | Sistemas conectados | `MU-24-sistemas-conectados.png` | Pendiente |
-| MU-25 | Portal público | `MU-25-portal-publico.png` | Pendiente |
-
-## 27.1 Criterios para las capturas
-
-- Utilizar resolución legible y conservar la interfaz completa cuando aporte
-  contexto.
-- Mantener el mismo cliente y, cuando sea posible, la misma orden en todo el
-  recorrido.
-- Ocultar contraseñas, JWT, PAN, CVV/CVC y otros datos sensibles.
-- No recortar mensajes de estado relevantes.
-- Agregar una descripción breve debajo de cada imagen.
-- Confirmar que el nombre del archivo coincida con el código del manual.
-
----
-
-## Validación final del documento
-
-- [ ] Todas las capturas MU-01 a MU-25 fueron incorporadas.
-- [ ] Las imágenes corresponden a la versión entregada del sistema.
-- [ ] Se verificaron ortografía, numeración e índice.
-- [ ] Las credenciales de demostración siguen vigentes o fueron actualizadas.
-- [ ] Se comprobó una compra PayKlik.
-- [ ] Se comprobó una compra mediante crédito propio.
-- [ ] Se comprobó el consumo acumulado de la línea.
-- [ ] Se comprobó una factura y el seguimiento de la orden.
-- [ ] Finanzas comprobó la ruta `OWN_CREDIT` en el informe y el ERP.
-- [ ] Soporte comprobó la recuperación del carrito omnicanal.
-- [ ] Logística comprobó despacho y seguimiento en LogiExpress.
-- [ ] Tienda online comprobó recepción, publicación y traslado.
-- [ ] Se comprobó la comunicación con Almacén Central y POS-01.
-- [ ] Se revisaron notificaciones, incidencias, auditoría y exportaciones.
-- [ ] El documento fue revisado por una persona distinta de quien tomó las
-      capturas.
