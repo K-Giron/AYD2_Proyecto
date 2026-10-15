@@ -345,8 +345,9 @@ otra compra ni cambie la referencia mientras la primera esté procesándose.
 # 10. Compra mediante crédito propio
 
 La alternativa de crédito permite comprar ahora y pagar en un plazo de 30 días.
-Su disponibilidad depende del historial del cliente, ausencia de mora, reglas
-vigentes y saldo suficiente.
+Cada cliente registrado recibe una línea inicial individual de Q2,500. Su
+disponibilidad posterior depende de la ausencia de mora, las reglas vigentes y
+el saldo que ese mismo cliente todavía tenga disponible.
 
 ## 10.1 Interpretar el límite disponible
 
@@ -403,7 +404,6 @@ saldo concedido.
 
 Esto puede ocurrir cuando:
 
-- no existe historial suficiente;
 - el cliente tiene una condición incompatible con la política vigente;
 - el total excede el saldo disponible;
 - la evaluación tardó demasiado o el servicio no estuvo disponible.

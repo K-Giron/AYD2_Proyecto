@@ -104,16 +104,16 @@ class CreditServiceIntegrationTest {
     }
 
     @Test
-    void customerWithoutProfileIsRejectedWithoutDebtOrDueDate() {
+    void customerWithoutProfileReceivesInitialCreditAndDebtDueDate() {
         UUID orderId = UUID.randomUUID();
         CreditOperationResult result = credit.requestCredit(request(
                 orderId, UUID.randomUUID(), "credit-rejected-" + UUID.randomUUID()));
 
-        assertThat(result.status()).isEqualTo(CreditOperationStatus.REJECTED);
-        assertThat(result.dueDate()).isNull();
+        assertThat(result.status()).isEqualTo(CreditOperationStatus.GRANTED);
+        assertThat(result.dueDate()).isNotNull();
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM credit_operations WHERE order_id = ? AND status = 'GRANTED'",
-                Integer.class, orderId)).isZero();
+                Integer.class, orderId)).isOne();
     }
 
     @Test

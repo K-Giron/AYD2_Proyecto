@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * IT-02 (EDS3-05): el checkout consulta la elegibilidad por HTTP contra
  * PostgreSQL real y expone las opciones correctas — PayKlik primero, crédito
- * solo para el perfil elegible — y la propiedad del carrito se aplica.
+ * inicial individual para todo cliente — y la propiedad del carrito se aplica.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -82,7 +82,7 @@ class PaymentOptionsIntegrationTest {
     @Test
     void eligibleCustomerSeesPayKlikFirstAndOwnCreditWithDueDatePreview() throws Exception {
         String client = login("cliente@megastore.com", "Cliente123");
-        String cartId = openCartWithProduct(client);
+        String cartId = openCartWithProduct(client, DEMO_CUSTOMER_ID);
 
         JsonNode options = getJson("/api/v1/carts/" + cartId + "/payment-options", client);
 
@@ -105,18 +105,43 @@ class PaymentOptionsIntegrationTest {
     }
 
     @Test
-    void customerWithoutHistorySeesOnlyPayKlik() throws Exception {
+    void existingCustomerWithoutProfileReceivesItsOwnInitialCredit() throws Exception {
         String client = login("cliente@megastore.com", "Cliente123");
-        String cartId = openCartWithProduct(client);
+        String cartId = openCartWithProduct(client, DEMO_CUSTOMER_ID);
         jdbc.update("DELETE FROM credit_customer_profiles WHERE customer_id = ?", DEMO_CUSTOMER_ID);
 
         JsonNode options = getJson("/api/v1/carts/" + cartId + "/payment-options", client);
 
-        assertThat(options.get("options").size()).isEqualTo(1);
-        assertThat(options.get("options").get(0).get("route").asText()).isEqualTo("PAYKLIK");
+        assertThat(options.get("options").size()).isEqualTo(2);
+        assertThat(options.get("options").get(1).get("route").asText()).isEqualTo("OWN_CREDIT");
+        assertThat(options.get("options").get(1).get("approvedLimit").decimalValue())
+                .isEqualByComparingTo("2500.00");
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM credit_decisions WHERE customer_id = ? AND eligible = FALSE",
-                Integer.class, DEMO_CUSTOMER_ID)).isGreaterThanOrEqualTo(1);
+                "SELECT available_credit FROM credit_customer_profiles WHERE customer_id = ?",
+                BigDecimal.class, DEMO_CUSTOMER_ID)).isEqualByComparingTo("2500.00");
+    }
+
+    @Test
+    void newlyRegisteredCustomerReceivesIndependentInitialCredit() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String registration = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "fullName", "Cliente nuevo", "email", "credito-" + suffix + "@megastore.test",
+                                "password", "Segura123"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode account = objectMapper.readTree(registration);
+        UUID customerId = UUID.fromString(account.get("customerId").asText());
+        String token = account.get("accessToken").asText();
+        String cartId = openCartWithProduct(token, customerId);
+
+        JsonNode options = getJson("/api/v1/carts/" + cartId + "/payment-options", token);
+
+        assertThat(customerId).isNotEqualTo(DEMO_CUSTOMER_ID);
+        assertThat(options.get("options").get(1).get("route").asText()).isEqualTo("OWN_CREDIT");
+        assertThat(options.get("options").get(1).get("approvedLimit").decimalValue())
+                .isEqualByComparingTo("2500.00");
     }
 
     @Test
@@ -135,13 +160,13 @@ class PaymentOptionsIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    private String openCartWithProduct(String token) throws Exception {
+    private String openCartWithProduct(String token, UUID customerId) throws Exception {
         String cart = mockMvc.perform(post("/api/v1/carts")
                         .header("Authorization", "Bearer " + token)
                         .header("Idempotency-Key", "options-cart-" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of(
-                                "customerId", DEMO_CUSTOMER_ID.toString(), "channel", "WEB"))))
+                                "customerId", customerId.toString(), "channel", "WEB"))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String cartId = objectMapper.readTree(cart).get("id").asText();

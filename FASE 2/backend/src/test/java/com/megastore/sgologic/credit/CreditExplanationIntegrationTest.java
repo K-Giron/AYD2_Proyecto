@@ -113,7 +113,7 @@ class CreditExplanationIntegrationTest {
     @Test
     void rejectedCreditExplainsTheReasonAndHasNoDueDate() throws Exception {
         CreditOperationResult rejected = credit.requestCredit(new CreditRequest(
-                UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("399.00"), "GTQ",
+                UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("2500.01"), "GTQ",
                 UUID.randomUUID(), "explain-rejected-" + UUID.randomUUID()));
 
         JsonNode explanation = getExplanation(rejected.creditOperationId().toString());
