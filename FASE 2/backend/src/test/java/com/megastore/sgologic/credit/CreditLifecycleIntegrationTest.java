@@ -62,7 +62,7 @@ class CreditLifecycleIntegrationTest {
 
     private UUID customer;
 
-    /** Cliente con límite de 1200.00 (4 compras de 750, 25 % de devoluciones, sin mora). */
+    /** Cliente con línea base de 2500.00, 25 % de devoluciones y sin mora. */
     @BeforeEach
     void eligibleCustomer() {
         customer = UUID.randomUUID();
@@ -80,7 +80,7 @@ class CreditLifecycleIntegrationTest {
     @Test
     void grantedCreditBecomesOverdueAfterItsDueDateAndBlocksNewCredit() {
         CreditOperationResult granted = grant("500.00");
-        assertThat(available()).isEqualByComparingTo("700.00");
+        assertThat(available()).isEqualByComparingTo("2000.00");
 
         assertThat(lifecycle.markOverdue(granted.dueDate(), UUID.randomUUID())).isZero();
         assertThat(lifecycle.markOverdue(granted.dueDate().plusDays(1), UUID.randomUUID())).isGreaterThanOrEqualTo(1);
@@ -100,7 +100,7 @@ class CreditLifecycleIntegrationTest {
         CreditOperationResult settled = lifecycle.settle(granted.creditOperationId(), UUID.randomUUID());
 
         assertThat(settled.status()).isEqualTo(CreditOperationStatus.SETTLED);
-        assertThat(available()).isEqualByComparingTo("1200.00");
+        assertThat(available()).isEqualByComparingTo("2500.00");
         assertThat(overdueFlag()).isFalse();
         assertThat(grant("100.00").status()).isEqualTo(CreditOperationStatus.GRANTED);
     }
@@ -113,7 +113,7 @@ class CreditLifecycleIntegrationTest {
         CreditOperationResult again = lifecycle.settle(granted.creditOperationId(), UUID.randomUUID());
 
         assertThat(again.status()).isEqualTo(CreditOperationStatus.SETTLED);
-        assertThat(available()).isEqualByComparingTo("1200.00");
+        assertThat(available()).isEqualByComparingTo("2500.00");
     }
 
     @Test
@@ -132,7 +132,7 @@ class CreditLifecycleIntegrationTest {
         for (Future<?> run : runs) run.get();
         pool.shutdown();
 
-        assertThat(available()).isEqualByComparingTo("1200.00");
+        assertThat(available()).isEqualByComparingTo("2500.00");
     }
 
     @Test
@@ -146,13 +146,13 @@ class CreditLifecycleIntegrationTest {
         assertThat(cancelled).isPresent();
         assertThat(cancelled.get().status()).isEqualTo(CreditOperationStatus.CANCELLED);
         assertThat(statusOf(granted)).isEqualTo(CreditOperationStatus.CANCELLED);
-        assertThat(available()).isEqualByComparingTo("1200.00");
+        assertThat(available()).isEqualByComparingTo("2500.00");
     }
 
     @Test
     void cancellingAnOrderWithoutCreditChangesNothing() {
         assertThat(lifecycle.cancelForOrder(UUID.randomUUID(), UUID.randomUUID())).isEmpty();
-        assertThat(available()).isEqualByComparingTo("1200.00");
+        assertThat(available()).isEqualByComparingTo("2500.00");
     }
 
     @Test
@@ -164,14 +164,14 @@ class CreditLifecycleIntegrationTest {
         lifecycle.cancelForOrder(orderId, UUID.randomUUID());
 
         assertThat(statusOf(granted)).isEqualTo(CreditOperationStatus.SETTLED);
-        assertThat(available()).isEqualByComparingTo("1200.00");
+        assertThat(available()).isEqualByComparingTo("2500.00");
     }
 
     @Test
     void rejectedOrUnknownOperationsCannotBeSettled() {
         UUID stranger = UUID.randomUUID();
         CreditOperationResult rejected = credit.requestCredit(new CreditRequest(UUID.randomUUID(), stranger,
-                new BigDecimal("50.00"), "GTQ", UUID.randomUUID(), "key-" + UUID.randomUUID()));
+                new BigDecimal("2500.01"), "GTQ", UUID.randomUUID(), "key-" + UUID.randomUUID()));
 
         assertThat(rejected.status()).isEqualTo(CreditOperationStatus.REJECTED);
         assertThatThrownBy(() -> lifecycle.settle(rejected.creditOperationId(), UUID.randomUUID()))
@@ -188,8 +188,8 @@ class CreditLifecycleIntegrationTest {
                 List.of(new CreditHistoryEntry(customer, "lc-late-" + customer, CreditHistoryType.PURCHASE,
                         Instant.now().minusSeconds(60), new BigDecimal("750.00"), null, false))));
 
-        // Límite nuevo: 5 compras x 750 = 3750 * 0.40 = 1500; menos 500 vigentes.
-        assertThat(available()).isEqualByComparingTo("1000.00");
+        // El cálculo histórico no reduce la línea base: 2500 menos 500 vigentes.
+        assertThat(available()).isEqualByComparingTo("2000.00");
     }
 
     private CreditOperationResult grant(String amount) {

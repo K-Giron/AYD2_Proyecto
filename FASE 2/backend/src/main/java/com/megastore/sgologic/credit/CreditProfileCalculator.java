@@ -26,6 +26,7 @@ class CreditProfileCalculator {
                 ? BigDecimal.ZERO.setScale(4)
                 : ratio(history.returns(), history.purchases()).min(BigDecimal.ONE.setScale(4));
         BigDecimal limit = history.purchaseTotal().multiply(properties.getLimitRatio())
+                .max(properties.getInitialLimit())
                 .min(properties.getMaximumLimit()).setScale(2, RoundingMode.DOWN);
         BigDecimal available = limit.subtract(history.outstandingCredit()).max(BigDecimal.ZERO);
         return new ProfileValues(history.purchases(), onTimeRate, returnRate,

@@ -28,6 +28,7 @@ class CreditService implements CreditPort {
     private final CreditDecisionRepository decisions;
     private final CreditOperationRepository operations;
     private final CreditEligibilityPolicy policy;
+    private final CreditProperties properties;
     private final CreditConcurrencyGuard concurrency;
     private final PublishEvent events;
     private final CreditOperationEvents operationEvents;
@@ -38,6 +39,7 @@ class CreditService implements CreditPort {
                   CreditDecisionRepository decisions,
                   CreditOperationRepository operations,
                   CreditEligibilityPolicy policy,
+                  CreditProperties properties,
                   CreditConcurrencyGuard concurrency,
                   PublishEvent events,
                   CreditOperationEvents operationEvents,
@@ -47,6 +49,7 @@ class CreditService implements CreditPort {
         this.decisions = decisions;
         this.operations = operations;
         this.policy = policy;
+        this.properties = properties;
         this.concurrency = concurrency;
         this.events = events;
         this.operationEvents = operationEvents;
@@ -60,7 +63,7 @@ class CreditService implements CreditPort {
         requireRequest(request.customerId(), request.amount(), request.currency(), request.correlationId());
         String currency = normalizeCurrency(request.currency());
         CreditEligibilityPolicy.PolicyResult result = policy.evaluate(
-                profiles.findById(request.customerId()).orElse(null), request.amount());
+                profileFor(request.customerId()), request.amount());
         CreditDecision decision = decisions.save(CreditDecision.create(
                 request.customerId(), request.amount(), currency, result.eligible(),
                 result.approvedLimit(), policy.ruleVersion(), result.reasonCode(), result.inputsSnapshot(),
@@ -116,6 +119,17 @@ class CreditService implements CreditPort {
     @Transactional(readOnly = true)
     public Optional<CreditOperationResult> latestForOrder(UUID orderId) {
         return operations.findByOrderId(orderId).map(this::toOperation);
+    }
+
+    /**
+     * Toda identidad de cliente dispone de una línea inicial propia. El INSERT
+     * idempotente también cubre cuentas creadas después de ejecutar Flyway y
+     * evita compartir el saldo entre clientes concurrentes.
+     */
+    private CreditCustomerProfile profileFor(UUID customerId) {
+        profiles.initializeIfMissing(customerId, properties.getInitialLimit(), clock.instant());
+        return profiles.findById(customerId)
+                .orElseThrow(() -> new IllegalStateException("No se pudo inicializar el crédito del cliente."));
     }
 
     private void requireRequest(UUID customerId, BigDecimal amount, String currency, UUID correlationId) {

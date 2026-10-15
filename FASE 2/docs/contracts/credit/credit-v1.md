@@ -13,7 +13,8 @@ evaluate(customerId, amount, currency, correlationId)
 
 - `amount > 0`; `currency` usa tres letras y se normaliza a mayúsculas.
 - Persiste una decisión incluso cuando el resultado es no elegible.
-- Sin perfil o historial suficiente devuelve no elegible.
+- Si falta el perfil, se crea idempotentemente con una línea inicial individual
+  de Q2,500 antes de evaluar.
 - El consumidor público no expone las métricas históricas.
 
 ## Solicitar concesión
@@ -112,19 +113,18 @@ anteriores a la migración `V4008` quedan sin instantánea.
 
 Se evalúan en este orden y la primera que falla fija la razón:
 
-1. Sin perfil crediticio: `INSUFFICIENT_HISTORY`.
+1. Todo cliente obtiene de forma idempotente un perfil con línea inicial propia.
 2. Crédito vencido activo: `OVERDUE_CREDIT`.
-3. Menos compras que el mínimo: `INSUFFICIENT_HISTORY`.
-4. Puntualidad menor al mínimo: `LATE_PAYMENT_HISTORY`.
-5. Tasa de devoluciones mayor al máximo: `HIGH_RETURN_RATE`.
-6. Incidentes críticos mayores al máximo: `CRITICAL_INCIDENTS`.
-7. Monto mayor al límite disponible: `INSUFFICIENT_LIMIT`.
+3. Puntualidad menor al mínimo: `LATE_PAYMENT_HISTORY`.
+4. Tasa de devoluciones mayor al máximo: `HIGH_RETURN_RATE`.
+5. Incidentes críticos mayores al máximo: `CRITICAL_INCIDENTS`.
+6. Monto mayor al límite disponible: `INSUFFICIENT_LIMIT`.
 
 Los umbrales son inclusivos: igualar el mínimo o el máximo aprueba.
 
 | Parámetro | Variable | Valor |
 |---|---|---|
-| Compras completadas mínimas | `SGO_CREDIT_MINIMUM_PURCHASES` | 3 |
+| Línea inicial por cliente | `SGO_CREDIT_INITIAL_LIMIT` | 2500.00 |
 | Puntualidad mínima | `SGO_CREDIT_MINIMUM_ON_TIME_RATE` | 0.80 |
 | Devoluciones máximas | `SGO_CREDIT_MAXIMUM_RETURN_RATE` | 0.30 |
 | Incidentes críticos máximos | `SGO_CREDIT_MAXIMUM_CRITICAL_INCIDENTS` | 1 |

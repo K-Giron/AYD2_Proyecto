@@ -72,7 +72,7 @@ class CreditDemoDatasetTest {
 
         assertThat(result.profilesRebuilt()).isEqualTo(5);
         assertDecision("000000000001", true, "ELIGIBLE");
-        assertDecision("000000000002", false, "INSUFFICIENT_HISTORY");
+        assertDecision("000000000002", true, "ELIGIBLE");
         assertDecision("000000000003", false, "HIGH_RETURN_RATE");
         assertDecision("000000000004", false, "CRITICAL_INCIDENTS");
         assertDecision("000000000005", false, "LATE_PAYMENT_HISTORY");

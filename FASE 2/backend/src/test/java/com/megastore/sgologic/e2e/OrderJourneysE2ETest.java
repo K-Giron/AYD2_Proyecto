@@ -183,7 +183,10 @@ class OrderJourneysE2ETest {
         assertThat(options.get("options").get(0).get("route").asText()).isEqualTo("PAYKLIK");
         assertThat(options.get("options").get(1).get("route").asText()).isEqualTo("OWN_CREDIT");
 
-        JsonNode order = checkout(client, cart.get("id").asText(), key("checkout-credit"));
+        String checkoutKey = key("checkout-credit");
+        JsonNode order = checkout(client, cart.get("id").asText(), checkoutKey);
+        JsonNode repeatedCheckout = checkout(client, cart.get("id").asText(), checkoutKey);
+        assertThat(repeatedCheckout.get("id").asText()).isEqualTo(order.get("id").asText());
         String sagaKey = key("saga-credit");
         JsonNode saga = awaitCreditSaga(client, order.get("id").asText(), sagaKey);
         JsonNode repeated = awaitCreditSaga(client, order.get("id").asText(), sagaKey);
@@ -216,6 +219,10 @@ class OrderJourneysE2ETest {
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT financial_operation_type FROM fiscal_documents WHERE order_id = ?",
                 String.class, orderId)).isEqualTo("OWN_CREDIT");
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM customer_orders WHERE checkout_key = ?", Integer.class, checkoutKey))
+                .isEqualTo(1);
+        assertThat(getJson("/api/v1/shipments?orderId=" + orderId, client).size()).isEqualTo(1);
     }
 
     @Test

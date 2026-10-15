@@ -18,10 +18,10 @@ class CreditProfileCalculatorTest {
     }
 
     @Test
-    void limitIsFortyPercentOfWindowPurchases() {
+    void initialLimitIsTheFloorWhenHistoryWouldYieldLess() {
         var values = calculator.calculate(history(4, "3000.00", 0, 0, 0, 0, "0.00"));
 
-        assertThat(values.availableCredit()).isEqualByComparingTo("1200.00");
+        assertThat(values.availableCredit()).isEqualByComparingTo("2500.00");
         assertThat(values.completedPurchases()).isEqualTo(4);
     }
 
@@ -37,8 +37,8 @@ class CreditProfileCalculatorTest {
         var partial = calculator.calculate(history(4, "3000.00", 0, 0, 0, 0, "500.00"));
         var exhausted = calculator.calculate(history(4, "3000.00", 0, 0, 0, 0, "2000.00"));
 
-        assertThat(partial.availableCredit()).isEqualByComparingTo("700.00");
-        assertThat(exhausted.availableCredit()).isEqualByComparingTo("0.00");
+        assertThat(partial.availableCredit()).isEqualByComparingTo("2000.00");
+        assertThat(exhausted.availableCredit()).isEqualByComparingTo("500.00");
     }
 
     @Test
@@ -51,12 +51,12 @@ class CreditProfileCalculatorTest {
     }
 
     @Test
-    void customerWithoutPaymentsOrPurchasesGetsNeutralRatesAndNoLimit() {
+    void customerWithoutPaymentsOrPurchasesGetsNeutralRatesAndInitialLimit() {
         var values = calculator.calculate(history(0, "0.00", 0, 0, 0, 0, "0.00"));
 
         assertThat(values.onTimePaymentRate()).isEqualByComparingTo("1.0000");
         assertThat(values.returnRate()).isEqualByComparingTo("0.0000");
-        assertThat(values.availableCredit()).isEqualByComparingTo("0.00");
+        assertThat(values.availableCredit()).isEqualByComparingTo("2500.00");
     }
 
     @Test

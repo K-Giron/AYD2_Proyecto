@@ -1,7 +1,8 @@
 # ADR-016 — Crédito propio y Saga financiera dual
 
 - **Fecha:** 2026-10-12
-- **Estado:** Proposed
+- **Estado:** Accepted
+- **Ratificación:** 2026-10-14
 - **Responsable del borrador:** Jairo Gómez
 - **Revisores:** Jorge Pumay, Edson Sosa, Andy Sánchez y Kevin Girón
 - **Resuelve:** incorporación de “Compra ahora, paga en 30 días” sin convertir el crédito en un pago PayKlik ficticio
@@ -38,11 +39,12 @@ obligaciones.
    `credit_customer_profiles`, `credit_decisions` y `credit_operations`.
    `orders` solo lo consume mediante la interfaz pública `credit :: api`.
 2. La evaluación es síncrona porque el checkout necesita saber qué alternativa
-   mostrar. Es *fail closed*: sin perfil o con historia insuficiente no se ofrece
-   crédito. Una falla técnica al consultar opciones se degrada a PayKlik.
-3. La política inicial es configurable y versionada (`credit-rules-v1`): mínimo
-   de compras completadas, puntualidad mínima, devolución máxima, incidentes
-   críticos máximos, ausencia de mora y límite disponible suficiente. Cada
+   mostrar. Cada cliente recibe idempotentemente una línea inicial individual
+   de Q2,500; las compras de otro cliente nunca consumen ese saldo. Una falla
+   técnica al consultar opciones se degrada a PayKlik.
+3. La política es configurable y versionada (`credit-rules-v1`): línea inicial,
+   puntualidad mínima, devolución máxima, incidentes críticos máximos, ausencia
+   de mora y límite disponible suficiente. Cada
    evaluación persiste entradas, resultado, razón pública, límite y versión.
 4. La concesión es idempotente por orden y por `Idempotency-Key`. Una operación
    `GRANTED` crea una obligación con vencimiento calculado a 30 días; una
@@ -67,10 +69,11 @@ obligaciones.
 10. El módulo no lee tablas privadas de ERP, pagos u órdenes. El perfil local es
     una proyección; su alimentación productiva desde fuentes autorizadas queda
     como trabajo de integración y gobierno de datos.
-11. La identidad canónica de la cuenta `CLIENT` demostrativa se incluye como
-    claim firmado `customer_id`. Un guard del backend deriva de ese claim el
-    filtro de consultas y rechaza el acceso a carritos u órdenes ajenos; el
-    navegador no decide la identidad efectiva.
+11. Cada cuenta `CLIENT`, incluida la cuenta demostrativa, recibe un claim
+    firmado `customer_id`. Las cuentas creadas en la web persisten su hash
+    BCrypt en `customers` y obtienen un UUID propio. Un guard del backend
+    deriva de ese claim el filtro de consultas y rechaza el acceso a carritos
+    u órdenes ajenos; el navegador no decide la identidad efectiva.
 12. La evaluación de opciones tiene un límite temporal configurable (2 s por
     defecto). Una demora, excepción o timeout cancela la tarea y devuelve solo
     PayKlik, sin convertir una indisponibilidad de crédito en error del checkout.
@@ -119,11 +122,10 @@ obligaciones.
 - El ciclo de cobranza, abonos, mora, notas de crédito y restitución de línea no
   forma parte de esta decisión. Requiere reglas y contrato de cartera del dueño
   financiero antes de considerarlo apto para operación productiva completa.
-- La cuenta `CLIENT` demostrativa continúa siendo una sola identidad canónica,
-  ahora ligada al claim JWT `customer_id`. Antes de producción se necesita un
-  almacén de credenciales o proveedor de identidad que emita un cliente
-  distinto por persona; las cuentas locales del navegador no constituyen ese
-  directorio productivo.
+- El registro web usa el almacén de credenciales del módulo `customers`, con
+  BCrypt y una identidad distinta por persona. Una operación productiva de
+  mayor escala puede sustituirlo por un proveedor de identidad externo sin
+  cambiar la propiedad por `customer_id` ni los contratos de órdenes/crédito.
 - La política configura 30 días; cambios regulatorios, mora, pagos de cuota y
   cobranza requieren decisiones y alcance adicionales.
 
@@ -153,11 +155,38 @@ obligaciones.
   pero no historial completo, PAN, CVV ni secretos.
 - La regresión de PayKlik, conciliación y seguridad permanece verde.
 
+## Ratificación
+
+La decisión se acepta después de contrastarla con la implementación integrada
+en `develop`, el contrato `credit :: api`, las migraciones V4004 a V4009 y la
+evidencia automatizada. El SHA `274ee02` completó el
+[run de CI 38616631224](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38616631224):
+cinco proyectos Java, validación del frontend y seis imágenes Docker en verde.
+El mismo SHA se desplegó mediante el
+[run 38618417187](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38618417187)
+y superó el smoke externo.
+
+La revisión confirmó:
+
+- separación semántica entre `PAYKLIK` y `OWN_CREDIT`;
+- ausencia de intentos PayKlik ficticios en crédito;
+- idempotencia por orden y llave, más serialización por cliente;
+- consumo acumulado y restitución controlada de la línea;
+- referencia fiscal neutral y clasificación coherente en ERP e informes;
+- dependencia de `orders` únicamente sobre la API pública de `credit`;
+- degradación a PayKlik ante falla o timeout de elegibilidad;
+- notificación asíncrona sin revertir la operación financiera.
+
+La aceptación arquitectónica no elimina los límites declarados: el IdP
+multiusuario, el gobierno de la fuente productiva del historial, los abonos
+parciales e intereses continúan fuera de esta versión y no se presentan como
+capacidades terminadas.
+
 ## Referencias
 
 - `Docs/planificacion/PLANIFICACION_FASE_3.md`
 - `Docs/planificacion/PLAN_EJECUCION_JAIRO_FASE_3.md`
-- `Proyecto Fase 3_convertido.md`
+- Enunciado académico de Fase 3 (fuente externa de requisitos)
 - ADR-002, ADR-003, ADR-005, ADR-007, ADR-008 y ADR-015
 - Migraciones `V4004__fiscal_generalize_financial_operation.sql` y
   `V4005__credit_and_order_financial_route.sql` y

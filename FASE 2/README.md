@@ -375,6 +375,25 @@ La línea base `T` y la carga `8T` se midieron con k6 sobre el conjunto declarad
 
 `8T` es ≈ 8.04× la tasa de `T` sin degradar los umbrales. Protocolo en `docs/qa/DEC-02-protocolo-carga-T-8T.md`, resultados y hallazgos en `docs/evidence/performance/QA-02-linea-base-y-8T.md` y comandos en `tests/k6/README.md`. La prueba encontró y corrigió un agotamiento del pool de conexiones en la consulta de auditoría y el consumo excesivo del healthcheck de RabbitMQ.
 
+## Rendimiento de Fase 3 (Andy Sánchez)
+
+El arnés de Fase 3 se encuentra en `tests/k6/phase3` y separa cinco escenarios
+de carga de cinco escenarios de estrés. Incluye ejecución reproducible para
+PowerShell/Bash, umbrales, rutas configurables y captura de resúmenes k6. El
+reporte controlado está en
+`docs/evidence/performance/FASE3-REPORTE-CARGA-ESTRES.md` y el Manual Técnico en
+`docs/manuals/MANUAL_TECNICO_FASE_3.md`.
+
+El arnés ya usa los contratos integrados de carritos, opciones de pago, Saga
+dual e historial `credit-history-v1`. El 14 de octubre de 2026 se ejecutaron en
+Docker local los cinco escenarios de carga y los cinco de estrés sobre la base
+`5a7cdd1`. La repetición controlada de STRESS-03 completó 58,124 comprobaciones
+sin errores y mantuvo PayKlik dentro de sus umbrales; STRESS-04 dejó abierto un
+cuello de botella de aceptación y drenaje de notificaciones. Las métricas,
+limitaciones y el veredicto están en el reporte enlazado. El smoke independiente
+contra GCP terminó con 11/11 comprobaciones y 0 % de errores. Las mediciones de
+estrés fueron únicamente locales y no se presentan como capacidad de producción.
+
 ## Integración continua — QA-01
 
 El workflow `.github/workflows/qa-integracion-base.yml` usa dos jobs: primero compila y prueba el backend; después construye Compose y ejecuta el smoke test. Se activa en pull requests, push a `develop`/`main` y manualmente. Puede utilizar estos secretos de GitHub Actions:

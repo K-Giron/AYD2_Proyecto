@@ -1,17 +1,73 @@
 "use strict";
 
 const PUBLIC_CORRELATION_ID = crypto.randomUUID();
-const FAVORITES_KEY = "sgo.megastore.favorites";
-const PURCHASE_INTENT_KEY = "sgo.purchaseIntent";
 const publicSession = typeof sgoGetSession === "function" ? sgoGetSession() : null;
+const FAVORITES_KEY = publicSession?.customerId
+    ? `sgo.megastore.favorites.${publicSession.customerId}`
+    : "sgo.megastore.favorites.public";
+const PURCHASE_INTENT_KEY = "sgo.purchaseIntent";
 let publicCatalog = [];
 let publicStocks = new Map();
 let activeCategory = "all";
+const MAX_FEATURED_CATEGORIES = 4;
+const CATEGORY_PRIORITY = ["Hogar", "Moda", "Tecnología", "Calzado"];
 
 function landingMoney(value) { return new Intl.NumberFormat("es-GT", { style: "currency", currency: "GTQ" }).format(value); }
 function landingEscape(value) { return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 function getFavorites() { try { return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []); } catch { return new Set(); } }
 function saveFavorites(favorites) { localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites])); }
+
+function catalogCategories() {
+    const counts = new Map();
+    publicCatalog.forEach(product => {
+        const category = String(product.category || "General").trim() || "General";
+        counts.set(category, (counts.get(category) || 0) + 1);
+    });
+    return [...counts.entries()]
+        .map(([name, count]) => ({ name, count }))
+        .sort((left, right) => {
+            const leftPriority = CATEGORY_PRIORITY.indexOf(left.name);
+            const rightPriority = CATEGORY_PRIORITY.indexOf(right.name);
+            if (leftPriority !== -1 || rightPriority !== -1) {
+                if (leftPriority === -1) return 1;
+                if (rightPriority === -1) return -1;
+                return leftPriority - rightPriority;
+            }
+            return left.name.localeCompare(right.name, "es", { sensitivity: "base" });
+        });
+}
+
+function categoryButton(category, count, menuItem = false) {
+    const active = activeCategory === category;
+    if (menuItem) {
+        return `<button type="button" data-category="${landingEscape(category)}" class="category-menu-item${active ? " active" : ""}" aria-pressed="${active}"><span>${landingEscape(category)}</span><small>${count} producto${count === 1 ? "" : "s"}</small><i aria-hidden="true">→</i></button>`;
+    }
+    return `<button type="button" data-category="${landingEscape(category)}" class="${active ? "active" : ""}" aria-pressed="${active}">${landingEscape(category)}</button>`;
+}
+
+function renderCategoryNavigation() {
+    const categories = catalogCategories();
+    document.getElementById("featured-categories").innerHTML = categories
+        .slice(0, MAX_FEATURED_CATEGORIES)
+        .map(category => categoryButton(category.name, category.count))
+        .join("");
+    document.getElementById("all-category-options").innerHTML = categories.length
+        ? categories.map(category => categoryButton(category.name, category.count, true)).join("")
+        : `<p class="category-menu-empty">Las categorías aparecerán cuando existan productos publicados.</p>`;
+    document.getElementById("category-total").textContent = String(categories.length);
+}
+
+function selectCategory(category) {
+    activeCategory = category;
+    document.querySelectorAll("[data-category]").forEach(item => {
+        const active = item.dataset.category === category;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-pressed", String(active));
+    });
+    document.getElementById("all-categories").removeAttribute("open");
+    renderPublicCatalog();
+    document.getElementById("catalogo").scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
 async function publicCartCount() {
     if (publicSession?.role !== "CLIENTE") return 0;
@@ -36,8 +92,17 @@ async function renderAccountNavigation() {
 function renderPublicCatalog() {
     const query = document.getElementById("public-search").value.trim().toLowerCase();
     const favorites = getFavorites();
-    const products = publicCatalog.filter(product => (activeCategory === "all" || product.category === activeCategory) && `${product.name} ${product.category} ${product.sku}`.toLowerCase().includes(query));
+    const products = publicCatalog.filter(product => {
+        const category = String(product.category || "General").trim() || "General";
+        return (activeCategory === "all" || category === activeCategory)
+            && `${product.name} ${category} ${product.sku}`.toLowerCase().includes(query);
+    });
     const container = document.getElementById("public-catalog-grid");
+    const status = document.getElementById("public-catalog-status");
+    const categoryLabel = activeCategory === "all" ? "todas las categorías" : activeCategory;
+    status.textContent = query
+        ? `${products.length} resultado${products.length === 1 ? "" : "s"} en ${categoryLabel}`
+        : `${products.length} producto${products.length === 1 ? "" : "s"} en ${categoryLabel}`;
     if (!products.length) { container.innerHTML = `<p class="catalog-empty">No encontramos productos con esos filtros.</p>`; return; }
     container.innerHTML = products.map(product => {
         const stock = publicStocks.get(product.id);
@@ -52,9 +117,7 @@ async function loadPublicCatalog() {
     try {
         publicCatalog = await sgoLoadCatalog();
         publicCatalog.forEach(product => publicStocks.set(product.id, product.available));
-        status.textContent = publicCatalog.length
-            ? `${publicCatalog.length} productos con existencia de la tienda online`
-            : "La tienda online aún no tiene productos publicados";
+        renderCategoryNavigation();
         renderPublicCatalog();
     } catch {
         status.textContent = "Catálogo no disponible";
@@ -78,11 +141,17 @@ document.getElementById("public-catalog-grid").addEventListener("click", event =
     const buyButton = event.target.closest("[data-buy-product]");
     if (buyButton) requestAuthentication(buyButton.dataset.buyProduct);
 });
-document.querySelectorAll("[data-category]").forEach(button => button.addEventListener("click", () => {
-    activeCategory = button.dataset.category;
-    document.querySelectorAll("[data-category]").forEach(item => item.classList.toggle("active", item === button));
-    renderPublicCatalog(); document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" });
-}));
+document.getElementById("department-nav").addEventListener("click", event => {
+    const button = event.target.closest("[data-category]");
+    if (button) selectCategory(button.dataset.category);
+});
+document.addEventListener("click", event => {
+    const menu = document.getElementById("all-categories");
+    if (menu.open && !menu.contains(event.target)) menu.removeAttribute("open");
+});
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape") document.getElementById("all-categories").removeAttribute("open");
+});
 document.getElementById("public-search").addEventListener("input", renderPublicCatalog);
 document.getElementById("public-search-btn").addEventListener("click", () => document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" }));
 document.querySelector("[data-close-auth]").addEventListener("click", () => document.getElementById("auth-required-dialog").close());

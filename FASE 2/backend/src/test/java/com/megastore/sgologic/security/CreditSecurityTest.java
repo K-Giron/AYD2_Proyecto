@@ -22,13 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Matriz 401/403 del módulo de crédito (EDS3-03): solo Finanzas puede cargar
- * historial del ERP y registrar el pago de una obligación.
+ * historial del ERP, registrar el pago de una obligación y consultar su
+ * explicación.
  */
 @Testcontainers
 @ActiveProfiles("test")
@@ -127,6 +129,27 @@ class CreditSecurityTest {
     @Test
     void financeSettlingAnUnknownOperationGetsA404() throws Exception {
         mockMvc.perform(post("/api/v1/credit/operations/" + UUID.randomUUID() + "/settle")
+                        .header("Authorization", "Bearer " + token("finanzas@megastore.com", "Finanzas123")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("CREDIT_OPERATION_NOT_FOUND"));
+    }
+
+    @Test
+    void explanationRequiresFinance() throws Exception {
+        String url = "/api/v1/credit/operations/" + UUID.randomUUID();
+
+        mockMvc.perform(get(url)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get(url).header("Authorization",
+                        "Bearer " + token("cliente@megastore.com", "Cliente123")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get(url).header("Authorization",
+                        "Bearer " + token("staff@megastore.com", "Staff123")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void financeGettingAnUnknownExplanationGetsA404() throws Exception {
+        mockMvc.perform(get("/api/v1/credit/operations/" + UUID.randomUUID())
                         .header("Authorization", "Bearer " + token("finanzas@megastore.com", "Finanzas123")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("CREDIT_OPERATION_NOT_FOUND"));

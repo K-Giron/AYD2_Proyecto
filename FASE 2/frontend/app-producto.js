@@ -1,7 +1,9 @@
 "use strict";
 
-const DETAIL_FAVORITES_KEY = "sgo.megastore.favorites";
-const detailSession = sgoGetSession();
+const detailSession = typeof sgoGetSession === "function" ? sgoGetSession() : null;
+const DETAIL_FAVORITES_KEY = detailSession?.customerId
+    ? `sgo.megastore.favorites.${detailSession.customerId}`
+    : "sgo.megastore.favorites.public";
 let detailProduct = null;
 
 function detailEscape(value) { return String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }

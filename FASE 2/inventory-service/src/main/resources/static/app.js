@@ -2,6 +2,23 @@
 
 const SESSION_KEY = "almacen.session";
 
+function configurePortalLinks() {
+    const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+    const ports = { main: localHosts.has(window.location.hostname) ? "8081" : "", store: "8084" };
+    document.querySelectorAll("a[data-portal]").forEach(link => {
+        const port = ports[link.dataset.portal];
+        if (port === undefined) return;
+        const url = new URL(window.location.href);
+        url.port = port;
+        url.pathname = link.dataset.portalPath || "/";
+        url.search = "";
+        url.hash = "";
+        link.href = url.toString();
+    });
+}
+
+configurePortalLinks();
+
 // Declarados aquí arriba (no junto a cada sección) para que estén
 // inicializados antes de que corra cualquier código — bindMainPage()
 // dispara las cargas iniciales de forma síncrona más abajo en el mismo
