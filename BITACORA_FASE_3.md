@@ -173,8 +173,9 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   - Corrigió el workflow de integración para que utilizara los secretos y
     contratos vigentes sin valores sensibles explícitos (`8f35443`).
 - Resultado funcional:
-  - Crédito aparece únicamente para un cliente elegible y PayKlik se conserva
-    ante rechazo, excepción o timeout.
+  - Cada cliente registrado recibe una línea inicial individual de Q2,500; la
+    alternativa se ofrece mientras su saldo y condiciones vigentes lo permitan.
+    PayKlik se conserva ante rechazo, excepción o timeout.
   - Una compra a crédito no crea un intento PayKlik; factura, ERP e informe
     conservan `OWN_CREDIT`.
   - La línea de Q2,500 se consume entre compras y las solicitudes concurrentes
@@ -228,17 +229,33 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   - 14 imágenes WebP de 1000×1000 verificadas y catálogo público operativo.
   - CI, seis imágenes, despliegue y smoke externo en verde.
 - Integración: `74684ae` y `274ee02` en `develop`.
+- **Actualización de cierre:**
+  - Separó carrito, pedidos e identidad por cliente registrado (`457446e`).
+  - Corrigió la política para entregar Q2,500 iniciales e independientes a cada
+    cliente, conservando consumo acumulado, concurrencia y bloqueos por riesgo
+    (`7d3b095`).
+  - Incorporó 30 capturas al Manual de Usuario, eliminó marcadores editoriales
+    y alineó bitácora, planificación y matriz con la evidencia final
+    (`fc52d03`, integrado mediante `3ddec7a`).
+  - El CI final de `develop` concluyó correctamente en el run `38674105134`.
 - Horas reales: no registradas.
 
-### Integrante: Edson Sosa — estado de evidencia del corte
+### Fecha: 2026-10-14 — Integrante: Edson Sosa
 
-- No se identificaron commits de Fase 3 atribuibles a Edson entre el 10 y el 14
-  de octubre en las referencias locales/remotas auditadas.
-- La implementación de Jairo reutiliza la infraestructura de notificaciones,
-  auditoría, Outbox e Inbox existente y agrega el consumidor de crédito dentro
-  de sus propios commits; eso no se reasigna a Edson.
-- Para completar su frente deben registrarse sus aportes reales o la revisión
-  ejecutada con commit, documento, PR o evidencia equivalente.
+- Trabajo realizado (`224a73c`, EDS3-01 a EDS3-07):
+  - Cerró el endpoint financiero de explicación de crédito para reconstruir
+    operación, decisión, regla, resultado, entradas y correlación.
+  - Agregó integración real de opciones de pago con PostgreSQL, incluyendo
+    propiedad cliente–carrito y respuestas 401/403.
+  - Cubrió Outbox, RabbitMQ e Inbox para notificaciones de crédito con reintento,
+    cola de fallidos y recuperación idempotente.
+  - Incorporó E2E de degradación de crédito, repetición sin duplicados y caída
+    del proveedor de notificaciones sin reversión de la orden.
+  - Amplió seguridad, escaneo de datos sensibles, reporte funcional, matriz de
+    evidencia y catálogo de trazabilidad.
+- Resultado: **320 pruebas**, 0 fallos, 0 errores y 0 omitidas en el corte de
+  integración; 1,273 líneas agregadas y 19 eliminadas en 16 archivos.
+- Integración: commit sustancial contenido en `develop` desde `224a73c`.
 
 ## 3. Resumen de contribuciones verificadas
 
@@ -248,7 +265,7 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
 | Jorge Pumay | Historial ERP, dataset, reglas trazables, ciclo de obligación, seguridad y correcciones de logística | Integrado en `develop` |
 | Kevin Girón | CI/CD, Compose productivo, GCP, scripts de backup/deploy/rollback, runbook y release `v1` | Integrado; pipeline y nube operativos |
 | Andy Sánchez | Arnés 5+5, ejecución y análisis k6, Manual Técnico, smoke independiente y revisión estática del CI/CD | Integrado en `develop` |
-| Edson Sosa | Sin commit de Fase 3 identificable en el periodo auditado | Falta evidencia atribuible |
+| Edson Sosa | Explicación financiera, seguridad, integración PostgreSQL/RabbitMQ, notificaciones y E2E de degradación | Integrado en `develop` mediante `224a73c` |
 
 ## 4. Evidencia de integración y operación
 
@@ -257,6 +274,8 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
 | SHA desplegado | `bcc1cf6c41aa1b6edf4e2313db6889a2c2341adf` |
 | CI del SHA | [Run 38668140432](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38668140432): CI/CD completo en verde |
 | Deploy del SHA | [Run 38669072485](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38669072485): despliegue manual del mismo SHA en verde |
+| Manual de Usuario | `fc52d03`, integrado en `develop` mediante `3ddec7a`; 30 capturas incorporadas |
+| CI documental final | [Run 38674105134](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38674105134): frontend, cinco proyectos Java y seis imágenes en verde |
 | Ambiente | `http://136.65.180.39` y portales `:8082`, `:8084`, `:8085`, `:8086` |
 | Release disponible | `v1`; `v2`–`v4` pendientes |
 | Smoke final | 17 verificaciones, 0 fallos |
@@ -274,7 +293,11 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   idempotencia/concurrencia en la evidencia automatizada.
 - El proceso de aprobación de PR se considera administrado por el equipo; esta
   bitácora conserva únicamente hechos verificables del historial.
-- Los resultados de rendimiento ya están integrados y las capturas del Manual
-  de Usuario fueron completadas localmente el 14 de octubre. Para cerrar toda
-  la fase falta incorporar el manual y sus imágenes mediante PR, registrar
-  cualquier aporte de Edson y publicar `v2`, `v3` y `v4` desde `main`.
+- Los resultados de rendimiento, el aporte de Edson y el Manual de Usuario con
+  sus 30 capturas ya están integrados en `develop` y validados por CI.
+- El frente funcional de Jairo se declara terminado: implementación,
+  estabilización, manual y evidencias están integrados. La bitácora, el guion y
+  la actualización final del DDA quedan preparados en la rama documental de
+  cierre para su revisión e integración. Después de esa integración, el trabajo
+  restante es colectivo y operativo: ensayo de defensa, promoción a `main` y
+  publicación de `v2`, `v3` y `v4`.
