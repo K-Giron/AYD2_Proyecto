@@ -88,6 +88,15 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
     despliegue por Actions y smoke externo están operativos.
   - **KEV3-06:** `v1` y `v2` publicados; `v3` y `v4`, con el ensayo de
     rollback, se publican con este cierre.
+- **Actualización 2026-10-15, `v3` y ensayo de rollback:**
+  - `v3` publicado (cierre documental y diagramas) y desplegado por su tag.
+  - Ensayo de rollback con *Run workflow*: `v3 → v2`
+    ([run 38726847745](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38726847745))
+    y regreso `v2 → v3`
+    ([run 38727317337](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38727317337)),
+    ambos con respaldo previo, 12/12 contenedores sanos y smoke en verde.
+    Evidencia en `FASE 2/docs/operacion/RELEASES-GITFLOW.md`.
+  - **KEV3-05 y KEV3-06 cerrados** con la publicación de `v4`.
 - Horas reales y estimadas restantes: pendiente de registrar por Kevin.
 - Persona que quedaría bloqueada y acción temporal: ninguna; Andy ya puede usar la nube (`http://136.65.180.39`) para carga y estrés.
 
@@ -292,7 +301,8 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
 | Manual de Usuario | `fc52d03`, integrado en `develop` mediante `3ddec7a`; 30 capturas incorporadas |
 | CI documental final | [Run 38674105134](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38674105134): frontend, cinco proyectos Java y seis imágenes en verde |
 | Ambiente | `http://136.65.180.39` y portales `:8082`, `:8084`, `:8085`, `:8086` |
-| Releases | `v1` y `v2` publicados y desplegados por tag; `v3` y `v4` en el cierre (ver `FASE 2/docs/operacion/RELEASES-GITFLOW.md`) |
+| Releases | `v1`, `v2`, `v3` y `v4` publicados desde `main` y desplegados por tag (ver `FASE 2/docs/operacion/RELEASES-GITFLOW.md`) |
+| Ensayo de rollback | `v3 → v2 → v3`: [run 38726847745](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38726847745) y [run 38727317337](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38727317337), ambos en verde |
 | Smoke final | 17 verificaciones, 0 fallos |
 
 ## 5. Decisiones y pendientes del cierre
@@ -301,8 +311,9 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
   migraciones, límites modulares, pruebas automatizadas y comportamiento
   desplegado. Las limitaciones productivas permanecen explícitas.
 - ADR-017 se ratifica como `Accepted` porque CI, imágenes, GCP, health y smoke
-  operan sobre la topología decidida. El rollback manual entre tags, la
-  restauración controlada y `v2`–`v4` permanecen como gates de operación.
+  operan sobre la topología decidida. El rollback manual entre tags se ensayó
+  (`v3 → v2 → v3`) y los releases `v1`–`v4` están publicados; la restauración
+  de respaldos queda documentada en el runbook.
 - La revisión técnica del frente de Jairo se acepta: no se detectaron accesos a
   internals de `credit`, intentos PayKlik ficticios ni pérdida de
   idempotencia/concurrencia en la evidencia automatizada.
