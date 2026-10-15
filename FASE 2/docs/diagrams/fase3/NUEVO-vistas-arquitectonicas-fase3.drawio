@@ -62,7 +62,7 @@
   <diagram id="f3-deploy" name="04-Despliegue-Fase-3">
     <mxGraphModel grid="1" gridSize="10" page="1" pageWidth="1600" pageHeight="1000" background="#FFFFFF" shadow="0">
       <root><mxCell id="0"/><mxCell id="1" parent="0"/>
-        <mxCell id="p-title" parent="1" vertex="1" value="Fase 3 — topología ejecutable local / Docker Compose" style="whiteSpace=wrap;html=1;strokeColor=none;fillColor=none;fontColor=#000000;fontSize=24;fontStyle=1;"><mxGeometry x="220" y="30" width="1160" height="50" as="geometry"/></mxCell>
+        <mxCell id="p-title" parent="1" vertex="1" value="Fase 3 — topología Docker Compose local y GCP" style="whiteSpace=wrap;html=1;strokeColor=none;fillColor=none;fontColor=#000000;fontSize=24;fontStyle=1;"><mxGeometry x="220" y="30" width="1160" height="50" as="geometry"/></mxCell>
         <mxCell id="p-browser" parent="1" vertex="1" value="Navegador&#xa;frontend :8081" style="shape=mxgraph.networks.pc;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontColor=#000000;strokeWidth=2;"><mxGeometry x="70" y="330" width="200" height="120" as="geometry"/></mxCell>
         <mxCell id="p-back" parent="1" vertex="1" value="backend :8080&#xa;Spring Modulith&#xa;orders + credit + fiscal + notifications&#xa;una unidad de despliegue" style="shape=cube;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontColor=#000000;strokeWidth=2;"><mxGeometry x="430" y="260" width="360" height="230" as="geometry"/></mxCell>
         <mxCell id="p-db" parent="1" vertex="1" value="PostgreSQL&#xa;sgo_logic&#xa;tablas con propiedad modular" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#FFFFFF;strokeColor=#000000;fontColor=#000000;strokeWidth=2;"><mxGeometry x="950" y="130" width="260" height="150" as="geometry"/></mxCell>
@@ -72,7 +72,7 @@
         <mxCell id="pe2" parent="1" edge="1" source="p-back" target="p-db" value="JDBC / Flyway" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#000000;fontColor=#000000;strokeWidth=2;endArrow=open;endFill=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="pe3" parent="1" edge="1" source="p-back" target="p-mq" value="AMQP" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#000000;fontColor=#000000;strokeWidth=2;endArrow=open;endFill=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
         <mxCell id="pe4" parent="1" edge="1" source="p-back" target="p-ext" value="REST / SMTP" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#000000;fontColor=#000000;strokeWidth=2;endArrow=open;endFill=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
-        <mxCell id="p-note" parent="1" vertex="1" value="No se representa credit como microservicio: no existe una imagen, proceso ni base independiente.&#xa;La topología de nube y sus réplicas se agregarán únicamente con evidencia del despliegue de Kevin." style="whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontColor=#000000;strokeWidth=2;dashed=1;"><mxGeometry x="430" y="680" width="780" height="100" as="geometry"/></mxCell>
+        <mxCell id="p-note" parent="1" vertex="1" value="No se representa credit como microservicio: no existe una imagen, proceso ni base independiente.&#xa;Esta topología Compose se ejecuta en la VM GCP; GitHub Actions publica seis imágenes y controla el despliegue." style="whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontColor=#000000;strokeWidth=2;dashed=1;"><mxGeometry x="430" y="680" width="780" height="100" as="geometry"/></mxCell>
       </root>
     </mxGraphModel>
   </diagram>

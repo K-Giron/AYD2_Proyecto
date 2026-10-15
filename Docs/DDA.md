@@ -18,7 +18,7 @@
 <br>
 
 <p>
-  <strong>Proyecto - Fase 2</strong><br>
+  <strong>Proyecto - Fase 3</strong><br>
   Grupo 5<br>
   AYD2_A_2S2025_PROYECTO_G5
 </p>
@@ -38,7 +38,7 @@
 
 <p>
   <br>
-  Guatemala, 10 de octubre de 2026
+  Guatemala, 14 de octubre de 2026
 </p>
 
 </div>
@@ -65,7 +65,9 @@
 
 MegaStore es una cadena regional de retail con 32 tiendas en Guatemala, El Salvador y Costa Rica y una facturación anual de USD 450 millones, cuyo comercio electrónico crece un 15 % cada año. Su operación actual está fragmentada: cada tienda administra inventario local, el canal en línea opera por separado, la disponibilidad se confirma por teléfono y Finanzas concilia ventas manualmente desde hojas de cálculo, generando devoluciones de hasta siete días hábiles y exposición a errores de despacho y a pérdidas ya cuantificadas, como los USD 150,000 de un solo evento de indisponibilidad de la pasarela de pago.
 
-SGO-Logic se propone como una capa de orquestación e integración omnicanal que permite iniciar, continuar y completar una compra desde cualquier canal sin modificar ERP-Core ni los POS existentes, cuya sustitución la Junta Directiva descartó. La arquitectura aceptada en ADR-001 es un **monolito modular** organizado por capacidades de negocio, rodeado de una **capa de integración por puertos, adaptadores y mensajería** que aísla a SGO-Logic de PayKlik, LogiExpress, la SAT, los POS y el ERP. Este estilo protege los drivers críticos priorizados: continuidad de la orden ante fallas de PayKlik, escalabilidad de hasta 8x en Black Friday, trazabilidad completa para las auditorías de la SAT y mantenibilidad con las capacidades de Java, .NET y Docker del equipo interno, dentro del presupuesto aprobado y con una ruta planificada de evolución hacia la nube.
+SGO-Logic se implementó como una capa de orquestación e integración omnicanal que permite iniciar, continuar y completar una compra sin modificar ERP-Core ni los POS existentes, cuya sustitución la Junta Directiva descartó. La arquitectura aceptada en ADR-001 es un **monolito modular** organizado por capacidades de negocio, rodeado de una **capa de integración por puertos, adaptadores y mensajería** que aísla a SGO-Logic de PayKlik, LogiExpress, la SAT, los POS y el ERP. En Fase 3 se incorporó una segunda ruta financiera de crédito propio, con límite inicial individual de Q2,500 por cliente registrado, aislamiento de carrito, pedidos y saldo mediante identidad persistente y JWT firmado, y conservación de PayKlik como alternativa independiente.
+
+La solución ejecutable se despliega mediante Docker Compose en una VM de Google Cloud Platform y se publica como seis imágenes versionadas en GHCR por un flujo de GitHub Actions. La verificación integrada comprende pruebas unitarias, de integración y E2E, cinco escenarios de carga, cinco de estrés y smoke tests de plataforma y nube. Esta realización conserva los drivers críticos priorizados: continuidad de la orden ante fallas externas, escalabilidad observable, trazabilidad fiscal y financiera, aislamiento entre clientes y mantenibilidad con las capacidades de Java, .NET y Docker del equipo.
 
 ---
 
@@ -101,7 +103,7 @@ El objetivo de SGO-Logic es habilitar una operación omnicanal en la que el clie
 - Modificar o reemplazar ERP-Core sobre AS/400.
 - Modificar o reemplazar las 32 instancias POS.
 - Modificar los servicios internos de PayKlik, LogiExpress, SAT o del proveedor de notificaciones.
-- Implementar en esta fase el sistema productivo: la Fase 1 entrega definición arquitectónica, vistas, justificación y prototipo de alto nivel.
+- Operar la realización académica como una plataforma productiva con SLA, alta disponibilidad, recuperación multizona o certificación regulatoria. El despliegue de Fase 3 demuestra la arquitectura y sus flujos, pero no sustituye esos controles de producción.
 
 **Interfaces que atraviesan la frontera:**
 
@@ -161,13 +163,13 @@ Para este DDA, un stakeholder es una persona, grupo u organización con interese
 
 ### 2.6 Supuestos y preguntas arquitectónicas abiertas
 
-Los siguientes puntos no están definidos por el enunciado y deben confirmarse antes de dimensionar o implementar. Las decisiones que podían cerrarse en esta fase se registraron en ADR-003 a ADR-008.
+Los siguientes puntos surgieron del enunciado original. Fase 2 y Fase 3 cerraron las decisiones necesarias para la realización académica mediante ADR, contratos ejecutables y pruebas; se mantienen abiertos únicamente los acuerdos organizacionales requeridos antes de una operación productiva regional.
 
-| Tema abierto | Por qué afecta la arquitectura | Tratamiento durante Fase 1 |
+| Tema abierto | Por qué afecta la arquitectura | Tratamiento y estado al cierre de Fase 3 |
 |---|---|---|
-| Fuente autoritativa y mecanismo de actualización del inventario | Determina consistencia de reservas, prevención de doble compromiso y diseño de integración con tiendas y centros de distribución | Se exige una fuente lógica única y reserva atómica; el producto o sistema de registro se decide con Negocio y Logística |
-| Formato, protocolo y garantías disponibles en cada POS | Define el contrato físico de los adaptadores | ADR-004 ubica idempotencia y reintento en el adaptador para no modificar POS; el formato queda parametrizable |
-| Volumen normal, concurrencia y distribución del tráfico por canal | “8x” es una proporción, pero falta línea base | EaC-03 define una prueba relativa a la línea base `T`; TI debe medir `T` antes de dimensionar `N` instancias |
+| Fuente autoritativa y mecanismo de actualización del inventario | Determina consistencia de reservas, prevención de doble compromiso y diseño de integración con tiendas y centros de distribución | La realización usa inventario central, reserva atómica y sincronización idempotente; el gobierno contractual de la fuente regional continúa como decisión operativa |
+| Formato, protocolo y garantías disponibles en cada POS | Define el contrato físico de los adaptadores | ADR-004 y la realización ubican idempotencia, reintento e Inbox/Outbox en los adaptadores sin modificar POS; cada instancia real deberá adoptar el contrato publicado |
+| Volumen normal, concurrencia y distribución del tráfico por canal | “8x” es una proporción y requiere una línea base representativa | Se ejecutaron cinco escenarios de carga y cinco de estrés sobre la línea base académica; TI debe repetirlos con telemetría productiva antes de dimensionar capacidad regional |
 | Objetivos de disponibilidad, recuperación y pérdida de datos | Sin RTO, RPO y disponibilidad objetivo no se justifica una topología final de redundancia | La vista conserva `N` y no inventa réplicas; TI y Gerencia deben acordar SLO, RTO y RPO antes de producción |
 | Jurisdicciones y controles concretos de protección de datos | MegaStore opera en tres países | Se aplican minimización, TLS, tokenización y control de acceso; Legal debe confirmar retención, residencia y normativa específica |
 
@@ -1210,7 +1212,22 @@ sistemas contratados. ERP-Core solamente recibe el archivo conciliado CSV/XML
 cada 30 minutos. Esta separación evita atribuir al ERP la responsabilidad de
 inventario o presentar a SGO-Logic como dueño de datos externos.
 
-#### 5.1.2 Vista objetivo de Fase 1
+#### 5.1.2 Realización ampliada en Fase 3
+
+![Componentes y fronteras implementados en Fase 3](<../FASE 2/docs/diagrams/fase3/01-componentes-fase3.svg>)
+
+*Figura 17B. Ampliación del monolito modular con crédito propio y Saga financiera dual.*
+
+Fase 3 conserva las fronteras de Fase 2 y añade el módulo interno `credit`, que
+es propietario lógico de perfiles, evaluaciones y operaciones de crédito en la
+base PostgreSQL principal. `orders` consume exclusivamente `credit::api` y
+mantiene dos rutas explícitas, `PAYKLIK` y `OWN_CREDIT`, que convergen en una
+referencia financiera neutral para facturación. La identidad persistente del
+cliente y el claim JWT `customer_id` aíslan carrito, pedidos y saldo. La
+publicación mediante Outbox/Inbox mantiene auditoría y notificaciones fuera de
+la transacción crítica sin convertir crédito en un servicio o almacén separado.
+
+#### 5.1.3 Vista objetivo original de Fase 1
 
 ![Diagrama de Bloques de SGO-Logic](./diagramas/bloques.svg)
 
@@ -1549,15 +1566,20 @@ CUN-11, EaC-08, EaC-07, R3.
 
 ## 6. Vistas Arquitectónicas
 
-Las vistas de Fase 1 se conservan como arquitectura objetivo. La realización de
-Fase 2 se documenta aparte en
+Las vistas de Fase 1 se conservan como arquitectura objetivo histórica. La realización de
+Fase 2 se documenta en
 [`nuevos-fase2`](<../FASE 2/docs/diagrams/nuevos-fase2/>), con exportaciones JPG
 y dos fuentes `draw.io` multipágina editables: una para
 [`bloques, componentes y despliegue`](<../FASE 2/docs/diagrams/nuevos-fase2/NUEVO-vistas-arquitectonicas-fase2.drawio>)
 y otra para los
 [`casos de uso expandidos`](<../FASE 2/docs/diagrams/nuevos-fase2/NUEVO-cdu-expandidos-fase2.drawio>).
+La ampliación de Fase 3 se documenta en
+[`fase3`](<../FASE 2/docs/diagrams/fase3/>), con cuatro exportaciones SVG, un
+[`catálogo de trazabilidad`](<../FASE 2/docs/diagrams/fase3/CATALOGO_TRAZABILIDAD_FASE_3.md>)
+y una
+[`fuente draw.io editable`](<../FASE 2/docs/diagrams/fase3/NUEVO-vistas-arquitectonicas-fase3.drawio>).
 La separación evita presentar una decisión objetivo como si ya estuviera
-desplegada y, a la vez, conserva trazabilidad con el código ejecutable.
+desplegada y conserva trazabilidad entre evolución, código y operación real.
 
 Todas las vistas de cierre usan fondo y relleno blancos, texto y líneas negros,
 sin degradados ni sombras. Los conectores continuos representan llamadas o
@@ -1565,7 +1587,7 @@ intercambios síncronos; los discontinuos representan eventos. Los rótulos
 declaran el protocolo cuando está respaldado por Compose o por el código.
 
 Para conservar el nivel de presentación de las vistas objetivo, las figuras de
-Fase 2 aplican una jerarquía visual común: título y propósito, frontera del
+Fase 2 y Fase 3 aplican una jerarquía visual común: título y propósito, frontera del
 sistema, agrupaciones por responsabilidad y detalle técnico progresivo. Esta
 composición evita una lista plana de componentes, reduce cruces innecesarios y
 permite leer primero la decisión arquitectónica y después su realización. El
@@ -1593,7 +1615,20 @@ discontinuas muestran eventos de pago o de estado de envío. Este nivel permite
 seguir las dependencias reales sin confundir módulos internos con servicios o
 sistemas externos.
 
-#### 6.1.2 Vista objetivo de Fase 1
+#### 6.1.2 Vista implementada en Fase 3
+
+![Componentes implementados en Fase 3](<../FASE 2/docs/diagrams/fase3/01-componentes-fase3.svg>)
+
+*Figura 18B. Componentes de crédito propio, identidad de cliente y rutas financieras.*
+
+La ampliación respeta el límite modular: `credit` expone una API pública y
+mantiene su implementación interna cerrada; `orders` no lee sus tablas. La
+Saga selecciona `PAYKLIK` u `OWN_CREDIT`, conserva idempotencia por orden y
+operación y entrega a `fiscal` una referencia financiera neutral. Los eventos
+`CREDIT_*` pasan por Outbox, RabbitMQ e Inbox hacia notificaciones, mientras
+auditoría conserva la explicación y la versión de reglas aplicadas.
+
+#### 6.1.3 Vista objetivo original de Fase 1
 
 ![Diagrama de Componentes de SGO-Logic](./diagramas/componentes.svg)
 
@@ -1628,7 +1663,21 @@ integra mediante API, eventos o archivos; ningún componente lee tablas de otro
 sistema. Esta regla reduce acoplamiento de datos y permite probar o recuperar
 cada integración de forma independiente.
 
-#### 6.2.2 Vista objetivo de Fase 1
+#### 6.2.2 Despliegue ejecutado en Fase 3
+
+![Despliegue ejecutado en Fase 3](<../FASE 2/docs/diagrams/fase3/04-despliegue-fase3.svg>)
+
+*Figura 19B. Topología Compose desplegada en Google Cloud Platform.*
+
+La misma topología de doce contenedores se ejecuta en una VM GCP
+`e2-standard-2` con IP pública fija `136.65.180.39`. GitHub Actions valida los
+proyectos, construye y publica seis imágenes versionadas en GHCR y ejecuta el
+despliegue con comprobaciones de salud y smoke tests. Esta evidencia materializa
+la portabilidad prevista sin alterar las fronteras: `credit` continúa dentro
+del backend y usa la base operacional de SGO-Logic; PayKlik y los demás sistemas
+simulados conservan sus despliegues y contratos independientes.
+
+#### 6.2.3 Vista objetivo original de Fase 1
 
 ![Diagrama de Despliegue de SGO-Logic](./diagramas/despliegue.svg)
 
@@ -1715,11 +1764,40 @@ transportista LogiExpress.*
 La separación documenta la decisión de integración por contratos y evita que
 una relación conceptual se interprete como clave foránea entre sistemas.
 
+#### 6.3.2 Modelo de datos de crédito en Fase 3
+
+![Modelo de datos de crédito propio](<../FASE 2/docs/diagrams/fase3/03-datos-credito.svg>)
+
+*Figura 25. Propiedad lógica y relaciones de perfiles, decisiones y operaciones de crédito.*
+
+Las tablas de crédito pertenecen al módulo `credit` dentro de la base principal.
+Cada perfil se asocia a un `customer_id` único y recibe de forma idempotente un
+límite inicial de Q2,500; la migración V4011 crea el perfil faltante para
+clientes existentes. Las operaciones se relacionan con la orden y su llave de
+idempotencia, registran monto, vencimiento y estado (`GRANTED`, `OVERDUE`,
+`SETTLED` o `CANCELLED`) y conservan la versión y explicación de la decisión.
+El saldo disponible se calcula por cliente, por lo que compras y obligaciones
+de una cuenta no pueden consumir el crédito de otra.
+
+### 6.4 Secuencia de la Saga financiera dual
+
+![Secuencia de la Saga financiera dual](<../FASE 2/docs/diagrams/fase3/02-secuencia-saga-dual.svg>)
+
+*Figura 26. Selección, concesión, rechazo y recuperación de las dos rutas financieras.*
+
+El checkout consulta opciones para el cliente autenticado. En la ruta de
+crédito, la evaluación considera saldo disponible, mora, incidencias críticas,
+devoluciones y versión de reglas; una aprobación concede una sola obligación y
+continúa hacia facturación, mientras un rechazo no crea deuda y deja disponible
+una nueva ejecución por PayKlik. En la ruta PayKlik se conserva el procesamiento
+existente. Ambas rutas son idempotentes y convergen en la misma reserva,
+facturación, despacho, auditoría y notificación.
+
 ---
 
 ## 7. Validación y Trazabilidad
 
-La matriz principal relaciona stakeholders y entidades externas con drivers, decisiones aceptadas, vistas y mecanismos de validación. Las referencias de vista corresponden a [Contexto (§2.3)](#23-diagrama-de-contexto), [Componentes (§6.1)](#61-diagrama-de-componentes), [Despliegue (§6.2)](#62-diagrama-de-despliegue), [Bloques (§5.1)](#51-visión-general-de-la-solución) y [Prototipo (§8)](#8-prototipo--mockups). Una validación prevista es un criterio o diseño de prueba de Fase 1, no un resultado de implementación. Las secciones 7.4 a 7.6 añaden matrices de control entre requisitos funcionales, atributos de calidad y decisiones arquitectónicas.
+La matriz principal relaciona stakeholders y entidades externas con drivers, decisiones aceptadas, vistas y mecanismos de validación. Las referencias de vista corresponden a [Contexto (§2.3)](#23-diagrama-de-contexto), [Componentes (§6.1)](#61-diagrama-de-componentes), [Despliegue (§6.2)](#62-diagrama-de-despliegue), [Datos (§6.3)](#63-modelo-er), [Saga dual (§6.4)](#64-secuencia-de-la-saga-financiera-dual), [Bloques (§5.1)](#51-visión-general-de-la-solución) y [Prototipo (§8)](#8-prototipo--mockups). En las matrices originales, “validación prevista” conserva el criterio definido en Fase 1; las subsecciones de cierre y el catálogo de Fase 3 registran la evidencia ejecutada. Las secciones 7.4 a 7.6 añaden matrices de control entre requisitos funcionales, atributos de calidad y decisiones arquitectónicas.
 
 | Fuente de la preocupación | Preocupación o condición | Driver relacionado | Decisión/ADR | Vista prevista | Validación prevista |
 |---|---|---|---|---|---|
@@ -1903,10 +1981,13 @@ como hipótesis de negocio que deberá medirse; no se declara como beneficio ya
 obtenido. Marketing/Comercialización patrocina la oferta, Finanzas/Riesgo define
 su apetito y reglas, el Cliente decide la ruta y TI opera y observa la solución.
 
-Se añaden cuatro capacidades funcionales: evaluar elegibilidad, ofrecer la
-alternativa únicamente cuando corresponda, conceder o rechazar una obligación
-propia y notificar el resultado. La decisión arquitectónica completa se registra
-en [ADR-016](<../FASE 2/docs/adr/ADR-016-credito-propio-y-saga-financiera-dual.md>).
+Se añadieron cuatro capacidades funcionales: crear un perfil individual,
+evaluar elegibilidad y saldo, conceder o rechazar una obligación propia y
+notificar el resultado. La decisión de crédito se registra en
+[ADR-016](<../FASE 2/docs/adr/ADR-016-credito-propio-y-saga-financiera-dual.md>)
+y su despliegue en GCP y CI/CD en
+[ADR-017](<../FASE 2/docs/adr/ADR-017-despliegue-nube-gcp-y-cicd.md>), ambas en
+estado `Accepted`.
 
 La realización implementada mantiene el monolito modular: `credit` posee perfil,
 decisión y operación; publica una API explícita para `orders`; la Saga conserva
@@ -1923,16 +2004,20 @@ Checkout -> orders -> credit::api -> perfil/proyección + decisión
                     +-> audit
 ```
 
-Los estados nuevos son `CREDIT_PENDING`, `CREDIT_APPROVED` y
+Los estados de orden son `CREDIT_PENDING`, `CREDIT_APPROVED` y
 `CREDIT_REJECTED`. Un rechazo no crea deuda ni intento PayKlik y permite una
 elección posterior de PayKlik mientras la orden sea recuperable. Una concesión
 se identifica de forma única por orden y llave idempotente y fija vencimiento a
-30 días. La política inicial es configurable, falla de forma cerrada ante
-historial ausente y conserva `ruleVersion` y un código público de resultado.
+30 días. Todo cliente registrado recibe de manera perezosa e idempotente un
+límite base individual de Q2,500; V4011 cubre las cuentas existentes. La falta
+de historial no reduce ese límite base. El historial favorable puede elevarlo
+hasta Q5,000, mientras mora, incidencias críticas, devoluciones altas o saldo
+disponible insuficiente pueden bloquear una operación. Cada decisión conserva
+`ruleVersion`, código público y explicación consultable.
 
 | Requisito Fase 3 | Decisión / código | Evidencia prevista o existente |
 |---|---|---|
-| Alternativa solo para elegibles | ADR-016; `PaymentOptionsService` | `PaymentOptionsServiceTest` |
+| Crédito individual para todo cliente registrado | ADR-016; perfil idempotente de Q2,500 | pruebas de perfil, registro y migración V4011 |
 | Decisión basada en historial | `CreditEligibilityPolicy`; perfil y versión de reglas | `CreditEligibilityPolicyTest` |
 | PayKlik independiente | Rutas `PaymentRoute`; degradación segura | prueba de opciones y regresión PayKlik |
 | Concesión sin duplicados | `credit_operations` con unicidad por orden/llave | E2E de compra con crédito |
@@ -1941,22 +2026,40 @@ historial ausente y conserva `ruleVersion` y un código público de resultado.
 | Límite modular | `credit :: api` | `ModularArchitectureTest` |
 
 Cada cuenta web registrada recibe un `customerId` persistente y un claim JWT
-firmado; el backend impide operar carritos u órdenes ajenos. Las contraseñas se
-codifican con BCrypt en el servidor y no se guardan en el navegador. El
-historial ERP cuenta con un contrato de ingesta idempotente, trazabilidad de
-entradas y dataset de demostración. Para una operación productiva de mayor
-escala siguen pendientes la posible federación con un IdP y el gobierno formal
-de fuente, frescura y reconciliación del historial.
+firmado; el backend impide operar carritos, órdenes, historial o crédito ajenos.
+Las contraseñas se codifican con BCrypt en el servidor y no se guardan en el
+navegador. El historial ERP cuenta con ingesta idempotente, trazabilidad y datos
+de demostración. Para una operación regional siguen pendientes la posible
+federación con un IdP y el gobierno formal de fuente, frescura y reconciliación
+del historial. Pagos parciales, intereses y recargos permanecen fuera del
+alcance funcional de la campaña.
 
-La rebanada funcional supera el mínimo de cinco integraciones y cinco E2E y el
-SHA `274ee02` pasó CI y despliegue en GCP. La medición de los cinco casos de
-carga y cinco de estrés continúa como gate de cierre no funcional; el arnés
-existe en la rama de rendimiento, pero sus métricas no deben declararse hasta
-ejecutarlo e integrarlo.
+La rebanada funcional supera el mínimo de cinco integraciones y cinco E2E. La
+suite integrada documentó **320 pruebas** sin fallos, errores ni omisiones. También
+se ejecutaron cinco escenarios de carga y cinco de estrés: todos los umbrales de
+carga se cumplieron y la repetición de STRESS-03 terminó con 0 % de errores;
+STRESS-04 documentó honestamente el límite de capacidad del consumidor de
+notificaciones, con acumulación de cola, 28 % de error en creación y drenaje
+incompleto. Los smoke tests cerraron con 11/11 verificaciones de nube y 17/17 de
+plataforma.
 
-El diseño establece a SGO-Logic como una capa de orquestación e integración omnicanal que conserva ERP-Core y los POS existentes. Los drivers funcionales, de calidad y de restricción quedan atendidos mediante el monolito modular, los puertos y adaptadores, la mensajería confiable, la Saga orquestada y los controles transversales documentados en ADR-001 a ADR-008.
+El commit integrado `3ddec7a` pasó el flujo final de CI
+`38674105134`, que validó frontend, cinco proyectos Java y seis imágenes Docker.
+La versión desplegada corresponde al commit `bcc1cf6` y al flujo
+`38669072485` sobre GCP. Estas referencias son evidencia reproducible del
+estado verificado; una nueva publicación debe repetir el mismo gate antes de
+promoverse.
 
-Las vistas de contexto, bloques, componentes y despliegue mantienen una misma frontera y una derivación trazable desde las necesidades del negocio. Los supuestos de la sección 2.6 deben confirmarse antes de dimensionar o implementar, sin que representen entregables faltantes de la Fase 1. Este DDA constituye la línea base arquitectónica aprobada para la evolución posterior de SGO-Logic.
+El diseño resultante establece a SGO-Logic como capa de orquestación omnicanal
+que conserva ERP-Core y los POS existentes. Los drivers funcionales, de calidad
+y de restricción se atienden mediante monolito modular, puertos y adaptadores,
+mensajería confiable, Saga orquestada, identidad por cliente y controles
+transversales documentados en ADR-001 a ADR-017. Las vistas de contexto,
+bloques, componentes, datos, secuencia y despliegue comparten la misma frontera
+y se derivan de necesidades verificables. Los puntos aún abiertos en §2.6 son
+decisiones de operación productiva, no defectos pendientes de la realización
+académica. Este DDA constituye la línea base arquitectónica actualizada al
+cierre de Fase 3.
 
 ---
 
@@ -1978,3 +2081,6 @@ Las vistas de contexto, bloques, componentes y despliegue mantienen una misma fr
 | Event Store | Almacén de eventos que conserva la secuencia de cambios como fuente de estado; no es sinónimo de Outbox |
 | Circuit Breaker | Mecanismo que interrumpe temporalmente llamadas a una dependencia que está fallando para evitar fallas en cascada |
 | Saga | Coordinación de una transacción de negocio distribuida mediante pasos y acciones de compensación |
+| OWN_CREDIT | Ruta financiera de crédito propio de MegaStore, independiente de PayKlik |
+| JWT | Token firmado que transporta identidad y roles; en clientes incluye el claim `customer_id` |
+| CI/CD | Automatización de validación, construcción, publicación y despliegue del software |
