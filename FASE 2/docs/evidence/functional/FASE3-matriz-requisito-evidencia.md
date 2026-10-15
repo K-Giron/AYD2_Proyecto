@@ -2,7 +2,7 @@
 
 **Corte:** 14 de octubre de 2026
 
-**Estado:** implementación integrada y validada en CI/nube; promoción final a `v4` pendiente
+**Estado:** implementación integrada y validada en CI/nube; releases `v1` a `v4` publicados desde `main` (ver `docs/operacion/RELEASES-GITFLOW.md`)
 
 | Requisito / riesgo | Implementación | Prueba o documento | Estado local |
 |---|---|---|---|
@@ -57,5 +57,17 @@ Los cinco escenarios de carga y cinco de estrés exigidos fueron ejecutados,
 analizados e integrados en `develop` mediante el PR correspondiente. Sus
 métricas, hallazgos y repeticiones se conservan en
 `docs/evidence/performance/FASE3-REPORTE-CARGA-ESTRES.md`; el Manual Técnico
-también refleja esos resultados. Permanecen pendientes la promoción final a
-`main` y los releases de cierre `v2`, `v3` y `v4`.
+también refleja esos resultados.
+
+### Releases y despliegue
+
+| Release | Rama | Contenido | Evidencia |
+|---|---|---|---|
+| `v1` | `release/v1` | Cierre de Fase 2 y frente DevOps (pipeline, Compose de producción, despliegue con rollback) | Run del tag `v1`: pruebas, 6 imágenes, deploy y smoke en verde |
+| `v2` | `release/fase3-v2` | Crédito propio completo, registro de clientes, seguridad, pruebas de integración/E2E y rendimiento | Run del tag `v2`: 323 pruebas del backend y smoke 17/17 |
+| `v3` | `release/fase3-v3` | Cierre de documentación y operación de Fase 3 | Run del tag `v3` |
+| `v4` | `release/fase3-v4` | Entrega final con el ensayo de rollback documentado | Runs de rollback `v3 → v2 → v3` y run del tag `v4` |
+
+Las notas de cada release, con el enlace a su run, están en GitHub →
+Releases. El ensayo de rollback se registra en
+`docs/operacion/RELEASES-GITFLOW.md`.

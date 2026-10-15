@@ -49,7 +49,7 @@ gcloud compute firewall-rules create sgo-logic-web \
 ```bash
 gcloud compute ssh sgo-logic-vm --zone="$ZONE"
 # ya dentro de la VM:
-curl -fsSL https://raw.githubusercontent.com/JairoGH/AYD2_A_2S2025_PROYECTO_G5/develop/FASE%202/deploy/scripts/vm-bootstrap.sh | sudo bash -s -- deploy
+curl -fsSL https://raw.githubusercontent.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/develop/FASE%202/deploy/scripts/vm-bootstrap.sh | sudo bash -s -- deploy
 exit
 ```
 

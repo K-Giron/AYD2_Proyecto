@@ -15,7 +15,7 @@ lleva.
 feature/<autor>-<tema>  (desde develop)
    └─ PR → develop          (CI: pruebas de los 5 proyectos + frontend)
 develop
-   └─ release/vN            (estabilización: solo correcciones y documentación)
+   └─ release/fase3-vN      (estabilización: solo correcciones y documentación)
         └─ PR → main        (CI de nuevo)
              └─ tag vN      → CI/CD publica imágenes y despliega en GCP
         └─ merge de vuelta a develop
@@ -33,17 +33,16 @@ Los ejecuta el responsable de releases (Kevin Girón). `N` es el número de rele
 
 ```bash
 git switch develop && git pull
-git switch -c release/vN
+git switch -c release/fase3-vN
 # … solo correcciones de último momento, notas y versión de la documentación …
-git push -u origin release/vN
-# En GitHub: PR release/vN → main. Esperar el CI verde y hacer merge.
+git push -u origin release/fase3-vN
+# En GitHub: PR release/fase3-vN → main. Esperar el CI verde y hacer merge (merge commit).
 
 git switch main && git pull
 git tag -a vN -m "vN: <resumen de una línea>"
 git push origin vN                 # dispara build → test → imágenes → deploy
 
 git switch develop && git merge --no-ff main && git push   # develop recibe lo de la release
-git push origin --delete release/vN                         # opcional: limpiar la rama
 ```
 
 Luego, en GitHub → Releases → *Draft a new release* sobre el tag `vN`, se
@@ -52,25 +51,43 @@ pegan las notas (plantilla al final) y se adjunta la evidencia:
 - El resultado del smoke.
 - Los reportes de pruebas (artefactos `pruebas-*`).
 
-## Contenido propuesto de cada release
+## Releases publicados
 
-| Release | Contenido | Gate (lo verifica el pipeline o el responsable) |
-|---|---|---|
-| `v1` | Cierre de Fase 2 (documentación, ADR-011/013/014/015, prueba de fuga estable) y **frente DevOps**: pipeline CI/CD, Compose de producción, scripts de despliegue, smoke, respaldo y rollback, ADR-017 y runbook | 5 proyectos con sus pruebas en verde; 6 imágenes publicadas; **primer despliegue en GCP** y smoke externo en verde |
-| `v2` | Dominio de crédito: modelo y migración, proyección del historial ERP y motor de elegibilidad versionado y explicable (Jorge), con **5 pruebas unitarias** | Pruebas unitarias del crédito en verde; despliegue sano |
-| `v3` | Checkout con ruta crédito/PayKlik y Saga dual (Jairo); eventos, notificación, seguridad y auditoría del crédito, con **5 pruebas de integración y 5 E2E** (Edson) | Integración y E2E en verde; despliegue sano |
-| `v4` | **5 pruebas de carga y 5 de estrés** contra la nube (Andy), Manual Técnico y de Usuario, DDA y diagramas finales | Las 25 pruebas documentadas; smoke externo; **rollback ensayado** |
+El crédito, la Saga dual y las pruebas se integraron en `develop` casi al mismo
+tiempo, así que el contenido se agrupó distinto al plan original (que asignaba
+crédito a `v2`, Saga y E2E a `v3`, y carga/estrés a `v4`). Cada release pasó su
+gate: pruebas de los 5 proyectos, imágenes publicadas, despliegue sano y smoke.
+
+| Release | Rama | Contenido | Gate verificado |
+|---|---|---|---|
+| `v1` | `release/v1` | Cierre de Fase 2 (ADR-011/013/014/015, prueba de fuga estable), avance del crédito (V4004–V4009) y **frente DevOps**: pipeline CI/CD, Compose de producción, scripts de despliegue, smoke, respaldo y rollback, ADR-017 y runbook | 5 proyectos y frontend en verde; 6 imágenes en GHCR; **primer despliegue automático en GCP**; smoke 10/10 |
+| `v2` | `release/fase3-v2` | Crédito propio completo (línea individual, elegibilidad explicable, historial ERP, ciclo de la obligación), registro de clientes con BCrypt (V4010–V4011), Saga dual con degradación a PayKlik, seguridad 401/403, **pruebas unitarias, de integración y E2E**, **5 de carga y 5 de estrés** (k6), manuales y DDA | 323 pruebas del backend en verde; despliegue sano; smoke 17/17 |
+| `v3` | `release/fase3-v3` | Cierre de documentación y operación: matriz de evidencia con los releases, flujo de releases, bitácora y nombre actual del repositorio | Pipeline en verde; despliegue sano; smoke 17/17 |
+| `v4` | `release/fase3-v4` | Entrega final con el **ensayo de rollback** documentado | Rollback `v3 → v2 → v3` verificado; despliegue de `v4` sano |
 
 Si un release no llega a su gate, no se etiqueta: se corrige en
-`release/vN` o se mueve el contenido al siguiente.
+`release/fase3-vN` o se mueve el contenido al siguiente.
+
+Los despliegues manuales de `develop` (*Run workflow* con `deploy_tag =
+develop`) se usaron para validar la integración en la nube antes de `v2`. Desde
+`v2`, la nube solo recibe tags de release.
 
 ## Ensayo de rollback (evidencia para v4)
 
-1. Con `vN` desplegado, en GitHub → Actions → **CI/CD - SGO-Logic** → *Run
-   workflow* → `deploy_tag` = `vN-1`.
-2. Verificar que el smoke queda verde y que en la VM `cat .current_tag` dice `vN-1`.
-3. Repetir con `deploy_tag` = `vN` para volver.
-4. Guardar los enlaces de los dos runs como evidencia.
+Se ensaya entre `v3` y `v2`, que no tienen migraciones de por medio:
+
+1. Con `v3` desplegado, en GitHub → Actions → **CI/CD - SGO-Logic** → *Run
+   workflow* → `deploy_tag` = `v2`.
+2. Verificar que el smoke queda verde y que en la VM `cat .current_tag` dice `v2`.
+3. Repetir con `deploy_tag` = `v3` para volver.
+4. Guardar los enlaces de los dos runs como evidencia (sección siguiente).
+
+### Resultado del ensayo
+
+| Paso | Run | Versión en la nube | Smoke |
+|---|---|---|---|
+| Rollback `v3 → v2` | _pendiente_ | _pendiente_ | _pendiente_ |
+| Regreso `v2 → v3` | _pendiente_ | _pendiente_ | _pendiente_ |
 
 ## Plantilla de notas de release
 

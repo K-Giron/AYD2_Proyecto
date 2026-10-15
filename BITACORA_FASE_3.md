@@ -68,11 +68,26 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
     correctamente en el [run 38618417187](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38618417187).
   - El smoke externo ampliado verificó 17 controles, incluidos los enlaces
     portables de los seis portales, sin fallos.
+- **Actualización 2026-10-14 (noche), releases y validación integral:**
+  - **KEV3-06:** releases `v1` (PR #10) y `v2` (PR #15) publicados desde `main`,
+    cada uno desplegado por su tag con pruebas, imágenes, health check y smoke
+    en verde. Notas de release con enlace a su run en GitHub → Releases.
+  - Revisión de la integración de Edson, Jairo y Andy antes de `v2`: backend
+    con **323 pruebas** en verde, JavaScript de los seis portales válido y
+    smoke ampliado 17 de 17 en la nube.
+  - Prueba manual de punta a punta en un ambiente local limpio
+    (`reset-demo-data.sh`): almacén central, folios a POS-ONLINE y POS-01,
+    publicación, venta en tienda física, compra web con PayKlik y con crédito,
+    retiro en tienda, LogiExpress, consola, ERP e informes, sin hallazgos.
+  - Cierre documental (`v3`): matriz de evidencia con los cuatro releases,
+    `RELEASES-GITFLOW.md` con el contenido real de cada uno y el ensayo de
+    rollback, y referencias al nombre actual del repositorio
+    (`AYD2_A_2S2026_PROYECTO_G5`).
 - Impedimentos, responsable e impacto:
   - **KEV3-02 y KEV3-07 cerrados:** infraestructura, secretos, variables,
     despliegue por Actions y smoke externo están operativos.
-  - Permanecen los releases `v2` a `v4`; dependen de integrar los resultados
-    de rendimiento y promover el contenido validado de `develop` a `main`.
+  - **KEV3-06:** `v1` y `v2` publicados; `v3` y `v4`, con el ensayo de
+    rollback, se publican con este cierre.
 - Horas reales y estimadas restantes: pendiente de registrar por Kevin.
 - Persona que quedaría bloqueada y acción temporal: ninguna; Andy ya puede usar la nube (`http://136.65.180.39`) para carga y estrés.
 
@@ -263,7 +278,7 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
 |---|---|---|
 | Jairo Gómez | Crédito base, checkout/Saga dual, integración ERP/reporte/notificaciones, pruebas, ADR/DDA/diagramas, Manual de Usuario, navegación y catálogo | Integrado y desplegado desde `develop` |
 | Jorge Pumay | Historial ERP, dataset, reglas trazables, ciclo de obligación, seguridad y correcciones de logística | Integrado en `develop` |
-| Kevin Girón | CI/CD, Compose productivo, GCP, scripts de backup/deploy/rollback, runbook y release `v1` | Integrado; pipeline y nube operativos |
+| Kevin Girón | CI/CD, Compose productivo, GCP, scripts de backup/deploy/rollback, runbook, releases `v1`–`v4` y validación integral | Integrado; pipeline y nube operativos |
 | Andy Sánchez | Arnés 5+5, ejecución y análisis k6, Manual Técnico, smoke independiente y revisión estática del CI/CD | Integrado en `develop` |
 | Edson Sosa | Explicación financiera, seguridad, integración PostgreSQL/RabbitMQ, notificaciones y E2E de degradación | Integrado en `develop` mediante `224a73c` |
 
@@ -277,7 +292,7 @@ Un bloque por fecha e integrante, sin completar información retroactiva.
 | Manual de Usuario | `fc52d03`, integrado en `develop` mediante `3ddec7a`; 30 capturas incorporadas |
 | CI documental final | [Run 38674105134](https://github.com/JairoGH/AYD2_A_2S2026_PROYECTO_G5/actions/runs/38674105134): frontend, cinco proyectos Java y seis imágenes en verde |
 | Ambiente | `http://136.65.180.39` y portales `:8082`, `:8084`, `:8085`, `:8086` |
-| Release disponible | `v1`; `v2`–`v4` pendientes |
+| Releases | `v1` y `v2` publicados y desplegados por tag; `v3` y `v4` en el cierre (ver `FASE 2/docs/operacion/RELEASES-GITFLOW.md`) |
 | Smoke final | 17 verificaciones, 0 fallos |
 
 ## 5. Decisiones y pendientes del cierre
