@@ -80,7 +80,7 @@ class CreditEligibilityPolicyTest {
 
     @Test
     void ruleBoundariesAreInclusiveAsDocumented() {
-        // Exactamente en el umbral: 3 compras, 80 % puntual, 30 % devoluciones, 1 incidente y el límite.
+        // Exactamente en los umbrales: 80 % puntual, 30 % devoluciones, 1 incidente y el límite.
         var atEveryThreshold = policy.evaluate(profile(3, "0.80", "0.30", 1, false, "1000.00"),
                 new BigDecimal("1000.00"));
 
@@ -90,8 +90,6 @@ class CreditEligibilityPolicyTest {
 
     @Test
     void oneStepBeyondEachBoundaryIsRejectedWithItsOwnReason() {
-        assertThat(policy.evaluate(profile(2, "1.00", "0.00", 0, false, "1000.00"), BigDecimal.TEN)
-                .reasonCode()).isEqualTo("INSUFFICIENT_HISTORY");
         assertThat(policy.evaluate(profile(5, "0.7999", "0.00", 0, false, "1000.00"), BigDecimal.TEN)
                 .reasonCode()).isEqualTo("LATE_PAYMENT_HISTORY");
         assertThat(policy.evaluate(profile(5, "1.00", "0.3001", 0, false, "1000.00"), BigDecimal.TEN)
@@ -113,7 +111,6 @@ class CreditEligibilityPolicyTest {
                 .contains("\"completedPurchases\":5")
                 .contains("\"onTimePaymentRate\":0.90")
                 .contains("\"availableCredit\":1500.00")
-                .contains("\"minimumCompletedPurchases\":3")
                 .contains("\"maximumLimit\":5000.00");
     }
 

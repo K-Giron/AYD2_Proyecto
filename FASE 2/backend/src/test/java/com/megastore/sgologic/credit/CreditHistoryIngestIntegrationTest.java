@@ -85,10 +85,10 @@ class CreditHistoryIngestIntegrationTest {
                 customer, new BigDecimal("300.00"), "GTQ", UUID.randomUUID()));
 
         assertThat(decision.eligible()).isTrue();
-        assertThat(decision.approvedLimit()).isEqualByComparingTo("1200.00");
+        assertThat(decision.approvedLimit()).isEqualByComparingTo("2500.00");
         String snapshot = jdbc.queryForObject("SELECT inputs_snapshot FROM credit_decisions WHERE id = ?",
                 String.class, decision.decisionId());
-        assertThat(snapshot).contains("\"completedPurchases\":4").contains("\"availableCredit\":1200.00");
+        assertThat(snapshot).contains("\"completedPurchases\":4").contains("\"availableCredit\":2500.00");
     }
 
     @Test
@@ -107,8 +107,8 @@ class CreditHistoryIngestIntegrationTest {
                 + "WHERE customer_id = ?", Integer.class, customer)).isEqualTo(1);
         var decision = credit.evaluate(new CreditEvaluationRequest(
                 customer, new BigDecimal("10.00"), "GTQ", UUID.randomUUID()));
-        assertThat(decision.eligible()).isFalse();
-        assertThat(decision.publicReasonCode()).isEqualTo("INSUFFICIENT_HISTORY");
+        assertThat(decision.eligible()).isTrue();
+        assertThat(decision.publicReasonCode()).isEqualTo("ELIGIBLE");
     }
 
     @Test

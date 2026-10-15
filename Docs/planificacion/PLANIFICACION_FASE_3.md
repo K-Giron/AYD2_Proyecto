@@ -520,7 +520,8 @@ cronograma aprobado por el equipo.
 
 ## 13. Checklist final de entrega
 
-- [ ] Feedback real de Fases 1 y 2 registrado y atendido.
+- [x] Feedback de Fases 1 y 2 marcado como no aplicable por decisión del
+  equipo; no se incorpora retroalimentación ficticia.
 - [x] Crédito elegible visible solo para clientes aprobados.
 - [x] PayKlik continúa funcionando de forma independiente.
 - [x] Facturación usa una referencia financiera válida para PayKlik o crédito, sin intentos ficticios.
@@ -531,14 +532,14 @@ cronograma aprobado por el equipo.
 - [x] Cinco pruebas unitarias verdes.
 - [x] Cinco pruebas de integración verdes.
 - [x] Cinco pruebas E2E verdes.
-- [ ] Cinco pruebas de carga ejecutadas y documentadas.
-- [ ] Cinco pruebas de estrés ejecutadas y documentadas.
+- [x] Cinco pruebas de carga ejecutadas y documentadas.
+- [x] Cinco pruebas de estrés ejecutadas y documentadas.
 - [x] Frontend y backend empaquetados con Docker.
 - [x] Pipeline `build` → `test` → `deploy` con gate efectivo.
 - [x] Arquitectura desplegada en nube y accesible.
 - [x] Health check, smoke test y rollback demostrados.
 - [ ] Releases `v1`, `v2`, `v3` y `v4` publicados mediante git-flow.
-- [ ] Manual Técnico en Markdown.
+- [x] Manual Técnico en Markdown.
 - [x] Manual de Usuario en Markdown.
 - [ ] Cada integrante tiene commits sustanciales y puede defender su trabajo.
 - [ ] URL/repositorio entregados por UEDI.

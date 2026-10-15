@@ -39,11 +39,12 @@ obligaciones.
    `credit_customer_profiles`, `credit_decisions` y `credit_operations`.
    `orders` solo lo consume mediante la interfaz pública `credit :: api`.
 2. La evaluación es síncrona porque el checkout necesita saber qué alternativa
-   mostrar. Es *fail closed*: sin perfil o con historia insuficiente no se ofrece
-   crédito. Una falla técnica al consultar opciones se degrada a PayKlik.
-3. La política inicial es configurable y versionada (`credit-rules-v1`): mínimo
-   de compras completadas, puntualidad mínima, devolución máxima, incidentes
-   críticos máximos, ausencia de mora y límite disponible suficiente. Cada
+   mostrar. Cada cliente recibe idempotentemente una línea inicial individual
+   de Q2,500; las compras de otro cliente nunca consumen ese saldo. Una falla
+   técnica al consultar opciones se degrada a PayKlik.
+3. La política es configurable y versionada (`credit-rules-v1`): línea inicial,
+   puntualidad mínima, devolución máxima, incidentes críticos máximos, ausencia
+   de mora y límite disponible suficiente. Cada
    evaluación persiste entradas, resultado, razón pública, límite y versión.
 4. La concesión es idempotente por orden y por `Idempotency-Key`. Una operación
    `GRANTED` crea una obligación con vencimiento calculado a 30 días; una
@@ -68,10 +69,11 @@ obligaciones.
 10. El módulo no lee tablas privadas de ERP, pagos u órdenes. El perfil local es
     una proyección; su alimentación productiva desde fuentes autorizadas queda
     como trabajo de integración y gobierno de datos.
-11. La identidad canónica de la cuenta `CLIENT` demostrativa se incluye como
-    claim firmado `customer_id`. Un guard del backend deriva de ese claim el
-    filtro de consultas y rechaza el acceso a carritos u órdenes ajenos; el
-    navegador no decide la identidad efectiva.
+11. Cada cuenta `CLIENT`, incluida la cuenta demostrativa, recibe un claim
+    firmado `customer_id`. Las cuentas creadas en la web persisten su hash
+    BCrypt en `customers` y obtienen un UUID propio. Un guard del backend
+    deriva de ese claim el filtro de consultas y rechaza el acceso a carritos
+    u órdenes ajenos; el navegador no decide la identidad efectiva.
 12. La evaluación de opciones tiene un límite temporal configurable (2 s por
     defecto). Una demora, excepción o timeout cancela la tarea y devuelve solo
     PayKlik, sin convertir una indisponibilidad de crédito en error del checkout.
@@ -120,11 +122,10 @@ obligaciones.
 - El ciclo de cobranza, abonos, mora, notas de crédito y restitución de línea no
   forma parte de esta decisión. Requiere reglas y contrato de cartera del dueño
   financiero antes de considerarlo apto para operación productiva completa.
-- La cuenta `CLIENT` demostrativa continúa siendo una sola identidad canónica,
-  ahora ligada al claim JWT `customer_id`. Antes de producción se necesita un
-  almacén de credenciales o proveedor de identidad que emita un cliente
-  distinto por persona; las cuentas locales del navegador no constituyen ese
-  directorio productivo.
+- El registro web usa el almacén de credenciales del módulo `customers`, con
+  BCrypt y una identidad distinta por persona. Una operación productiva de
+  mayor escala puede sustituirlo por un proveedor de identidad externo sin
+  cambiar la propiedad por `customer_id` ni los contratos de órdenes/crédito.
 - La política configura 30 días; cambios regulatorios, mora, pagos de cuota y
   cobranza requieren decisiones y alcance adicionales.
 

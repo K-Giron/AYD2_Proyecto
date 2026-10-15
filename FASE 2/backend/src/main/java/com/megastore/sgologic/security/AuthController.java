@@ -1,10 +1,15 @@
 package com.megastore.sgologic.security;
 
+import com.megastore.sgologic.customers.Customer;
+import com.megastore.sgologic.customers.CustomerService;
+import com.megastore.sgologic.customers.DuplicateCustomerUsernameException;
 import com.megastore.sgologic.shared.http.ApiError;
 import com.megastore.sgologic.shared.http.CorrelationIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,12 +39,17 @@ class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenService tokenService;
     private final SecurityProperties properties;
+    private final CustomerService customers;
+    private final PasswordEncoder passwordEncoder;
 
     AuthController(AuthenticationManager authenticationManager, JwtTokenService tokenService,
-                   SecurityProperties properties) {
+                   SecurityProperties properties, CustomerService customers,
+                   PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.properties = properties;
+        this.customers = customers;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/login")
@@ -58,21 +69,62 @@ class AuthController {
                     .findFirst()
                     .map(SecurityProperties.User::getCustomerId)
                     .orElse(null);
-            String token = tokenService.issueToken(authentication.getName(), roles, customerId);
-            return ResponseEntity.ok(new LoginResponse(
-                    token, "Bearer", tokenService.expiresAt(), roles, customerId));
+            String fullName = customerId == null ? authentication.getName() : customers.findById(customerId)
+                    .map(Customer::getFullName).orElse(authentication.getName());
+            return ResponseEntity.ok(loginResponse(authentication.getName(), fullName, roles, customerId));
         } catch (AuthenticationException invalidCredentials) {
-            String correlationId = String.valueOf(httpRequest.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME));
-            ApiError error = new ApiError("INVALID_CREDENTIALS", "Credenciales inválidas.",
-                    Instant.now(), httpRequest.getRequestURI(), correlationId);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+            return customers.authenticate(request.username(), request.password(), passwordEncoder)
+                    .<ResponseEntity<?>>map(customer -> ResponseEntity.ok(loginResponse(
+                            customer.getUsername(), customer.getFullName(), List.of("CLIENT"), customer.getId())))
+                    .orElseGet(() -> error(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS",
+                            "Credenciales inválidas.", httpRequest));
         }
+    }
+
+    /** Crea una identidad CLIENT persistente y devuelve su primer JWT. */
+    @PostMapping("/register")
+    ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        boolean reservedUsername = properties.getUsers().stream()
+                .anyMatch(user -> user.getUsername().equalsIgnoreCase(request.email()));
+        if (reservedUsername) {
+            return error(HttpStatus.CONFLICT, "DUPLICATE_CUSTOMER_USERNAME",
+                    "Ya existe una cuenta con ese correo.", httpRequest);
+        }
+        try {
+            Customer customer = customers.registerWithCredentials(
+                    request.email(), request.fullName(), passwordEncoder.encode(request.password()));
+            return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse(
+                    customer.getUsername(), customer.getFullName(), List.of("CLIENT"), customer.getId()));
+        } catch (DuplicateCustomerUsernameException duplicate) {
+            return error(HttpStatus.CONFLICT, "DUPLICATE_CUSTOMER_USERNAME",
+                    "Ya existe una cuenta con ese correo.", httpRequest);
+        }
+    }
+
+    private LoginResponse loginResponse(String username, String fullName, List<String> roles, UUID customerId) {
+        String token = tokenService.issueToken(username, roles, customerId);
+        return new LoginResponse(token, "Bearer", tokenService.expiresAt(), roles,
+                customerId, username, fullName);
+    }
+
+    private ResponseEntity<ApiError> error(HttpStatus status, String code, String message,
+                                           HttpServletRequest request) {
+        String correlationId = String.valueOf(request.getAttribute(CorrelationIdFilter.ATTRIBUTE_NAME));
+        return ResponseEntity.status(status).body(new ApiError(code, message, Instant.now(),
+                request.getRequestURI(), correlationId));
     }
 
     record LoginRequest(@NotBlank String username, @NotBlank String password) {
     }
 
+    record RegisterRequest(
+            @NotBlank @Size(max = 160) String fullName,
+            @NotBlank @Email @Size(max = 160) String email,
+            @NotBlank @Size(min = 8, max = 72) String password
+    ) {
+    }
+
     record LoginResponse(String accessToken, String tokenType, Instant expiresAt,
-                         List<String> roles, UUID customerId) {
+                         List<String> roles, UUID customerId, String username, String fullName) {
     }
 }

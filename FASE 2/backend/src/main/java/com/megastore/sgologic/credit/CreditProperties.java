@@ -9,24 +9,24 @@ import java.math.BigDecimal;
 @ConfigurationProperties(prefix = "sgo.credit")
 class CreditProperties {
 
-    private int minimumCompletedPurchases = 3;
     private BigDecimal minimumOnTimePaymentRate = new BigDecimal("0.80");
     private BigDecimal maximumReturnRate = new BigDecimal("0.30");
     private int maximumCriticalIncidents = 1;
+    private BigDecimal initialLimit = new BigDecimal("2500.00");
     private BigDecimal maximumLimit = new BigDecimal("5000.00");
     private int termDays = 30;
     private String ruleVersion = "credit-rules-v1";
     private int historyWindowMonths = 12;
     private BigDecimal limitRatio = new BigDecimal("0.40");
 
-    int getMinimumCompletedPurchases() { return minimumCompletedPurchases; }
-    void setMinimumCompletedPurchases(int value) { minimumCompletedPurchases = value; }
     BigDecimal getMinimumOnTimePaymentRate() { return minimumOnTimePaymentRate; }
     void setMinimumOnTimePaymentRate(BigDecimal value) { minimumOnTimePaymentRate = value; }
     BigDecimal getMaximumReturnRate() { return maximumReturnRate; }
     void setMaximumReturnRate(BigDecimal value) { maximumReturnRate = value; }
     int getMaximumCriticalIncidents() { return maximumCriticalIncidents; }
     void setMaximumCriticalIncidents(int value) { maximumCriticalIncidents = value; }
+    BigDecimal getInitialLimit() { return initialLimit; }
+    void setInitialLimit(BigDecimal value) { initialLimit = value; }
     BigDecimal getMaximumLimit() { return maximumLimit; }
     void setMaximumLimit(BigDecimal value) { maximumLimit = value; }
     int getTermDays() { return termDays; }

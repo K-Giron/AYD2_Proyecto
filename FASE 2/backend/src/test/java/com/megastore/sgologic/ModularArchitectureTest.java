@@ -83,6 +83,7 @@ class ModularArchitectureTest {
                 case "credit" -> Set.of(SHARED_MODULE, "integration", "audit", "messaging");
                 case "query" -> Set.of(SHARED_MODULE, "messaging");
                 case "notifications" -> Set.of(SHARED_MODULE, "messaging", "customers");
+                case "security" -> Set.of(SHARED_MODULE, "customers");
                 case "payments", "logistics" -> Set.of(SHARED_MODULE, "integration", "audit");
                 case "incidents" -> Set.of(SHARED_MODULE, "audit", "integration");
                 case "inventory" -> Set.of(SHARED_MODULE, "integration");
