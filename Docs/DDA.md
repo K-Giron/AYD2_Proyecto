@@ -1940,13 +1940,13 @@ historial ausente y conserva `ruleVersion` y un código público de resultado.
 | Auditoría y notificación | Outbox `CREDIT_*`, Audit e Inbox | pruebas de consumidores y escaneo EaC-12 |
 | Límite modular | `credit :: api` | `ModularArchitectureTest` |
 
-La identidad canónica de demostración ya viaja como claim JWT firmado y el
-backend impide operar carritos u órdenes ajenos. El historial ERP cuenta con un
-contrato de ingesta idempotente, trazabilidad de entradas y dataset de
-demostración. Antes de una operación productiva siguen pendientes un IdP que
-emita identidades individuales y el gobierno formal de fuente, frescura y
-reconciliación del historial; estas limitaciones no afectan la demostración
-controlada de Fase 3.
+Cada cuenta web registrada recibe un `customerId` persistente y un claim JWT
+firmado; el backend impide operar carritos u órdenes ajenos. Las contraseñas se
+codifican con BCrypt en el servidor y no se guardan en el navegador. El
+historial ERP cuenta con un contrato de ingesta idempotente, trazabilidad de
+entradas y dataset de demostración. Para una operación productiva de mayor
+escala siguen pendientes la posible federación con un IdP y el gobierno formal
+de fuente, frescura y reconciliación del historial.
 
 La rebanada funcional supera el mínimo de cinco integraciones y cinco E2E y el
 SHA `274ee02` pasó CI y despliegue en GCP. La medición de los cinco casos de

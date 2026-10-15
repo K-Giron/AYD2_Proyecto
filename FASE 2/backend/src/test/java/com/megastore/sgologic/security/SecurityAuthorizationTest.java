@@ -88,6 +88,60 @@ class SecurityAuthorizationTest {
     }
 
     @Test
+    void registeredClientsHaveIndependentSignedIdentitiesAndResources() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String firstEmail = "cliente-a-" + suffix + "@megastore.test";
+        String secondEmail = "cliente-b-" + suffix + "@megastore.test";
+        JsonNode first = register("Cliente A", firstEmail, "Segura123");
+        JsonNode second = register("Cliente B", secondEmail, "Segura456");
+
+        String firstId = first.get("customerId").asText();
+        String secondId = second.get("customerId").asText();
+        assertThat(firstId).isNotEqualTo(secondId);
+        assertThat(jwtDecoder.decode(first.get("accessToken").asText()).getClaimAsString("customer_id"))
+                .isEqualTo(firstId);
+        assertThat(jwtDecoder.decode(second.get("accessToken").asText()).getClaimAsString("customer_id"))
+                .isEqualTo(secondId);
+
+        String firstCart = mockMvc.perform(post("/api/v1/carts")
+                        .header("Authorization", "Bearer " + first.get("accessToken").asText())
+                        .header("Idempotency-Key", "cart-first-" + suffix)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "customerId", firstId, "channel", "WEB"))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.customerId").value(firstId))
+                .andReturn().getResponse().getContentAsString();
+        String firstCartId = objectMapper.readTree(firstCart).get("id").asText();
+
+        mockMvc.perform(get("/api/v1/carts/" + firstCartId)
+                        .header("Authorization", "Bearer " + second.get("accessToken").asText()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        mockMvc.perform(get("/api/v1/orders")
+                        .param("customerId", firstId)
+                        .header("Authorization", "Bearer " + second.get("accessToken").asText()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+
+        JsonNode relogin = login(firstEmail, "Segura123");
+        assertThat(relogin.get("customerId").asText()).isEqualTo(firstId);
+    }
+
+    @Test
+    void registrationRejectsDuplicateEmail() throws Exception {
+        String email = "duplicado-" + UUID.randomUUID() + "@megastore.test";
+        register("Primera cuenta", email, "Segura123");
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "fullName", "Segunda cuenta", "email", email, "password", "Segura456"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DUPLICATE_CUSTOMER_USERNAME"));
+    }
+
+    @Test
     void clientCannotOpenCartForAnotherCustomer() throws Exception {
         String token = login("cliente@megastore.com", "Cliente123").get("accessToken").asText();
 
@@ -316,6 +370,18 @@ class SecurityAuthorizationTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
+        return objectMapper.readTree(body);
+    }
+
+    private JsonNode register(String fullName, String email, String password) throws Exception {
+        String body = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "fullName", fullName, "email", email, "password", password))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.roles[0]").value("CLIENT"))
+                .andExpect(jsonPath("$.customerId").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body);
     }
 }

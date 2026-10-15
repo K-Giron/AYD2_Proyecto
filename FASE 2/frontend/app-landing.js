@@ -1,9 +1,11 @@
 "use strict";
 
 const PUBLIC_CORRELATION_ID = crypto.randomUUID();
-const FAVORITES_KEY = "sgo.megastore.favorites";
-const PURCHASE_INTENT_KEY = "sgo.purchaseIntent";
 const publicSession = typeof sgoGetSession === "function" ? sgoGetSession() : null;
+const FAVORITES_KEY = publicSession?.customerId
+    ? `sgo.megastore.favorites.${publicSession.customerId}`
+    : "sgo.megastore.favorites.public";
+const PURCHASE_INTENT_KEY = "sgo.purchaseIntent";
 let publicCatalog = [];
 let publicStocks = new Map();
 let activeCategory = "all";

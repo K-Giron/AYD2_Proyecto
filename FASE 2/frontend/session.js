@@ -20,7 +20,9 @@ if (typeof crypto.randomUUID !== "function") {
 }
 
 const SGO_SESSION_KEY = "sgo.session";
-const SGO_REGISTERED_ACCOUNTS_KEY = "sgo.registeredAccounts";
+// Versiones anteriores guardaban cuentas y contraseñas de demostración en el
+// navegador. Ya no son válidas ni seguras: la identidad vive en el backend.
+localStorage.removeItem("sgo.registeredAccounts");
 
 /**
  * Resuelve los accesos entre portales usando el host desde el que el usuario
@@ -60,11 +62,6 @@ function sgoUiRoleFor(roles) {
     return "STAFF";
 }
 
-function sgoRegisteredAccounts() {
-    try { return JSON.parse(localStorage.getItem(SGO_REGISTERED_ACCOUNTS_KEY)) || []; }
-    catch { return []; }
-}
-
 /**
  * Autentica contra el backend y devuelve `{ ok, session }` o
  * `{ ok: false, message }`. No guarda nada; app-login.js decide si la
@@ -72,17 +69,14 @@ function sgoRegisteredAccounts() {
  */
 async function sgoLogin(email, password) {
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    const localAccount = sgoRegisteredAccounts().find(
-        account => account.email === normalizedEmail && account.password === password
-    );
     let response;
     try {
         response = await fetch("/api/v1/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                username: localAccount ? "cliente@megastore.com" : normalizedEmail,
-                password: localAccount ? "Cliente123" : password,
+                username: normalizedEmail,
+                password,
             }),
         });
     } catch {
@@ -100,15 +94,9 @@ async function sgoLogin(email, password) {
         return { ok: false, message: (data && data.message) || "Correo o contraseña incorrectos." };
     }
     const roles = Array.isArray(data.roles) ? data.roles : [];
-    const fallbackCustomerId = data.customerId || localAccount?.customerId || (roles.includes("CLIENT")
-        ? "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" : null);
-    const customerId = roles.includes("CLIENT")
-        ? data.customerId || await sgoResolveServerCustomerId(data.accessToken,
-            localAccount?.email || normalizedEmail, localAccount?.name || normalizedEmail,
-            fallbackCustomerId)
-        : null;
-    if (localAccount && customerId && localAccount.customerId !== customerId) {
-        sgoUpdateLocalAccount(localAccount.email, { customerId });
+    const customerId = roles.includes("CLIENT") ? data.customerId : null;
+    if (roles.includes("CLIENT") && !customerId) {
+        return { ok: false, message: "La cuenta no posee una identidad de cliente válida." };
     }
     return {
         ok: true,
@@ -116,8 +104,9 @@ async function sgoLogin(email, password) {
             role: sgoUiRoleFor(roles),
             backendRoles: roles,
             customerId,
-            email: localAccount?.email || normalizedEmail,
-            name: localAccount?.name || normalizedEmail,
+            email: data.username || normalizedEmail,
+            name: data.fullName || data.username || normalizedEmail,
+            identityVersion: 2,
             accessToken: data.accessToken,
             expiresAt: data.expiresAt,
             loggedInAt: new Date().toISOString(),
@@ -126,87 +115,38 @@ async function sgoLogin(email, password) {
 }
 
 /**
- * El customerId sale del directorio de clientes del servidor (no del
- * navegador): así el mismo usuario tiene el mismo carrito en la web, en
- * otro dispositivo y en la tienda física (CDU-01). Si el cliente ya fue
- * registrado en una tienda, se enlaza a ese mismo registro en vez de
- * crear otro. Si el directorio no responde, se conserva el id local.
- */
-async function sgoResolveServerCustomerId(accessToken, username, fullName, fallbackCustomerId) {
-    const headers = { "Content-Type": "application/json", Authorization: "Bearer " + accessToken };
-    try {
-        const found = await fetch(`/api/v1/customers/by-username?username=${encodeURIComponent(username)}`,
-            { headers, cache: "no-store" });
-        if (found.ok) return (await found.json()).id;
-        if (found.status !== 404) return fallbackCustomerId;
-        const created = await fetch("/api/v1/customers", {
-            method: "POST", headers, cache: "no-store",
-            body: JSON.stringify({ username, fullName: fullName || username, channel: "WEB" }),
-        });
-        if (created.ok) return (await created.json()).id;
-        return fallbackCustomerId;
-    } catch {
-        return fallbackCustomerId;
-    }
-}
-
-function sgoUpdateLocalAccount(email, changes) {
-    const accounts = sgoRegisteredAccounts().map(account =>
-        account.email === email ? { ...account, ...changes } : account);
-    localStorage.setItem(SGO_REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
-}
-
-/**
- * ¿El directorio de clientes del servidor ya tiene ese correo? true/false, o
- * null si no se pudo consultar (entonces se decide con lo que sabe el navegador).
- * Consulta con la identidad JWT CLIENT del entorno demo, igual que el login.
- */
-async function sgoDirectoryHasCustomer(email) {
-    try {
-        const login = await fetch("/api/v1/auth/login", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username: "cliente@megastore.com", password: "Cliente123" }),
-        });
-        if (!login.ok) return null;
-        const { accessToken } = await login.json();
-        const found = await fetch(`/api/v1/customers/by-username?username=${encodeURIComponent(email)}`,
-            { headers: { Authorization: "Bearer " + accessToken }, cache: "no-store" });
-        if (found.ok) return true;
-        return found.status === 404 ? false : null;
-    } catch {
-        return null;
-    }
-}
-
-/**
- * Registro del prototipo: la contraseña sigue siendo local (la cuenta usa
- * la identidad JWT CLIENT del entorno demo), pero el cliente queda
- * registrado en el directorio del servidor al iniciar sesión.
+ * Registro persistente: el backend codifica la contraseña con BCrypt, crea un
+ * customerId único y devuelve un JWT limitado a ese cliente.
  */
 async function sgoRegisterClient(name, email, password) {
     const normalizedEmail = String(email || "").trim().toLowerCase();
-    // La fuente de verdad es el directorio de clientes del servidor, no este
-    // navegador: si aquí quedó guardada una cuenta que el servidor ya no tiene
-    // (p. ej. tras limpiar los datos de prueba), se reemplaza en vez de bloquear.
-    const existsOnServer = await sgoDirectoryHasCustomer(normalizedEmail);
-    if (existsOnServer === true) {
-        throw new Error("Ya existe una cuenta con ese correo. Inicia sesión con tu contraseña.");
+    let response;
+    try {
+        response = await fetch("/api/v1/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fullName: String(name || "").trim(), email: normalizedEmail, password }),
+        });
+    } catch {
+        throw new Error("No se pudo contactar al servidor para crear la cuenta.");
     }
-    const accounts = sgoRegisteredAccounts().filter(account => account.email !== normalizedEmail);
-    if (existsOnServer === null && accounts.length !== sgoRegisteredAccounts().length) {
-        throw new Error("Ya existe una cuenta con ese correo.");
+    const text = await response.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = null; }
+    if (!response.ok) {
+        throw new Error((data && data.message) || "No se pudo crear la cuenta.");
     }
-    const account = {
-        customerId: null,
-        email: normalizedEmail,
-        password,
-        name: String(name || "").trim(),
+    return {
+        role: sgoUiRoleFor(data.roles),
+        backendRoles: data.roles,
+        customerId: data.customerId,
+        email: data.username || normalizedEmail,
+        name: data.fullName || String(name || "").trim(),
+        identityVersion: 2,
+        accessToken: data.accessToken,
+        expiresAt: data.expiresAt,
+        loggedInAt: new Date().toISOString(),
     };
-    accounts.push(account);
-    localStorage.setItem(SGO_REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
-    const result = await sgoLogin(normalizedEmail, password);
-    if (!result.ok) throw new Error(result.message);
-    return result.session;
 }
 
 /**
@@ -228,7 +168,15 @@ function sgoCreateSession(session, remember) {
 function sgoGetSession() {
     const raw = sessionStorage.getItem(SGO_SESSION_KEY) || localStorage.getItem(SGO_SESSION_KEY);
     try {
-        return raw ? JSON.parse(raw) : null;
+        const session = raw ? JSON.parse(raw) : null;
+        // Fuerza un nuevo login después de abandonar la identidad canónica
+        // compartida. Los tokens CLIENT anteriores no distinguen cuentas.
+        if (session?.role === "CLIENTE" && session.identityVersion !== 2) {
+            sessionStorage.removeItem(SGO_SESSION_KEY);
+            localStorage.removeItem(SGO_SESSION_KEY);
+            return null;
+        }
+        return session;
     } catch {
         return null;
     }

@@ -75,7 +75,7 @@ datos, usuarios y direcciones pueden variar en un despliegue posterior.
 El manual cubre las siguientes funciones:
 
 - autenticación mediante una cuenta de cliente;
-- registro local de una cuenta de demostración y acceso según rol;
+- registro persistente de una cuenta de cliente y acceso según rol;
 - consulta y búsqueda de productos publicados;
 - administración de favoritos y carrito;
 - selección entre entrega a domicilio y retiro en tienda;
@@ -151,10 +151,7 @@ La página principal permite consultar productos publicados sin iniciar sesión.
 El stock público es informativo; la reserva definitiva ocurre durante el
 checkout después de autenticar al cliente.
 
-> **CAPTURA PENDIENTE MU-25 — Portal público**  
-> Insertar aquí una captura de la portada y el catálogo disponible sin sesión.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-25-portal-publico.png`
-
+![Portal público](Docs/capturas/manual-usuario/MU-25-portal-publico.png)
 ---
 
 # 4. Acceso e inicio de sesión
@@ -177,10 +174,7 @@ la consola correspondiente a sus permisos.
 - Si las credenciales son inválidas, el sistema muestra un mensaje y no inicia
   la sesión.
 
-> **CAPTURA PENDIENTE MU-01 — Inicio de sesión**  
-> Insertar aquí una captura de `login.html` con la pestaña **Cliente** activa y
-> los campos de correo y contraseña visibles.  
-> Archivo sugerido: `Docs/capturas/manual-usuario/MU-01-inicio-sesion.png`
+![InicioSesion](Docs/capturas/manual-usuario/MU-01-inicio-sesion.png)
 
 ## 4.2 Registro de un cliente de demostración
 
@@ -191,9 +185,9 @@ la consola correspondiente a sus permisos.
 4. Presione **Crear cuenta**.
 5. Confirme que el sistema inicia la sesión y abre la tienda.
 
-En el prototipo, el registro conserva la cuenta en el navegador y la vincula
-con el directorio de clientes del servidor. Para una operación productiva debe
-utilizarse un proveedor de identidad y cuentas individuales.
+El registro crea una identidad individual en el servidor. La contraseña se
+almacena codificada y el cliente recibe un identificador propio, por lo que su
+carrito, sus pedidos y su crédito no se comparten con otras cuentas.
 
 > **CAPTURA PENDIENTE MU-14 — Registro de cliente**  
 > Insertar aquí una captura de `registro.html` con los campos del formulario y
@@ -260,6 +254,7 @@ persistido del cliente.
 
 ---
 
+![alt text](image.png)
 # 7. Administración del carrito
 
 1. Seleccione **Mi carrito**.
